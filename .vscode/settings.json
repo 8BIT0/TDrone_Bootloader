@@ -1,0 +1,23 @@
+{
+    "files.associations": {
+        "storage.h": "c",
+        "shell_port.h": "c",
+        "srv_comtrans.h": "c",
+        "cusqueue.h": "c",
+        "srv_oscommon.h": "c",
+        "bsp_uart.h": "c",
+        "stm32h7xx_hal_uart.h": "c",
+        "bsp_uart_port_def.h": "c",
+        "hw_def.h": "c",
+        "cmsis_os.h": "c",
+        "kernel_stm32xxx.h": "c",
+        "task_manager.h": "c",
+        "bsp_flash.h": "c",
+        "bsp_flash_port_def.h": "c",
+        "ymodem.h": "c",
+        "srv_upgrade.h": "c",
+        "util.h": "c",
+        "stdint.h": "c",
+        "stdbool.h": "c"
+    }
+}
