@@ -118,12 +118,12 @@ bool BspSDRAM_Init(BspSDRAMObj_TypeDef *obj)
 
 	/* SdramTiming */
 	SdramTiming.LoadToActiveDelay       = 2;
-	SdramTiming.ExitSelfRefreshDelay    = 7;
-	SdramTiming.SelfRefreshTime         = 4;
-	SdramTiming.RowCycleDelay           = 7;
+	SdramTiming.ExitSelfRefreshDelay    = 12;
+	SdramTiming.SelfRefreshTime         = 7;
+	SdramTiming.RowCycleDelay           = 10;
 	SdramTiming.WriteRecoveryTime       = 2;
-	SdramTiming.RPDelay                 = 2;
-	SdramTiming.RCDDelay                = 2;
+	SdramTiming.RPDelay                 = 3;
+	SdramTiming.RCDDelay                = 3;
     
     if (HAL_SDRAM_Init(To_SDRAM_Handle(obj->hdl), &SdramTiming) != HAL_OK)
         return false;
@@ -141,8 +141,8 @@ bool BspSDRAM_Init(BspSDRAMObj_TypeDef *obj)
 	HAL_Delay(1);
 
 	/* Configure a PALL (precharge all) command */ 
-	Command.CommandMode            = FMC_SDRAM_CMD_PALL;		// 预充电命令
-	Command.CommandTarget          = FMC_SDRAM_CMD_TARGET_BANK1;	// 选择要控制的区域
+	Command.CommandMode            = FMC_SDRAM_CMD_PALL;
+	Command.CommandTarget          = FMC_SDRAM_CMD_TARGET_BANK1;
 	Command.AutoRefreshNumber      = 1;
 	Command.ModeRegisterDefinition = 0;
 
@@ -150,12 +150,12 @@ bool BspSDRAM_Init(BspSDRAMObj_TypeDef *obj)
         return false;
 
 	/* Configure a Auto-Refresh command */ 
-	Command.CommandMode 				= FMC_SDRAM_CMD_AUTOREFRESH_MODE;	// 使用自动刷新
-	Command.CommandTarget 				= FMC_SDRAM_CMD_TARGET_BANK1;          // 选择要控制的区域
-	Command.AutoRefreshNumber			= 8;                                // 自动刷新次数
+	Command.CommandMode 				= FMC_SDRAM_CMD_AUTOREFRESH_MODE;
+	Command.CommandTarget 				= FMC_SDRAM_CMD_TARGET_BANK1;
+	Command.AutoRefreshNumber			= 8;
 	Command.ModeRegisterDefinition 	= 0;
 
-	HAL_SDRAM_SendCommand(To_SDRAM_Handle(obj->hdl), &Command, SDRAM_TIMEOUT);	// 发送控制指令
+	HAL_SDRAM_SendCommand(To_SDRAM_Handle(obj->hdl), &Command, SDRAM_TIMEOUT);
 
 	/* Program the external memory mode register */
 	tmpmrd = (uint32_t)(SDRAM_MODEREG_BURST_LENGTH_2            | \
@@ -164,8 +164,8 @@ bool BspSDRAM_Init(BspSDRAMObj_TypeDef *obj)
                         SDRAM_MODEREG_OPERATING_MODE_STANDARD   | \
                         SDRAM_MODEREG_WRITEBURST_MODE_SINGLE);
 
-	Command.CommandMode            = FMC_SDRAM_CMD_LOAD_MODE;	// 加载模式寄存器命令
-	Command.CommandTarget          = FMC_SDRAM_CMD_TARGET_BANK1;	// 选择要控制的区域
+	Command.CommandMode            = FMC_SDRAM_CMD_LOAD_MODE;
+	Command.CommandTarget          = FMC_SDRAM_CMD_TARGET_BANK1;
 	Command.AutoRefreshNumber      = 1;
 	Command.ModeRegisterDefinition = tmpmrd;
 

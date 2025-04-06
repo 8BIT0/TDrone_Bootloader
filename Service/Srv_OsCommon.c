@@ -1,9 +1,9 @@
 #include "../FCHW_Config.h"
 #include "Srv_OsCommon.h"
+#include "util.h"
 #include "kernel.h"
 #include "HW_Def.h"
 #include "Bsp_SDRAM.h"
-#include "cmsis_gcc.h"
 #include "shell_port.h"
 
 typedef void (*Application_Func)(void);
@@ -20,7 +20,6 @@ typedef struct
     uint32_t free_faile_cnt;
 
     bool sdram_state;
-    uint32_t sdram_size;
     uint32_t sdram_base_addr;
     uint32_t ext_mem_size;
 }SrvOsCommon_HeapMonitor_TypeDef;
@@ -40,13 +39,6 @@ static void SrvOsCommon_JumpToAddr(uint32_t addr);
 /* external vriable */
 extern uint32_t __sdram_s1_s;
 uint8_t __attribute__((section(".Os_Section"))) ucHeap[ configTOTAL_HEAP_SIZE ];
-
-/* define heap_5 region */
-const HeapRegion_t xHeapRegions[] = {
-    {ucHeap, configTOTAL_HEAP_SIZE},
-    // {(const uint8_t *)&__sdram_s1_s, FC_SDRAM_Size},
-    {NULL, 0}
-};
 
 SrvOsCommon_TypeDef SrvOsCommon = {
     .init = SrvOsCommon_Init,
@@ -75,13 +67,13 @@ static bool SrvOsCommon_Init(void)
 {
     bool state = true;
     BspSDRAMObj_TypeDef sdram_obj;
+    uint32_t w = 0;
+    uint32_t i = 0;
 
     OsHeap_Monitor.sdram_state = false;
     sdram_obj.hdl = malloc(SDRAM_HandleType_Size);
     if (sdram_obj.hdl)
     {
-        sdram_obj.mem_size      = FC_SDRAM_Size;
-        sdram_obj.base_addr     = FC_SDRAM_Base_Addr;
         sdram_obj.bank_num      = BspSDRAM_BankNum_4;
         sdram_obj.bank_area     = BspSDRAM_Bank_1;
         sdram_obj.bus_width     = BspSDRAM_BusWidth_16;
@@ -93,35 +85,32 @@ static bool SrvOsCommon_Init(void)
         {
             /* sdram test */
             OsHeap_Monitor.sdram_state = true;
-            OsHeap_Monitor.sdram_size = FC_SDRAM_Size;
-            OsHeap_Monitor.sdram_base_addr = FC_SDRAM_Base_Addr;
+            OsHeap_Monitor.sdram_base_addr = 0xC0000000;
             
-            for (uint16_t i = 0; i < 10; i++)
+            for (i = 0; i < 1024 * 1024; i++)
             {
-                *(volatile uint8_t *)(OsHeap_Monitor.sdram_base_addr + i * sizeof(uint8_t)) = i;
-                __DSB();
-                if (*(volatile uint8_t *)(OsHeap_Monitor.sdram_base_addr + i * sizeof(uint8_t)) != i)
+                if (OsHeap_Monitor.sdram_base_addr + i * sizeof(uint16_t) == 0xC000100C)
+                    state = true;
+
+                *(volatile uint16_t *)(OsHeap_Monitor.sdram_base_addr + i * sizeof(uint16_t)) = (uint16_t)i;
+                if (*(volatile uint16_t *)(OsHeap_Monitor.sdram_base_addr + i * sizeof(uint16_t)) != (uint16_t)i)
                 {
                     state = false;
                     OsHeap_Monitor.sdram_state = false;
-                    break;
+                    // break;
                 }
-                __DSB();
+                else
+                    w ++;
 
                 /* reset value */
-                *(volatile uint8_t *)(OsHeap_Monitor.sdram_base_addr + i * sizeof(uint8_t)) = 0;
-                __DSB();
+                // *(volatile uint8_t *)(OsHeap_Monitor.sdram_base_addr + i * sizeof(uint8_t)) = 0;
             }
         }
     }
     
-    if (!OsHeap_Monitor.sdram_state)
-    {
-        vPortDefineHeapRegions(&xHeapRegions[0]);
-    }
-    else
-        vPortDefineHeapRegions(xHeapRegions);
-
+    uint16_t test = 2 * 1024;
+    *(volatile uint16_t *)(OsHeap_Monitor.sdram_base_addr + 0x100C) = (uint16_t)test;
+    
     return state;
 }
 

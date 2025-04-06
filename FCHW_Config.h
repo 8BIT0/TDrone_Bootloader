@@ -38,6 +38,6 @@ extern uint32_t __sdram_s1_e;
 #define RADIO_UART_NUM      RADIO_NUM
 
 #define FC_SDRAM_Base_Addr  ((uint32_t)(&__sdram_s1_s))
-#define FC_SDRAM_Size       (8 Mb)
+#define FC_SDRAM_Size       ((uint32_t)(&__sdram_s1_s) - (uint32_t)(&__sdram_s1_e))
 
 #endif

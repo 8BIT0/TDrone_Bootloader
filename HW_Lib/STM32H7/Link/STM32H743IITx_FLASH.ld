@@ -61,19 +61,17 @@ _Min_Stack_Size = 0x2000; /* required amount of stack */
 FLASH_SIZE = 1M;
 BOOT_SIZE = 256K;
 APP_SIZE = FLASH_SIZE - BOOT_SIZE;
-SDRAM_8M = 8M;
-SDRAM_16M = 16M;
 
 /* Specify the memory areas */
 MEMORY
 {
 DTCMRAM (xrw)           : ORIGIN = 0x20000000,              LENGTH = 128K
-RAM_D1 (xrw)            : ORIGIN = 0x24000000,              LENGTH = 416K
-RAM_D1_OS_Part(xrw)     : ORIGIN = 0x24070000,              LENGTH = 32K
+RAM_D1 (xrw)            : ORIGIN = 0x24000000,              LENGTH = 480K
 RAM_D1_Perph_Part(xrw)  : ORIGIN = 0x24078000,              LENGTH = 32K
-SDRAM_SEC1 (xrw)        : ORIGIN = 0xC0000000,              LENGTH = SDRAM_8M
-SDRAM_SEC2 (xrw)        : ORIGIN = 0xC8000000,              LENGTH = SDRAM_8M
-SDRAM_SEC3 (xrw)        : ORIGIN = 0xD0000000,              LENGTH = SDRAM_16M
+SDRAM_OS_Part (xrw)     : ORIGIN = 0xC0000000,              LENGTH = 2M
+SDRAM_SEC1 (xrw)        : ORIGIN = 0xC0200000,              LENGTH = 6M
+SDRAM_SEC2 (xrw)        : ORIGIN = 0xC0800000,              LENGTH = 8M
+SDRAM_SEC3 (xrw)        : ORIGIN = 0xD0000000,              LENGTH = 16M
 RAM_D2 (xrw)            : ORIGIN = 0x30000000,              LENGTH = 288K   
 RAM_D3 (xrw)            : ORIGIN = 0x38000000,              LENGTH = 64K
 ITCMRAM (xrw)           : ORIGIN = 0x00000000,              LENGTH = 64K
@@ -83,11 +81,11 @@ FLASH_BANK_2 (rx)       : ORIGIN = 0x8100000,               LENGTH = FLASH_SIZE
 }
 
 __sdram_s1_s = ORIGIN(SDRAM_SEC1);
-__sdram_s1_e = __sdram_s1_s + SDRAM_8M;
+__sdram_s1_e = __sdram_s1_s + 6M;
 __sdram_s2_s = ORIGIN(SDRAM_SEC2);
-__sdram_s2_e = __sdram_s2_s + SDRAM_8M;
+__sdram_s2_e = __sdram_s2_s + 8M;
 __sdram_s3_s = ORIGIN(SDRAM_SEC3);
-__sdram_s3_e = __sdram_s3_s + SDRAM_8M;
+__sdram_s3_e = __sdram_s3_s + 16M;
 __rom_s = ORIGIN(FLASH);
 __rom_e = __rom_s + FLASH_SIZE;
 __boot_s = __rom_s;
@@ -106,27 +104,27 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
-  .Os_Section :
+  .Os_Section (NOLOAD):
   {
     . = ALIGN(4);
-    Perph_s = .;
+    Os_Heap_s = .;
     *(.Os_Section)
     *(.Os_Section*)
     
-    Perph_e = .;
     . = ALIGN(4);
-  } >RAM_D1_OS_Part AT>FLASH
+    Os_Heap_e = .;
+  } >SDRAM_OS_Part
 
-  .Perph_Section :
+  .Perph_Section (NOLOAD):
   {
     . = ALIGN(4);
     Perph_s = .;
     *(.Perph_Section)
     *(.Perph_Section*)
     
-    Perph_e = .;
     . = ALIGN(4);
-  } >RAM_D1_Perph_Part AT>FLASH
+    Perph_e = .;
+  } >RAM_D1_Perph_Part
 
   /* The program code and other data goes into FLASH */
   .text :
@@ -245,5 +243,4 @@ SECTIONS
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
 }
-
 

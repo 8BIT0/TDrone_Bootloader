@@ -61,7 +61,7 @@ System/FreeRTOS/stream_buffer.c \
 System/FreeRTOS/tasks.c \
 System/FreeRTOS/timers.c \
 System/FreeRTOS/CMSIS_RTOS/cmsis_os.c \
-System/FreeRTOS/portable/MemMang/heap_5.c \
+System/FreeRTOS/portable/MemMang/heap_4.c \
 System/FreeRTOS/portable/GCC/ARM_CM4F/port.c \
 System/shell/shell_cmd_list.c \
 System/shell/shell_companion.c \

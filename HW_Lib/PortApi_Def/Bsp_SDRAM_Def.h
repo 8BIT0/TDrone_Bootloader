@@ -46,8 +46,6 @@ typedef enum
 typedef struct
 {
     bool init_state;
-    uint32_t base_addr;
-    uint32_t mem_size;
 
     uint8_t bank_num;
     uint8_t bank_area;
