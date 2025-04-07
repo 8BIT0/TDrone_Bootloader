@@ -295,7 +295,7 @@ static bool BspUart_Init(BspUARTObj_TypeDef *obj)
     switch (obj->irq_type)
     {
         case BspUart_IRQ_Type_Idle: __HAL_UART_ENABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_IDLE); break;
-        case BspUart_IRQ_Type_Byte: __HAL_UART_ENABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_RXNE | UART_IT_ERR | UART_IT_ORE); break;
+        case BspUart_IRQ_Type_Byte: __HAL_UART_ENABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_RXNE | UART_IT_ORE); break;
         default: return false;
     }
 
@@ -309,11 +309,6 @@ static bool BspUart_Init(BspUARTObj_TypeDef *obj)
     {
         if ((obj->rx_buf == NULL) || (obj->rx_size == 0))
             return false;
-
-        while ((__HAL_UART_GET_FLAG(To_Uart_Handle_Ptr(obj->hdl), UART_FLAG_IDLE) == SET))
-        {
-            __HAL_UART_CLEAR_IDLEFLAG(To_Uart_Handle_Ptr(obj->hdl));
-        }
         
         /* start dma receive data */
         HAL_UART_Receive_DMA(To_Uart_Handle_Ptr(obj->hdl), obj->rx_buf, obj->rx_size);
@@ -414,8 +409,11 @@ static bool BspUart_Transfer(BspUARTObj_TypeDef *obj, uint8_t *tx_buf, uint16_t 
 
     if (obj->tx_dma_hdl)
     {
+        if (obj->tx_buf)
+            memcpy(obj->tx_buf, tx_buf, size);
+
         /* send data */
-        switch (HAL_UART_Transmit_DMA(To_Uart_Handle_Ptr(obj->hdl), tx_buf, size))
+        switch (HAL_UART_Transmit_DMA(To_Uart_Handle_Ptr(obj->hdl), obj->tx_buf, size))
         {
             case HAL_OK:
                 obj->monitor.tx_cnt++;
@@ -439,32 +437,30 @@ static bool BspUart_Transfer(BspUARTObj_TypeDef *obj, uint8_t *tx_buf, uint16_t 
 
 static void BspUart_DMAStopRx(BspUART_Port_List index)
 {
-    UART_HandleTypeDef hdl;
+    UART_HandleTypeDef *hdl = NULL;
 
     if (BspUart_Obj_List[index])
     {
-        memcpy(&hdl, BspUart_Obj_List[index]->hdl, sizeof(UART_HandleTypeDef));
-
-        const HAL_UART_StateTypeDef rxstate = hdl.RxState;
+        hdl = BspUart_Obj_List[index]->hdl;
 
         /* Stop UART DMA Rx request if ongoing */
-        if ((HAL_IS_BIT_SET(hdl.Instance->CR3, USART_CR3_DMAR)) &&
-            (rxstate == HAL_UART_STATE_BUSY_RX))
+        if ((HAL_IS_BIT_SET(hdl->Instance->CR3, USART_CR3_DMAR)) &&
+            (hdl->RxState == HAL_UART_STATE_BUSY_RX))
         {
-            CLEAR_BIT(hdl.Instance->CR3, USART_CR3_DMAR);
+            CLEAR_BIT(hdl->Instance->CR3, USART_CR3_DMAR);
 
             /* Abort the UART DMA Rx channel */
-            if (hdl.hdmarx != NULL)
+            if (hdl->hdmarx != NULL)
             {
-                HAL_DMA_Abort(hdl.hdmarx);
+                HAL_DMA_Abort(hdl->hdmarx);
             }
 
             /* Disable RXNE, PE and ERR (Frame error, noise error, overrun error) interrupts */
-            CLEAR_BIT(hdl.Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE));
-            CLEAR_BIT(hdl.Instance->CR3, USART_CR3_EIE);
+            CLEAR_BIT(hdl->Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE));
+            CLEAR_BIT(hdl->Instance->CR3, USART_CR3_EIE);
 
             /* At end of Rx process, restore huart->RxState to Ready */
-            hdl.RxState = HAL_UART_STATE_READY;
+            hdl->RxState = HAL_UART_STATE_READY;
         }
     }
 }
@@ -501,57 +497,57 @@ void UART_IRQ_Callback(BspUART_Port_List index)
     uint32_t cr1its = 0;
     uint32_t cr3its = 0;
 
-    if (BspUart_Obj_List[index] && BspUart_Obj_List[index]->irq_type == BspUart_IRQ_Type_Idle)
+    if ((BspUart_Obj_List[index] == NULL) || \
+        BspUart_Obj_List[index]->irq_type != BspUart_IRQ_Type_Idle)
+        return;
+        
+    hdl = BspUart_Obj_List[index]->hdl;
+    isrflags = READ_REG(hdl->Instance->ISR);
+    cr1its = READ_REG(hdl->Instance->CR1);
+    cr3its = READ_REG(hdl->Instance->CR3);
+
+    rx_dma = To_UartDMA_Handle_Ptr(BspUart_Obj_List[index]->rx_dma_hdl);
+
+    if ((hdl == NULL) || \
+        (rx_dma == NULL) || \
+        (RESET == (isrflags & USART_ISR_IDLE)) || \
+        (RESET == (cr1its & USART_CR1_IDLEIE)))
+        return;
+
+    len = BspUart_Obj_List[index]->rx_size - __HAL_DMA_GET_COUNTER(rx_dma);
+    __HAL_UART_CLEAR_IDLEFLAG(hdl);
+    BspUart_DMAStopRx(index);
+    if (len)
     {
-        hdl = BspUart_Obj_List[index]->hdl;
-        isrflags = READ_REG(hdl->Instance->ISR);
-        cr1its = READ_REG(hdl->Instance->CR1);
-        cr3its = READ_REG(hdl->Instance->CR3);
+        SCB_InvalidateDCache();
 
-        rx_dma = To_UartDMA_Handle_Ptr(BspUart_Obj_List[index]->rx_dma_hdl);
+        /* idle receive callback process */
+        if (BspUart_Obj_List[index]->RxCallback)
+            BspUart_Obj_List[index]->RxCallback(BspUart_Obj_List[index]->cust_data_addr,
+                                                BspUart_Obj_List[index]->rx_buf,
+                                                len);
 
-        if (hdl && rx_dma)
-        {
-            const HAL_UART_StateTypeDef rxstate = hdl->RxState;
-
-            if ((RESET != (isrflags & USART_ISR_IDLE)) && (RESET != (cr1its & USART_CR1_IDLEIE)))
-            {
-                __HAL_UART_CLEAR_IDLEFLAG(hdl);
-
-                BspUart_DMAStopRx(index);
-
-                len = BspUart_Obj_List[index]->rx_size - __HAL_DMA_GET_COUNTER(rx_dma);
-                if (len)
-                {
-                    /* idle receive callback process */
-                    if (BspUart_Obj_List[index]->RxCallback)
-                        BspUart_Obj_List[index]->RxCallback(BspUart_Obj_List[index]->cust_data_addr,
-                                                            BspUart_Obj_List[index]->rx_buf,
-                                                            len);
-
-                    BspUart_Obj_List[index]->monitor.rx_cnt++;
-                }
-                else
-                {
-                    BspUart_Obj_List[index]->monitor.rx_err_cnt++;
-                    READ_REG(hdl->Instance->RDR);
-
-                    if (isrflags & USART_ISR_ORE)
-                        __HAL_UART_CLEAR_OREFLAG(hdl);
-
-                    if (isrflags & USART_ISR_FE)
-                        __HAL_UART_CLEAR_FEFLAG(hdl);
-
-                    if (isrflags & USART_ISR_NE)
-                        __HAL_UART_CLEAR_NEFLAG(hdl);
-
-                    if (isrflags & USART_ISR_PE)
-                        __HAL_UART_CLEAR_PEFLAG(hdl);
-                }
-                HAL_UART_Receive_DMA(hdl, BspUart_Obj_List[index]->rx_buf, BspUart_Obj_List[index]->rx_size);
-            }
-        }
+        BspUart_Obj_List[index]->monitor.rx_cnt++;
     }
+    else
+    {
+        BspUart_Obj_List[index]->monitor.rx_err_cnt++;
+        READ_REG(hdl->Instance->RDR);
+
+        if (isrflags & USART_ISR_ORE)
+            __HAL_UART_CLEAR_OREFLAG(hdl);
+
+        if (isrflags & USART_ISR_FE)
+            __HAL_UART_CLEAR_FEFLAG(hdl);
+
+        if (isrflags & USART_ISR_NE)
+            __HAL_UART_CLEAR_NEFLAG(hdl);
+
+        if (isrflags & USART_ISR_PE)
+            __HAL_UART_CLEAR_PEFLAG(hdl);
+    }
+    
+    HAL_UART_Receive_DMA(hdl, BspUart_Obj_List[index]->rx_buf, BspUart_Obj_List[index]->rx_size);
 }
 
 /* receive full */

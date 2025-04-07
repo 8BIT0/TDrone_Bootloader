@@ -11,7 +11,6 @@
 typedef struct
 {
     bool init_state;
-    uint8_t *p_tx_buff;
     void *port_obj;
     uint32_t rec_cnt;
     osSemaphoreId Tx_Irq_Sem;

@@ -71,6 +71,9 @@ typedef struct
     uint8_t *rx_buf;
     uint16_t rx_size;
 
+    uint8_t *tx_buf;
+    uint16_t tx_buf_size;
+
     uint8_t rx_single_byte;
 
     uint32_t cust_data_addr;

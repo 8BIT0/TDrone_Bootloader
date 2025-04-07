@@ -37,7 +37,7 @@ void Task_Main_Logic(void const *arg)
 
     DebugPort.free = SrvOsCommon.free;
     DebugPort.malloc = SrvOsCommon.malloc;
-    Debug_Port_Init(&DebugPort);
+    // Debug_Port_Init(&DebugPort);
 
     SYS_INFO("%s\r\n", Select_Hardware);
     SYS_INFO("Hardware Version %d.%d.%d", HWVer[0], HWVer[1], HWVer[2]);
@@ -53,6 +53,8 @@ void Task_Main_Logic(void const *arg)
             time_out_tick = sys_time + RECEIVE_TIME_OUT; 
         
         /* bootloader logic loop */
+
+        SrvCom.write(&SrvComObj, "test_1", strlen("test_1"));
 
         /* run system statistic in this task */
         osDelay(10);

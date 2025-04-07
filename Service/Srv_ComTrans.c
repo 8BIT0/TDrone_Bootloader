@@ -16,7 +16,7 @@
 #define SRV_COM_TX_TIMEOUT      100
 
 /* internal variable */
-// static __attribute__((section(".Perph_Section"))) uint8_t SrvCom_Tx_Buff[SRV_COM_TX_BUFF_LEN] = {0};
+static __attribute__((section(".Perph_Section"))) uint8_t SrvCom_Tx_Buff[SRV_COM_TX_BUFF_LEN] = {0};
 static __attribute__((section(".Perph_Section"))) uint8_t SrvCom_Rx_Buff[SRV_COM_RX_BUFF_LEN] = {0};
 static uint8_t SrvCom_Rx_tmpBuf[SRV_COM_RX_BUFF_LEN];
 
@@ -49,11 +49,9 @@ static bool SrvComTrans_Init(SrvComObj_TypeDef *obj)
 
     obj->init_state = false;
 
-    // memset(SrvCom_Tx_Buff,   0, SRV_COM_TX_BUFF_LEN);
+    memset(SrvCom_Tx_Buff,   0, SRV_COM_TX_BUFF_LEN);
     memset(SrvCom_Rx_Buff,   0, SRV_COM_RX_BUFF_LEN);
     memset(SrvCom_Rx_tmpBuf, 0, SRV_COM_RX_BUFF_LEN);
-
-    // obj->p_tx_buff = SrvCom_Tx_Buff;
 
     /* create port object */
     obj->port_obj = SrvOsCommon.malloc(BspUartObj_Size);
@@ -81,6 +79,8 @@ static bool SrvComTrans_Init(SrvComObj_TypeDef *obj)
     To_BspUart_ObjPtr(obj->port_obj)->rx_stream         = SRV_COM_RX_DMA_STREAM;
     To_BspUart_ObjPtr(obj->port_obj)->rx_size           = SRV_COM_RX_BUFF_LEN;
     To_BspUart_ObjPtr(obj->port_obj)->rx_buf            = SrvCom_Rx_Buff;
+    To_BspUart_ObjPtr(obj->port_obj)->tx_buf            = SrvCom_Tx_Buff;
+    To_BspUart_ObjPtr(obj->port_obj)->tx_buf_size       = SRV_COM_TX_BUFF_LEN;
     To_BspUart_ObjPtr(obj->port_obj)->cust_data_addr    = (uint32_t)obj;
 
     /* init port object */
