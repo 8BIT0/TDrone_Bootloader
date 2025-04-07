@@ -105,11 +105,11 @@ bool BspSDRAM_Init(BspSDRAMObj_TypeDef *obj)
 
 	/* hsdram1.Init */
 	To_SDRAM_Handle(obj->hdl)->Instance                = FMC_SDRAM_DEVICE;
-	To_SDRAM_Handle(obj->hdl)->Init.SDBank             = BspSDRAM_Get_BankArea(obj->bank_area);
-	To_SDRAM_Handle(obj->hdl)->Init.ColumnBitsNumber   = BspSDRAM_Get_ColumnBits(obj->column_bits);
-	To_SDRAM_Handle(obj->hdl)->Init.RowBitsNumber      = BspSDRAM_Get_RowBits(obj->row_bits);
-	To_SDRAM_Handle(obj->hdl)->Init.MemoryDataWidth    = BspSDRAM_Bus_Width(obj->bus_width);
-	To_SDRAM_Handle(obj->hdl)->Init.InternalBankNumber = BspSDRAM_Get_BankNum(obj->bank_num);
+	To_SDRAM_Handle(obj->hdl)->Init.SDBank             = FMC_SDRAM_BANK1;//BspSDRAM_Get_BankArea(obj->bank_area);
+	To_SDRAM_Handle(obj->hdl)->Init.ColumnBitsNumber   = FMC_SDRAM_COLUMN_BITS_NUM_9;//BspSDRAM_Get_ColumnBits(obj->column_bits);
+	To_SDRAM_Handle(obj->hdl)->Init.RowBitsNumber      = FMC_SDRAM_ROW_BITS_NUM_13;//BspSDRAM_Get_RowBits(obj->row_bits);
+	To_SDRAM_Handle(obj->hdl)->Init.MemoryDataWidth    = FMC_SDRAM_MEM_BUS_WIDTH_16;//BspSDRAM_Bus_Width(obj->bus_width);
+	To_SDRAM_Handle(obj->hdl)->Init.InternalBankNumber = FMC_SDRAM_INTERN_BANKS_NUM_4;//BspSDRAM_Get_BankNum(obj->bank_num);
 	To_SDRAM_Handle(obj->hdl)->Init.CASLatency         = FMC_SDRAM_CAS_LATENCY_3;
 	To_SDRAM_Handle(obj->hdl)->Init.WriteProtection    = FMC_SDRAM_WRITE_PROTECTION_DISABLE;
 	To_SDRAM_Handle(obj->hdl)->Init.SDClockPeriod      = FMC_SDRAM_CLOCK_PERIOD_2;
@@ -118,12 +118,12 @@ bool BspSDRAM_Init(BspSDRAMObj_TypeDef *obj)
 
 	/* SdramTiming */
 	SdramTiming.LoadToActiveDelay       = 2;
-	SdramTiming.ExitSelfRefreshDelay    = 12;
-	SdramTiming.SelfRefreshTime         = 7;
-	SdramTiming.RowCycleDelay           = 10;
+	SdramTiming.ExitSelfRefreshDelay    = 7;
+	SdramTiming.SelfRefreshTime         = 4;
+	SdramTiming.RowCycleDelay           = 7;
 	SdramTiming.WriteRecoveryTime       = 2;
-	SdramTiming.RPDelay                 = 3;
-	SdramTiming.RCDDelay                = 3;
+	SdramTiming.RPDelay                 = 2;
+	SdramTiming.RCDDelay                = 2;
     
     if (HAL_SDRAM_Init(To_SDRAM_Handle(obj->hdl), &SdramTiming) != HAL_OK)
         return false;
@@ -150,9 +150,9 @@ bool BspSDRAM_Init(BspSDRAMObj_TypeDef *obj)
         return false;
 
 	/* Configure a Auto-Refresh command */ 
-	Command.CommandMode 				= FMC_SDRAM_CMD_AUTOREFRESH_MODE;
-	Command.CommandTarget 				= FMC_SDRAM_CMD_TARGET_BANK1;
-	Command.AutoRefreshNumber			= 8;
+	Command.CommandMode 			= FMC_SDRAM_CMD_AUTOREFRESH_MODE;
+	Command.CommandTarget 			= FMC_SDRAM_CMD_TARGET_BANK1;
+	Command.AutoRefreshNumber		= 8;
 	Command.ModeRegisterDefinition 	= 0;
 
 	HAL_SDRAM_SendCommand(To_SDRAM_Handle(obj->hdl), &Command, SDRAM_TIMEOUT);
@@ -169,8 +169,10 @@ bool BspSDRAM_Init(BspSDRAMObj_TypeDef *obj)
 	Command.AutoRefreshNumber      = 1;
 	Command.ModeRegisterDefinition = tmpmrd;
 
-	if ((HAL_SDRAM_SendCommand(To_SDRAM_Handle(obj->hdl), &Command, SDRAM_TIMEOUT) != HAL_OK) || \
-        (HAL_SDRAM_ProgramRefreshRate(To_SDRAM_Handle(obj->hdl), 918) != HAL_OK))
+	if (HAL_SDRAM_SendCommand(To_SDRAM_Handle(obj->hdl), &Command, SDRAM_TIMEOUT) != HAL_OK)
+        return false;
+        
+    if (HAL_SDRAM_ProgramRefreshRate(To_SDRAM_Handle(obj->hdl), 605) != HAL_OK)
         return false;
 	
     obj->init_state = true;

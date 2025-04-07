@@ -27,15 +27,13 @@ void Kernel_MPU_Config(void);
 
 bool Kernel_Init(void)
 {
-    __enable_irq();
-
     Kernel_MPU_Config();
     SCB_EnableICache();
     SCB_EnableDCache();
 
     HAL_Init();
 
-    return HAL_BaseTick_Init() && KernelClock_Init() && Kernel_BaseTick_Init();
+    return HAL_BaseTick_Init() & KernelClock_Init() & Kernel_BaseTick_Init();
 }
 
 void Kernel_MPU_Config(void)
@@ -44,7 +42,7 @@ void Kernel_MPU_Config(void)
 
 	HAL_MPU_Disable();
 	MPU_InitStruct.Enable           = MPU_REGION_ENABLE;
-	MPU_InitStruct.BaseAddress      = 0xC0000000;
+	MPU_InitStruct.BaseAddress      = (uint32_t)0xC0000000;
 	MPU_InitStruct.Size             = MPU_REGION_SIZE_32MB;
 	MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
 	MPU_InitStruct.IsBufferable     = MPU_ACCESS_NOT_BUFFERABLE;
@@ -79,43 +77,11 @@ static bool KernelClock_Init(void)
 
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
-  /** Macro to configure the PLL clock source
-  */
-  __HAL_RCC_PLL_PLLSOURCE_CONFIG(RCC_PLLSOURCE_HSE);
-
+  __HAL_RCC_GPIOH_CLK_ENABLE();
+  
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
- #if (HSE_VALUE == 8000000)
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 2;
-  RCC_OscInitStruct.PLL.PLLN = 160;
-  RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 2;
-  RCC_OscInitStruct.PLL.PLLR = 2;
-  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_2;
-  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
-  RCC_OscInitStruct.PLL.PLLFRACN = 0;
-
-  /** Initializes the peripherals clock
-   */
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI3|RCC_PERIPHCLK_SPI2
-                                             |RCC_PERIPHCLK_SPI1 | RCC_PERIPHCLK_SPI4;
-  PeriphClkInitStruct.PLL2.PLL2M = 2;
-  PeriphClkInitStruct.PLL2.PLL2N = 160;
-  PeriphClkInitStruct.PLL2.PLL2P = 8;
-  PeriphClkInitStruct.PLL2.PLL2Q = 8;
-  PeriphClkInitStruct.PLL2.PLL2R = 2;
-  PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_2;
-  PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
-  PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
-  PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL2;
-  PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PLL2; 
-#elif (HSE_VALUE == 25000000)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
@@ -141,7 +107,7 @@ static bool KernelClock_Init(void)
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
   PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL2;
-#endif
+  
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
     return false;
 
@@ -163,8 +129,6 @@ static bool KernelClock_Init(void)
 
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
         return false;
-
-    __HAL_RCC_GPIOH_CLK_ENABLE();
 
     return true;
 }

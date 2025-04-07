@@ -22,10 +22,12 @@ typedef struct
     bool sdram_state;
     uint32_t sdram_base_addr;
     uint32_t ext_mem_size;
+
+    uint32_t t_w_cnt;           /* test write count */
+    uint32_t t_w_failed_cnt;    /* test write failed count */
 }SrvOsCommon_HeapMonitor_TypeDef;
 
 /* internal vriable */
-static bool first_call = true;
 static SrvOsCommon_HeapMonitor_TypeDef OsHeap_Monitor = {0};
 
 /* external function */
@@ -65,10 +67,11 @@ SrvOsCommon_TypeDef SrvOsCommon = {
 
 static bool SrvOsCommon_Init(void)
 {
+    volatile uint32_t w = 0;
+    uint32_t t_addr = 0;
     bool state = true;
     BspSDRAMObj_TypeDef sdram_obj;
-    uint32_t w = 0;
-    uint32_t i = 0;
+    memset(&OsHeap_Monitor, 0, sizeof(SrvOsCommon_HeapMonitor_TypeDef));
 
     OsHeap_Monitor.sdram_state = false;
     sdram_obj.hdl = malloc(SDRAM_HandleType_Size);
@@ -87,29 +90,23 @@ static bool SrvOsCommon_Init(void)
             OsHeap_Monitor.sdram_state = true;
             OsHeap_Monitor.sdram_base_addr = 0xC0000000;
             
-            for (i = 0; i < 1024 * 1024; i++)
+            t_addr = OsHeap_Monitor.sdram_base_addr;
+            OsHeap_Monitor.t_w_failed_cnt = 0;
+            for (OsHeap_Monitor.t_w_cnt = 0; OsHeap_Monitor.t_w_cnt < (configTOTAL_HEAP_SIZE / 2); OsHeap_Monitor.t_w_cnt ++)
             {
-                if (OsHeap_Monitor.sdram_base_addr + i * sizeof(uint16_t) == 0xC000100C)
-                    state = true;
-
-                *(volatile uint16_t *)(OsHeap_Monitor.sdram_base_addr + i * sizeof(uint16_t)) = (uint16_t)i;
-                if (*(volatile uint16_t *)(OsHeap_Monitor.sdram_base_addr + i * sizeof(uint16_t)) != (uint16_t)i)
+                *(volatile uint16_t *)t_addr = (uint16_t)OsHeap_Monitor.t_w_cnt;
+                if (*(volatile uint16_t *)t_addr != (uint16_t)OsHeap_Monitor.t_w_cnt)
                 {
                     state = false;
                     OsHeap_Monitor.sdram_state = false;
-                    // break;
+                    OsHeap_Monitor.t_w_failed_cnt ++;
                 }
-                else
-                    w ++;
 
                 /* reset value */
-                // *(volatile uint8_t *)(OsHeap_Monitor.sdram_base_addr + i * sizeof(uint8_t)) = 0;
+                *(volatile uint16_t *)t_addr = 0;
             }
         }
     }
-    
-    uint16_t test = 2 * 1024;
-    *(volatile uint16_t *)(OsHeap_Monitor.sdram_base_addr + 0x100C) = (uint16_t)test;
     
     return state;
 }
@@ -125,12 +122,6 @@ static void* SrvOsCommon_Malloc(uint32_t size)
     vPortGetHeapStats(&status);
     malloc_num = status.xNumberOfSuccessfulAllocations;
     
-    if(first_call)
-    {
-        memset(&OsHeap_Monitor, 0, sizeof(SrvOsCommon_HeapMonitor_TypeDef));
-        first_call = false;
-    }
-
     if(status.xAvailableHeapSpaceInBytes)
     {
         req_tmp = pvPortMalloc(size);

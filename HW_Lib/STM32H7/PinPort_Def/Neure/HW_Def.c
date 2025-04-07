@@ -96,6 +96,13 @@ void BspSDRAM_Pin_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct ={0};
   
+  __HAL_RCC_GPIOF_CLK_ENABLE();
+  __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOG_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
+
     /** FMC GPIO Configuration
     PF0   ------> FMC_A0        PD14   ------> FMC_D0       PH5    ------> FMC_SDNWE
     PF1   ------> FMC_A1        PD15   ------> FMC_D1       PG15   ------> FMC_SDNCAS 
