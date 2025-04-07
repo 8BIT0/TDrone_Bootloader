@@ -84,6 +84,8 @@ static void Bootloader_Check(uint32_t sys_time)
 
         if (rec_size)
         {
+            /* Use YModem receive firmware */
+
             /* update time out tick */
             time_out_tick = sys_time + RECEIVE_TIME_OUT;
         }
