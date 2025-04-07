@@ -44,7 +44,7 @@ void Task_Main_Logic(void const *arg)
     SYS_INFO("Bootloader", "Start");
     
     SrvCom.init(&SrvComObj);
-    SrvUpgrade.init(SrvCom.write);
+    // SrvUpgrade.init(SrvCom.write);
     
     while(1)
     {

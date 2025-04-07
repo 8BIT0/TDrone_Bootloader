@@ -262,6 +262,7 @@ static bool BspUart_Init(BspUARTObj_TypeDef *obj)
     To_Uart_Handle_Ptr(obj->hdl)->Init.ClockPrescaler = UART_PRESCALER_DIV1;
     To_Uart_Handle_Ptr(obj->hdl)->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
     To_Uart_Handle_Ptr(obj->hdl)->AdvancedInit.OverrunDisable = UART_ADVFEATURE_OVERRUN_DISABLE;
+    To_Uart_Handle_Ptr(obj->hdl)->AdvancedInit.DMADisableonRxError = UART_ADVFEATURE_DMA_DISABLEONRXERROR;
 
     /* swap tx rx pin */
     if (obj->pin_swap)
@@ -277,9 +278,13 @@ static bool BspUart_Init(BspUARTObj_TypeDef *obj)
     uint32_t tick = HAL_GetTick();
     while(HAL_GetTick() - tick < 50);
 
-    if (HAL_UARTEx_SetTxFifoThreshold(To_Uart_Handle_Ptr(obj->hdl), UART_TXFIFO_THRESHOLD_1_8) != HAL_OK ||
-        HAL_UARTEx_SetRxFifoThreshold(To_Uart_Handle_Ptr(obj->hdl), UART_RXFIFO_THRESHOLD_1_8) != HAL_OK ||
-        HAL_UARTEx_DisableFifoMode(To_Uart_Handle_Ptr(obj->hdl)) != HAL_OK)
+    if (HAL_UARTEx_SetTxFifoThreshold(To_Uart_Handle_Ptr(obj->hdl), UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+        return false;
+
+    if (HAL_UARTEx_SetRxFifoThreshold(To_Uart_Handle_Ptr(obj->hdl), UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+        return false;
+
+    if (HAL_UARTEx_DisableFifoMode(To_Uart_Handle_Ptr(obj->hdl)) != HAL_OK)
         return false;
 
     BspUart_Obj_List[port_index] = obj;
@@ -304,6 +309,11 @@ static bool BspUart_Init(BspUARTObj_TypeDef *obj)
     {
         if ((obj->rx_buf == NULL) || (obj->rx_size == 0))
             return false;
+
+        while ((__HAL_UART_GET_FLAG(To_Uart_Handle_Ptr(obj->hdl), UART_FLAG_IDLE) == SET))
+        {
+            __HAL_UART_CLEAR_IDLEFLAG(To_Uart_Handle_Ptr(obj->hdl));
+        }
         
         /* start dma receive data */
         HAL_UART_Receive_DMA(To_Uart_Handle_Ptr(obj->hdl), obj->rx_buf, obj->rx_size);
@@ -511,7 +521,6 @@ void UART_IRQ_Callback(BspUART_Port_List index)
                 BspUart_DMAStopRx(index);
 
                 len = BspUart_Obj_List[index]->rx_size - __HAL_DMA_GET_COUNTER(rx_dma);
-
                 if (len)
                 {
                     /* idle receive callback process */

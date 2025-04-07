@@ -16,8 +16,8 @@
 #define SRV_COM_TX_TIMEOUT      100
 
 /* internal variable */
-static __attribute__((section(".Perph_Section"))) uint8_t SrvCom_Tx_Buff[SRV_COM_TX_BUFF_LEN];
-static __attribute__((section(".Perph_Section"))) uint8_t SrvCom_Rx_Buff[SRV_COM_RX_BUFF_LEN];
+// static __attribute__((section(".Perph_Section"))) uint8_t SrvCom_Tx_Buff[SRV_COM_TX_BUFF_LEN] = {0};
+static __attribute__((section(".Perph_Section"))) uint8_t SrvCom_Rx_Buff[SRV_COM_RX_BUFF_LEN] = {0};
 static uint8_t SrvCom_Rx_tmpBuf[SRV_COM_RX_BUFF_LEN];
 
 /* internal function */
@@ -49,11 +49,11 @@ static bool SrvComTrans_Init(SrvComObj_TypeDef *obj)
 
     obj->init_state = false;
 
-    memset(SrvCom_Tx_Buff,   0, SRV_COM_TX_BUFF_LEN);
+    // memset(SrvCom_Tx_Buff,   0, SRV_COM_TX_BUFF_LEN);
     memset(SrvCom_Rx_Buff,   0, SRV_COM_RX_BUFF_LEN);
     memset(SrvCom_Rx_tmpBuf, 0, SRV_COM_RX_BUFF_LEN);
 
-    obj->p_tx_buff = SrvCom_Tx_Buff;
+    // obj->p_tx_buff = SrvCom_Tx_Buff;
 
     /* create port object */
     obj->port_obj = SrvOsCommon.malloc(BspUartObj_Size);
