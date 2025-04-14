@@ -25,9 +25,10 @@ typedef struct
 {
     bool (*init)(SrvComObj_TypeDef *obj);
     bool (*de_init)(SrvComObj_TypeDef *obj);
+    uint16_t (*queue_capicity)(SrvComObj_TypeDef obj);
     bool (*write)(SrvComObj_TypeDef *obj, uint8_t *p_data, uint16_t len);
     uint16_t (*read)(SrvComObj_TypeDef *obj, uint8_t *p_data, uint16_t len);
-    bool (*available)(SrvComObj_TypeDef obj);
+    uint16_t (*available)(SrvComObj_TypeDef obj);
 } SrvComTrans_TypeDef;
 
 extern SrvComTrans_TypeDef SrvCom;

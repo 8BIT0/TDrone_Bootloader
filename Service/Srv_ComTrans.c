@@ -27,17 +27,19 @@ static void SrvComTrans_Tx_Callback(uint32_t cust_data_addr, uint8_t *buff, uint
 /* external function */
 static bool SrvComTrans_Init(SrvComObj_TypeDef *obj);
 static bool SrvComTrans_DeInit(SrvComObj_TypeDef *obj);
-static bool SrvComTrans_DataAvailable(SrvComObj_TypeDef obj);
+static uint16_t SrvComTrans_DataAvailable(SrvComObj_TypeDef obj);
 static bool SrvComTrans_Write(SrvComObj_TypeDef *obj, uint8_t *p_data, uint16_t len);
 static uint16_t SrvComTrans_GetRecData(SrvComObj_TypeDef *obj, uint8_t *p_data, uint16_t len);
+static uint16_t SrvCom_GetQueue_Capicity(SrvComObj_TypeDef obj);
 
 /* external variable */
 SrvComTrans_TypeDef SrvCom = {
-    .init       = SrvComTrans_Init,
-    .de_init    = SrvComTrans_DeInit,
-    .write      = SrvComTrans_Write,
-    .read       = SrvComTrans_GetRecData,
-    .available  = SrvComTrans_DataAvailable,
+    .init           = SrvComTrans_Init,
+    .de_init        = SrvComTrans_DeInit,
+    .write          = SrvComTrans_Write,
+    .read           = SrvComTrans_GetRecData,
+    .available      = SrvComTrans_DataAvailable,
+    .queue_capicity = SrvCom_GetQueue_Capicity,
 };
 
 static bool SrvComTrans_Init(SrvComObj_TypeDef *obj)
@@ -109,6 +111,11 @@ static bool SrvComTrans_Init(SrvComObj_TypeDef *obj)
 
     obj->init_state = true;
     return true;
+}
+
+static uint16_t SrvCom_GetQueue_Capicity(SrvComObj_TypeDef obj)
+{
+    return Queue.capicity(obj.rec_Q);
 }
 
 static bool SrvComTrans_DeInit(SrvComObj_TypeDef *obj)
@@ -207,12 +214,12 @@ static void SrvComTrans_Rx_Callback(uint32_t cust_data_addr, uint8_t *buff, uint
     }
 }
 
-static bool SrvComTrans_DataAvailable(SrvComObj_TypeDef obj)
+static uint16_t SrvComTrans_DataAvailable(SrvComObj_TypeDef obj)
 {
     if (!obj.init_state || (Queue.state(obj.rec_Q) == Queue_empty))
-        return false;
+        return 0;
 
-    return true;
+    return Queue.size(obj.rec_Q);
 }
 
 static bool SrvComTrans_Write(SrvComObj_TypeDef *obj, uint8_t *p_data, uint16_t len)

@@ -8,8 +8,8 @@
 #include "Srv_ComTrans.h"
 #include "Srv_Upgrade.h"
 
-#define WINDOW_SIZE 100
-#define RECEIVE_TIME_OUT 1000
+#define WINDOW_SIZE 100         /* unit: ms */
+#define RECEIVE_TIME_OUT 3000   /* unit: ms */
 
 osThreadId TaskManager_Handle = NULL;
 
@@ -19,6 +19,10 @@ osThreadId TaskManager_Handle = NULL;
 /* internal vairable */
 static uint32_t time_out_tick = WINDOW_SIZE;
 static SrvComObj_TypeDef SrvComObj;
+static uint8_t *Tmp_Frimware_Buf;
+
+/* internal function */
+static void Bootloader_Check(uint32_t sys_time);
 
 void Task_Manager_Init(void)
 {
@@ -44,8 +48,12 @@ void Task_Main_Logic(void const *arg)
     SYS_INFO("Bootloader", "Start");
     
     SrvCom.init(&SrvComObj);
-    // SrvUpgrade.init(SrvCom.write);
+    SrvUpgrade.init((SrvUpgrade_Send_Callback)SrvCom.write);
     
+    Tmp_Frimware_Buf = SrvOsCommon.malloc(SrvCom.queue_capicity(SrvComObj));
+    if (Tmp_Frimware_Buf == NULL)
+        SYS_INFO("Bootloader", "Tmp_Frimware_Buf malloc error");
+
     while(1)
     {
         sys_time = SrvOsCommon.get_os_ms();
@@ -53,8 +61,7 @@ void Task_Main_Logic(void const *arg)
             time_out_tick = sys_time + RECEIVE_TIME_OUT; 
         
         /* bootloader logic loop */
-
-        SrvCom.write(&SrvComObj, "test_1", strlen("test_1"));
+        Bootloader_Check(sys_time);
 
         /* run system statistic in this task */
         osDelay(10);
@@ -82,9 +89,13 @@ static void Bootloader_Check(uint32_t sys_time)
         if (SrvCom.available)
             rec_size = SrvCom.available(SrvComObj);
 
-        if (rec_size)
+        if (Tmp_Frimware_Buf && rec_size && (rec_size <= SrvCom.queue_capicity(SrvComObj)))
         {
+            /* get received data */
+            SrvCom.read(&SrvComObj, Tmp_Frimware_Buf, rec_size);            
+
             /* Use YModem receive firmware */
+            SrvUpgrade.DealRec(Tmp_Frimware_Buf, rec_size);
 
             /* update time out tick */
             time_out_tick = sys_time + RECEIVE_TIME_OUT;

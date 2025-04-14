@@ -6,13 +6,10 @@
 #include "YModem.h"
 #include "../common/util.h"
 #include "CusQueue.h"
+#include "../FCHW_Config.h"
 
 #define UPGRADE_QUEUE_SIZE  (2 Kb)
 
-#define ON_BOOT             1
-#define ON_APP              2
-
-#define CODE_TYPE           ON_BOOT
 #define PARA_TYPE           Para_Sys
 #define PARA_NAME           "Upgrade_Info"
 #define FORCE_MODE_CODE     "Force_Mode\r\n"
@@ -35,13 +32,20 @@ typedef struct
 static SrvUpgradeObj_TypeDef SrvUpgradeObj;
 
 /* internanl function */
-static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb);
+static bool SrvUpgrade_Load_Firmware(void);
+#if (CODE_TYPE == ON_BOOT)
+static void SrvUpgrade_Check_ForceMode_Enable(void);
+static void SrvUpgrade_JumpToApp(void);
+#endif
 
 /* external function */
+static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb);
+static void SrvUpgrade_DealRec(uint8_t *p_data, uint16_t size);
 
 /* external variable */
 SrvUpgrade_TypeDef SrvUpgrade = {
     .init = SrvUpgrade_Init,
+    .DealRec = SrvUpgrade_DealRec,
 };
 
 static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
@@ -51,18 +55,18 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
     SrvUpgradeObj.upgrade_on_bootup = false;
     SrvUpgradeObj.mode = Upgrade_Normal_Mode;
 
-#if (CODE_TYPE == ON_BOOT)
-    /* init on chip flash */
-    if (!BspFlash.init())
-        return false;
-#endif
-
     /* init queue */
     if (!Queue.create_auto(&SrvUpgradeObj.p_queue, "Upgrade_Queue", UPGRADE_QUEUE_SIZE))
         return false;
-
+    
+#if (CODE_TYPE == ON_BOOT)
     /* check storage system data section */
     /* check upgrade on boot up */
+
+    /* init on chip flash */
+    if (!BspFlash.init())
+        return false;    
+#endif
 
     SrvUpgradeObj.init_state = true;
     SrvUpgradeObj.send = tx_cb;
@@ -82,22 +86,72 @@ static bool SrvUpgrade_Load_Firmware(void)
 
     return true;
 }
-#endif
 
-#if (CODE_TYPE == ON_BOOT)
 /* if in boot mode check force code input */
-static void SrvUpgrade_Check_ForceMode_Enable(uint8_t *p_data, uint16_t size)
+static void SrvUpgrade_Check_ForceMode_Enable(void)
 {
-    if ((p_data == NULL) || (size == 0) || (SrvUpgradeObj.mode >= Upgrade_Force_Mode))
+    uint16_t q_size = 0;
+    uint8_t q_data = 0;
+
+    if (!SrvUpgradeObj.init_state || (SrvUpgradeObj.mode >= Upgrade_Force_Mode))
         return;
 
-    if (!SrvUpgradeObj.queue_inuse)
-    {
+    q_size = Queue.size(SrvUpgradeObj.p_queue);
 
+    if (!SrvUpgradeObj.queue_inuse && (q_size >= strlen(FORCE_MODE_CODE)))
+    {
+        while (true)
+        {
+            SrvUpgradeObj.queue_inuse = true;
+
+            if (!Queue.peek(&SrvUpgradeObj.p_queue, 0, &q_data, 1))
+                break;
+
+            if (q_data != FORCE_MODE_CODE[0])
+            {
+                Queue.pop(&SrvUpgradeObj.p_queue, &q_data, 1);
+            }
+            else
+            {
+                /* check queue remain size */
+                q_size = Queue.size(SrvUpgradeObj.p_queue);
+                if (q_size < strlen(FORCE_MODE_CODE))
+                    break;
+                    
+                for (uint8_t i = 0; i < strlen(FORCE_MODE_CODE); i++)
+                {
+                    SrvUpgradeObj.mode = Upgrade_Normal_Mode;
+                    Queue.pop(&SrvUpgradeObj.p_queue, &q_data, 1);
+
+                    if (q_data != FORCE_MODE_CODE[i])
+                        break;
+                    
+                    SrvUpgradeObj.mode = Upgrade_Force_Mode;
+                }
+            }
+        }
+
+        SrvUpgradeObj.queue_inuse = false;
     }
 }
 
+static void SrvUpgrade_JumpToApp(void)
+{
+}
 #endif
+
+static bool SrvUpgrade_Firmware_Download(uint8_t *p_data, uint16_t size)
+{
+    if (!SrvUpgradeObj.init_state || \
+        (SrvUpgradeObj.send == NULL) || \
+        (p_data == NULL) || (size == 0))
+        return false;
+
+#if (CODE_TYPE == ON_BOOT)
+    if (SrvUpgradeObj.mode != Upgrade_Force_Mode)
+        return false;
+#endif
+}
 
 static void SrvUpgrade_DealRec(uint8_t *p_data, uint16_t size)
 {
@@ -106,10 +160,15 @@ static void SrvUpgrade_DealRec(uint8_t *p_data, uint16_t size)
         (p_data == NULL)|| (size == 0))
         return;
 
+    /* push data into queue */
+    Queue.push(&SrvUpgradeObj.p_queue, p_data, size);
+
 #if (CODE_TYPE == ON_BOOT)
     /* if in boot mode check force code input */
-    SrvUpgrade_Check_ForceMode_Enable(p_data, size);
+    SrvUpgrade_Check_ForceMode_Enable();
 #endif
+
+    SrvUpgrade_Firmware_Download(p_data, size);
 
     SrvUpgradeObj.rec_cnt ++;
 }

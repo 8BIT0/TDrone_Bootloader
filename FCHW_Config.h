@@ -3,8 +3,11 @@
 
 #include "util.h"
 
-#define ON 1
-#define OFF 0
+#define ON                      1
+#define OFF                     0
+
+#define ON_BOOT                 1
+#define ON_APP                  2
 
 #define Storage_ChipBus_None    0
 #define Storage_ChipBus_Spi     (Storage_ChipBus_None + 1)
@@ -39,5 +42,7 @@ extern uint32_t __sdram_s1_e;
 
 #define FC_SDRAM_Base_Addr  ((uint32_t)(&__sdram_s1_s))
 #define FC_SDRAM_Size       ((uint32_t)(&__sdram_s1_s) - (uint32_t)(&__sdram_s1_e))
+
+#define CODE_TYPE           ON_BOOT
 
 #endif
