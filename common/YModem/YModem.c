@@ -1,355 +1,530 @@
-#include "YModem.h"
-#include "../../FCHW_Config.h"
-#include "util.h"
-#include "HW_Def.h"
-#include "debug_util.h"
+#include "Ymodem.h"
+#include "../util.h"
 
-#define YMODEM_MIN_SIZE 133
-#define YMODEM_MAX_SIZE 1029
-#define YMODEM_EOT_SIZE 1
-#define YMODEM_EOT_CNT  2
-#define YMODEM_PAYLOAD_OFFSET 3
-#define YMODEM_ID_P_OFFSET 1
-#define YMODEM_ID_N_OFFSET 2
+#define To_YModem_Obj(x)        ((YModemObj_TypeDef *)x)
 
-#define YMODEM_DEBUG(fmt,...) Debug_Print(&DebugPort, "[ YMODEM INFO ] ", fmt, ##__VA_ARGS__)
+#define YMODEM_DATA_SIZE_128    128
+#define YMODEM_DATA_SIZE_1024   1024
+   
+#define YMODEM_RX_IDLE          0
+#define YMODEM_RX_ACK           1
+#define YMODEM_RX_EOT           2
+#define YMODEM_RX_ERR           3
+#define YMODEM_RX_EXIT          4
 
-typedef struct
-{
-    uint8_t header;
-    uint8_t pack_id;
-    uint8_t reverse_id;
-    uint8_t *p_data;
-    uint16_t crc;
-} YModem_Frame_TypeDef;
+#define YMODEM_TX_IDLE          0
+#define YMODEM_TX_IDLE_ACK      1
+#define YMODEM_TX_DATA          2
+#define YMODEM_TX_DATA_ACK      3
+#define YMODEM_TX_EOT           4
+#define YMODEM_TX_ERR           5
+#define YMODEM_TX_EXIT          6
 
-typedef enum
-{
-    SOH    = 0x01,  /* 128  data size pack */
-    STX    = 0x02,  /* 1024 data size pack */
-    EOT    = 0x04,  /* end of translate */
-    ACK    = 0x06,  /* send acknowledge */
-    NAK    = 0x15,  /* send none acknowledge */
-    CAN    = 0x18,  /* cancel translation */
-    C      = 0x43,  /* request data pack */
-    ABORT1 = 0x41,
-    ABORT2 = 0x61,
-} YModem_CMD_List;
+#define PACKET_SEQNO_INDEX      (1)  
+#define PACKET_SEQNO_COMP_INDEX (2)  
+  
+#define PACKET_HEADER           (3)     /* start, block, block-complement */  
+#define PACKET_TRAILER          (2)     /* CRC bytes */  
+#define PACKET_OVERHEAD         (PACKET_HEADER + PACKET_TRAILER)  
+#define PACKET_TIMEOUT          (1)  
 
-/* internal function */
-static YModem_Stream_TypeDef YModem_Decode(YModemObj_TypeDef *obj, uint8_t *p_buf, uint16_t size);
+#define YMODEM_PAC_EMPTY        2       //包校验正确，但是里面是空值，在（IDLE状态，判断是否需要结束，退出）
+
+/* ASCII control codes: */  
+#define SOH                     (0x01)      /* start of 128-byte data packet */  
+#define STX                     (0x02)      /* start of 1024-byte data packet */  
+#define EOT                     (0x04)      /* end of transmission */  
+#define ACK                     (0x06)      /* receive OK */  
+#define NAK                     (0x15)      /* receiver error; retry */  
+#define CAN                     (0x18)      /* two of these in succession abortas transfer */  
+#define CNC                     (0x43)      /* character 'C' */  
+  
+static uint8_t ym_tx_status = YMODEM_RX_IDLE;
+static uint32_t ym_tx_fil_sz = 0;
+static uint8_t *ym_tx_pbuf = NULL;
+static uint8_t ym_cyc = 0;
 
 /* external function */
-static uint8_t YModem_State_Polling(uint32_t sys_time, YModemObj_TypeDef *obj, uint8_t *p_buf, uint16_t size, YModem_Stream_TypeDef *p_stream);
-static void YModem_Abort(YModemObj_TypeDef *obj);
+// static uint8_t YModem_Tx_Finish(uint8_t status);
+// static uint8_t YModem_Tx_Pack_Get(uint8_t *buf, uint8_t seek, uint8_t size);
 
-YModem_TypeDef YModem = {
-    .polling = YModem_State_Polling,
-    .abort = YModem_Abort,
-};
+/* internal function */
+static int8_t YModem_Rx_Pack_Check(uint8_t *buf, uint32_t size);
+static bool YModem_Rx_Check_Pack_Empty(uint8_t *buf, uint32_t size);
 
-static YModem_Stream_TypeDef YModem_Decode(YModemObj_TypeDef *obj, uint8_t *p_buf, uint16_t size)
+/* get pack type */
+static int8_t YModem_Rx_Pack_Check(uint8_t *buf, uint32_t size)
 {
-    YModem_Stream_TypeDef stream_out;
-    uint16_t pack_size = 0;
-    bool is_EOT = false;
-    volatile uint16_t crc_get = 0;
-    volatile uint16_t crc = 0;
+    uint8_t ch = 0;
+    uint32_t index = 1;
+    uint16_t pck_crc = 0;
+    uint16_t chk_crc = 0;
 
-    memset(&stream_out, 0, sizeof(YModem_Stream_TypeDef));
-    if (obj && p_buf && size)
+    if ((buf == NULL) || (size == 0))
+        return YModem_Pack_Error;
+
+    ch = buf[0];
+    if (size < YMODEM_DATA_SIZE_128)
     {
-        stream_out.size = size;
-
-        for (uint16_t i = 0; i < size; i ++)
+        /* receive cmd pack */
+        if ((ch == EOT) || (ch == ACK) || (ch == NAK) || (ch == CAN) || (ch == CNC))
         {
-            switch (p_buf[i])
+            while ((index < size) && (buf[index ++] == ch));
+            if(size == index)
+                return ch;
+        }
+        
+        return YModem_CMD_Code_Error;
+    }
+
+    if ((ch == SOH) || (ch == STX))
+    {
+        chk_crc = Common_CRC16((buf + PACKET_HEADER), (size - PACKET_OVERHEAD));
+        pck_crc = (buf[size - 2] << 8) + buf[size - 1];
+
+        if ((chk_crc == pck_crc) && (0xff == (buf[1] + buf[2])))
+            return ch;
+        
+        return YModem_Pack_CRC_Error;
+    }
+    
+    return YModem_CMD_Code_Error;
+}
+
+static bool YModem_Rx_Check_Pack_Empty(uint8_t *buf, uint32_t size)
+{
+    uint8_t chk = 0;
+    
+    for (uint32_t i = 0; i < size; i++)
+        chk |= buf[i];
+    
+    if (chk == 0)
+        return true;
+    
+    return false;
+}
+
+static YModem_Handle YModem_Obj_Init(YModem_Trans_TypeDef type, void *port_obj, malloc_callback malloc_cb, free_callback free_cb, trans_callback trans_cb, rec_start_callback rec_start_cb, rec_done_callback rec_done_cb, rec_pack_callback rec_pck_cb)
+{
+    YModemObj_TypeDef *obj = NULL;
+
+    if ((malloc_cb == NULL) || (free_cb == NULL))
+        return 0;
+
+    obj = malloc_cb(sizeof(YModemObj_TypeDef));
+    if (obj == NULL)
+    {
+        free_cb(obj);
+        return 0;
+    }
+
+    memset(obj, 0, sizeof(YModemObj_TypeDef));
+    obj->type = type;
+    obj->port_obj = port_obj;
+    obj->malloc_cb = malloc_cb;
+    obj->free_cb = free_cb;
+    obj->trans_cb = trans_cb;
+    obj->trans_cb = rec_start_cb;
+    obj->rec_pck_cb = rec_pck_cb;
+
+    obj->pck_cnt = 0;
+    obj->pck_size = 0;
+    obj->seek = 0;
+    obj->rx_status = YMODEM_RX_IDLE;
+
+    return (YModem_Handle)obj;
+}
+
+static void YModem_Obj_DeInit(YModem_Handle YM_hdl)
+{
+    YModemObj_TypeDef *obj = To_YModem_Obj(YM_hdl);
+    free_callback free_cb = NULL;
+
+    if ((obj == NULL) || (obj->free_cb == NULL))
+        return;
+
+    free_cb = obj->free_cb;
+
+    memset(obj, 0, sizeof(YModemObj_TypeDef));
+    free_cb(obj);
+}
+
+static void YModem_SendByte(YModemObj_TypeDef *obj, uint8_t byte)
+{
+    uint8_t t_data = byte;
+
+    if ((obj == NULL) || (obj->trans_cb == NULL) || (obj->port_obj == NULL))
+        return;
+
+    obj->trans_cb(obj->port_obj, &t_data, 1);
+}
+
+/******************************************************** receive section ****************************************************/
+static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
+{
+    if (Obj == NULL)
+        return;
+
+    switch (YModem_Rx_Pack_Check(buf, size))
+    {
+        case SOH:
+        case STX:
+            Obj->pck_size = ((buf[0] == SOH) ? YMODEM_DATA_SIZE_128 : YMODEM_DATA_SIZE_1024);
+                
+            if (YModem_Rx_Check_Pack_Empty((buf + PACKET_HEADER), Obj->pck_size))
             {
-                case SOH:
-                    if ((size - i) >= YMODEM_MIN_SIZE)
-                    {
-                        crc_get = p_buf[YMODEM_MIN_SIZE - 1];
-                        crc_get |= p_buf[YMODEM_MIN_SIZE - 2] << 8;
-                        pack_size = YMODEM_MIN_SIZE - 5;
-                    }
-                    else
-                        stream_out.valid = YModem_Pack_InCompelete;
-                    break;
-            
-                case STX:
-                    if ((size - i) >= YMODEM_MAX_SIZE)
-                    {
-                        crc_get = p_buf[YMODEM_MAX_SIZE - 1];
-                        crc_get |= p_buf[YMODEM_MAX_SIZE - 2] << 8;
-                        pack_size = YMODEM_MAX_SIZE - 5;
-                    }
-                    else
-                        stream_out.valid = YModem_Pack_InCompelete;
-                    break;
-
-                case EOT:
-                    if (size == YMODEM_EOT_SIZE)
-                    {
-                        pack_size = 0;
-                        is_EOT = true;
-                        obj->data_income = false;
-                        if (obj->EOT_Cnt < YMODEM_EOT_CNT)
-                            obj->EOT_Cnt ++;
-                        
-                        if (obj->EOT_Cnt == YMODEM_EOT_CNT)
-                            /* last pack remain */
-                            obj->wait_last_pack = true;
-                    }
-                    break;
-
-                default:
-                    pack_size = 0;
-                    break;
+                YModem_SendByte(Obj, ACK);
+                Obj->rx_status = YMODEM_RX_EXIT;
+                return;
             }
-
-            if (pack_size && ((p_buf[i + YMODEM_ID_N_OFFSET] + p_buf[i + YMODEM_ID_P_OFFSET]) == 0xFF))
+            else
             {
-                stream_out.p_buf = &p_buf[i + YMODEM_PAYLOAD_OFFSET];
-                stream_out.size = pack_size;
-
-                stream_out.valid = YModem_Pack_Invalid;
-                crc = Common_CRC16(&p_buf[i + YMODEM_PAYLOAD_OFFSET], pack_size);
-                /* check crc */
-                if (crc_get == crc) 
+                if (Obj->pck_size == YMODEM_DATA_SIZE_128)
                 {
-                    stream_out.valid = YModem_Pack_Compelete;
-
-                    if (!obj->data_income || obj->wait_last_pack)
-                    {
-                        /* is not file data */
-                        stream_out.file_data = false;
-                        break;
-                    }
-
-                    stream_out.file_data = true;
-                    if (obj->received_pack_num && (p_buf[i + YMODEM_ID_P_OFFSET] != obj->next_pack_id))
-                    {
-                        /* error pack id */
-                        stream_out.valid = YModem_Pack_Invalid;
-                        obj->data_income = false;
-                    }
-
-                    obj->cur_pack_id = p_buf[i + YMODEM_ID_P_OFFSET];
-                    obj->next_pack_id = obj->cur_pack_id + 1;
-                    obj->received_pack_num ++;
+                    /* get file name and size from first pack */
+                    if (Obj->start_cb)
+                        Obj->start_cb(Obj->port_obj, buf[PACKET_HEADER], Obj->pck_size);
+                    
+                    YModem_SendByte(Obj, ACK);
+                    YModem_SendByte(Obj, 'C');
+                    
+                    Obj->seek = 0;
+                    Obj->rx_status = YMODEM_RX_ACK;
+                    return;
                 }
-
-                break;
-            }
-            else if ((pack_size == 0) && is_EOT)
-            {
-                stream_out.valid = YModem_Pack_Compelete;
-                stream_out.size = 1;
-                stream_out.p_buf = NULL;
-
-                break;
-            }
-            else if (stream_out.valid == YModem_Pack_InCompelete)
-                break;
-        }
-    }
-
-    return stream_out;
-}
-
-static void YModem_Rx_State_Polling(uint32_t sys_time, YModemObj_TypeDef *obj, uint8_t *p_buf, uint16_t size, YModem_Stream_TypeDef *p_stream)
-{
-    /* check for time out */
-    if ((size == 0) || (p_buf == NULL) || (p_stream == NULL))
-    {
-        if (((obj->tx_stage == YModem_Req) && (sys_time >= obj->re_send_time)) || \
-            ((obj->tx_stage == YModem_ACK) && (sys_time >= obj->timeout_ms)))
-        {
-            obj->state = YModem_State_Tx;
-            obj->tx_stage = YModem_Req;
-        }
-        return;
-    }
-
-    *p_stream = YModem_Decode(obj, p_buf, size);
-    if (p_stream->valid == YModem_Pack_Invalid)
-    {
-        /* send NAK to host */
-        obj->state = YModem_State_Tx;
-        obj->tx_stage = YModem_NAK;
-
-        /* check for re-send */
-
-        /* check for time out */
-
-        return;
-    }
-    else if (p_stream->valid == YModem_Pack_InCompelete)
-        return;
-
-    /* update tx stage after receive data */
-    switch ((uint8_t) obj->tx_stage)
-    {
-        /* receive data after req */
-        case YModem_Req:
-            /* file name received */
-            obj->state = YModem_State_Tx;
-            if (p_stream->valid != YModem_Pack_Compelete)
-                break;
-
-            obj->tx_stage = YModem_Cfm;
-            obj->data_income = true;
-            break;
-
-        /* receive data after confirm */
-        case YModem_Cfm:
-            /* is first pack received */
-            obj->state = YModem_State_Tx;
-            if (p_stream->valid != YModem_Pack_Compelete)
-                break;
-
-            obj->tx_stage = YModem_ACK;
-            break;
-
-        /* receive data after ACK */
-        case YModem_ACK:
-            obj->state = YModem_State_Tx;
-            if (p_stream->valid != YModem_Pack_Compelete)
-                break;
-
-            obj->tx_stage = YModem_ACK;
-            if (p_stream->size == 1)
-            {
-                if (!obj->wait_last_pack)
-                {
-                    obj->tx_stage = YModem_NAK;
-                }
-                else
-                    obj->tx_stage = YModem_Lst;
+                
+                Obj->rx_status = YMODEM_RX_ERR;
             }
             break;
 
-        case YModem_Lst:
-            /* end trans */
-            obj->state = YModem_State_Tx;
-            if (p_stream->valid != YModem_Pack_Compelete)
-                break;
-
-            obj->tx_stage = YModem_EOT;
-            break;
-
-        default:
-            break;
+        case EOT: Obj->rx_status = YMODEM_RX_EXIT; break;
+        default:  Obj->rx_status = YMODEM_RX_ERR; break;
     }
 }
 
-static void YModem_Tx_State_Polling(uint32_t sys_time, YModemObj_TypeDef *obj)
+static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
 {
-    uint8_t tx_data[2] = {0};
-    uint8_t tx_size = 0;
+    if (Obj == NULL)
+        return;
 
-    switch ((uint8_t) obj->tx_stage)
+    switch(YModem_Rx_Pack_Check(buf, size))
     {
-        case YModem_Req:
-            /* send 'C' */
-            tx_data[0] = C;
-            tx_size = 1;
-            /* after req data send accomplished check received data */
-            obj->state = YModem_State_Rx;
-            obj->re_send_time = sys_time + 100;
-            obj->received_pack_num = 0;
+        case SOH:
+        case STX:
+            YModem_SendByte(Obj, ACK);
+            Obj->pck_size = ((buf[0] == SOH) ? YMODEM_DATA_SIZE_128 : YMODEM_DATA_SIZE_1024);
+
+            if (Obj->rec_pck_cb)
+                Obj->rec_pck_cb(&buf[PACKET_HEADER], Obj->seek, Obj->pck_size);
+
+            Obj->seek += Obj->pck_size;
+            YModem_SendByte(Obj, 'C');
+        break;
+
+        case EOT:
+            YModem_SendByte(Obj, NAK);
+            Obj->rx_status = YMODEM_RX_EOT;
             break;
 
-        case YModem_Cfm:
-            /* send ACk and C */
-            tx_data[0] = ACK;
-            tx_data[1] = C;
-            tx_size = 2;
-            /* wait data input */
-            obj->state = YModem_State_Rx;
-            obj->received_pack_num = 0;
-            break;
-
-        case YModem_ACK:
-            tx_data[0] = ACK;
-            tx_size = 1;
-            obj->state = YModem_State_Rx;
-            obj->timeout_ms = sys_time + 200;
-            break;
-
-        case YModem_NAK:
-            tx_data[0] = NAK;
-            tx_size = 1;
-            obj->state = YModem_State_Rx;
-            obj->timeout_ms = sys_time + 200;
-            obj->tx_stage = YModem_ACK;
-            break;
-
-        case YModem_Lst:
-            /* send ACk and C */
-            tx_data[0] = ACK;
-            tx_data[1] = C;
-            tx_size = 2;
-            /* wait data input */
-            obj->state = YModem_State_Rx;
-            break;
-
-        case YModem_EOT:
-            /* send last ack to host */
-            tx_data[0] = ACK;
-            tx_size = 1;
-            /* proto finish */
-            obj->state = YModem_State_Finish;
-            break;
-
-        default:
-            tx_size = 0;
-            break;
+        case CAN: Obj->rx_status = YMODEM_RX_ERR; break;
+        default: YModem_SendByte(Obj, NAK); break;
     }
-
-    if (obj->send_callback && tx_size)
-        obj->send_callback(tx_data, tx_size);
 }
 
-static void YModem_Abort(YModemObj_TypeDef *obj)
+static void YModem_EOT_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
 {
-    uint8_t abort_cmd = CAN;
+    if (Obj == NULL)
+        return;
 
-    if (obj && obj->send_callback)
+    switch (YModem_Rx_Pack_Check(buf, size))
     {
-        obj->send_callback(&abort_cmd, 1);
-        obj->send_callback(&abort_cmd, 1);
+        case EOT:
+            YModem_SendByte(Obj, ACK);
+            Obj->rx_status = YMODEM_RX_EXIT;
+            break;
+
+        default: Obj->rx_status = YMODEM_RX_ERR; break;
     }
 }
 
-static uint8_t YModem_State_Polling(uint32_t sys_time, YModemObj_TypeDef *obj, uint8_t *p_buf, uint16_t size, YModem_Stream_TypeDef *p_stream)
+static void YModem_Check_Exit(YModemObj_TypeDef *Obj)
 {
-    /* polling currently processing ymodem object */
-    if (obj)
+    if (Obj == NULL)
+        return;
+
+    switch (Obj->rx_status)
     {
-        switch ((uint8_t)(obj->state))
-        {
-            case YModem_State_Idle:
-                obj->state = YModem_State_Tx;
-                break;
+        case YMODEM_RX_ERR:
+            YModem_SendByte(Obj, CAN);
+            if (Obj->done_cb)
+                Obj->done_cb(Obj->port_obj, YModem_Rx_Error);
+        
+        case YMODEM_RX_EXIT:
+            Obj->rx_status = YMODEM_RX_IDLE;
+            if (Obj->done_cb)
+                Obj->done_cb(Obj->port_obj, YModem_Rx_Done);
 
-            case YModem_State_Rx:
-                YModem_Rx_State_Polling(sys_time, obj, p_buf, size, p_stream);
-                break;
+            YModem_Obj_DeInit((YModem_Handle)Obj);
+            break;
 
-            case YModem_State_Tx:
-                YModem_Tx_State_Polling(sys_time, obj);
-                break;
+        default: break;
+    }
+}
 
-            case YModem_State_Finish:
-                break;
+static void YModem_Rx(uint32_t YM_hdl, uint8_t *buf, uint32_t size)
+{
+    YModemObj_TypeDef *Obj = To_YModem_Obj(YM_hdl);
 
-            default:
-                break;
-        }
+    if (Obj == NULL)
+        return;
 
-        return (uint8_t)(obj->state);
+    if (size == 0)
+    {
+        YModem_SendByte(Obj, 'C');
+        return;
+    }
+    
+    switch (Obj->rx_status)
+    {
+        case YMODEM_RX_IDLE: YModem_Idle_Proc(Obj, buf, size); break;
+        case YMODEM_RX_ACK:  YModem_Ack_Proc(Obj, buf, size);  break;
+        case YMODEM_RX_EOT:  YModem_EOT_Proc(Obj, buf, size);  break;
+        default: Obj->rx_status = YMODEM_RX_ERR; break;
     }
 
-    return YModem_State_Error;
+    YModem_Check_Exit(Obj);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// //**********************************************************************发送部分
+// //pbuf 是指向缓冲区的最开始的地方， pac_sz 是数据区的大小
+// uint8 ymodem_tx_make_pac_data( char *pbuf, size_t pac_sz )
+// {
+//   uint8 ans = YMODEM_ERR;
+//   uint16 crc;
+  
+//   pbuf[0] = pac_sz==128? SOH:STX;
+//   pbuf[1] = ym_cyc;
+//   pbuf[2] = ~ym_cyc;
+//   crc = crc16( (unsigned char const*)pbuf, pac_sz );
+//   pbuf[PACKET_HEADER+pac_sz]   = (u8)(crc/256);
+//   pbuf[PACKET_HEADER+pac_sz+1] = (u8)(crc&0x00ff);
+//   ym_cyc++;
+//   return ans;
+// }
+// uint8 ymodem_tx_make_pac_header( char *pbuf, char *fil_nm, size_t fil_sz )
+// {
+//   uint8 ans = YMODEM_ERR;
+//   uint8 nm_len;
+//   memset( pbuf+PACKET_HEADER, 0, 128);
+//   if( fil_nm )
+//   {
+//     nm_len = strlen( fil_nm );
+//     strcpy( pbuf+PACKET_HEADER, fil_nm );
+//     strcpy( pbuf+PACKET_HEADER+nm_len+1, u32_to_str( fil_sz ) );
+//   }
+//   ym_cyc = 0x00;
+//   ymodem_tx_make_pac_data( pbuf, 128 );
+//   return ans;
+// }
+// /*********************************************************************
+//  * @fn      ymodem_tx_put : Ymodem发送时，逻辑轮转调用函数
+//  * @param   buf : 数据缓冲区 buf : 数据大小
+//  * 说明：
+//  * 1.发送 [包  头] 状态：如果没有文件名，则发送空包，否则发送封装的头包
+//  * 2.发送 [数据包] 状态：发送数据包，出现问题或结束，则进入结束状态
+//  * 3.发送 [结  束] 状态：处理发送完成的相关事情
+//  */ 
+// void ymodem_tx_put( char *buf, size_t rx_sz )
+// {
+//   char *fil_nm=NULL;
+//   size_t fil_sz=NULL;
+//   switch( ym_tx_status )
+//   {
+//   case YMODEM_TX_IDLE:
+//     switch( YModem_Rx_Pack_Check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
+//     {
+//     case CNC:
+//       {
+//         if( NULL == ym_tx_pbuf )
+//         {
+//           ym_tx_pbuf = pvPortMalloc( PACKET_OVERHEAD + PACKET_1K_SIZE );
+//           if( NULL == ym_tx_pbuf )      //申请失败，则返回
+//             break;
+//         }
+//         if( YModem_Error_None == ymodem_tx_header( &fil_nm, &fil_sz ) )   //得到 文件名和大小
+//         {//封装一个包头，然后发送出去
+//           ym_tx_fil_sz = fil_sz;
+//           ymodem_tx_make_pac_header( ym_tx_pbuf, fil_nm, fil_sz );
+//           __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_SIZE );
+//           ym_tx_status = YMODEM_TX_IDLE_ACK;
+//         }
+//         else //封装一个空包，然后发出去
+//         {
+//           ymodem_tx_make_pac_header( ym_tx_pbuf, NULL, NULL );
+//           __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_SIZE );
+//         }
+//       }
+//     break;
+//     case CAN:
+//       ym_rx_status = YMODEM_TX_ERR;
+//       goto err_tx;
+//     break;
+//     default:
+//      goto err_tx;              //这儿暂时认为，包有误，就退出
+//      break;
+//     }
+//     break;
+//     case YMODEM_TX_IDLE_ACK:
+//       {
+//         switch( YModem_Rx_Pack_Check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
+//         {
+//         case ACK://准备发数据包
+//           ym_tx_status = YMODEM_TX_DATA;
+//           break;
+//         case NAK://准备重发包头
+//           ym_tx_status = YMODEM_TX_IDLE;
+//           break;
+//         default://啥也不做
+//           break;
+//         }
+//       }
+//       break;
+// dt_tx: case YMODEM_TX_DATA:                             //1级——文件发送状态中
+//       switch( YModem_Rx_Pack_Check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
+//       {
+//         case CNC:
+//           if( YModem_Error_None == ymodem_tx_pac_get( ym_tx_pbuf+PACKET_HEADER, seek, PACKET_1K_SIZE ) )  //读取下一组数据
+//           {
+//             if( YModem_Error_None == ymodem_tx_make_pac_data( ym_tx_pbuf, PACKET_1K_SIZE ) )
+//             {
+//               __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_1K_SIZE );
+//               ym_tx_status = YMODEM_TX_DATA_ACK;
+//             }
+//             else        //读取数据出错，结束传输
+//             {
+//               ym_tx_status = YMODEM_TX_ERR;
+//               goto err_tx;
+//             }
+//           }
+//           break;
+//         case CAN:
+//           ym_rx_status = YMODEM_TX_ERR;
+//           goto err_tx;
+//           break;
+//         default:        //暂时啥也不做
+//           break;
+//       }
+//       break;
+//     case YMODEM_TX_DATA_ACK:
+//       {
+//         switch( YModem_Rx_Pack_Check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
+//         {
+//         case ACK:
+//           seek += PACKET_1K_SIZE;
+//           if( seek < ym_tx_fil_sz )     //数据未发送完（不能加‘=’！）
+//             ym_tx_status = YMODEM_TX_DATA_ACK;
+//           else  //数据发送完
+//           {
+//             ym_tx_status = YMODEM_TX_EOT;
+//             __putchar( EOT );
+//           }
+//         break;
+//         case CNC:       //如果接收方不先应答[ACK]而是直接发'C'在这里处理
+//           seek += PACKET_1K_SIZE;
+//           if( seek < ym_tx_fil_sz )     //数据未发送完（不能加‘=’！）
+//           {
+//             ym_tx_status = YMODEM_TX_DATA_ACK;
+//             //下面的状态，因为我需要马上回复，所以用goto
+//             goto dt_tx;         //发送下一个数据包
+//           }
+//           else  //数据发送完
+//           {
+//             ym_tx_status = YMODEM_TX_EOT;
+//             __putchar( EOT );
+//           }
+//         break;
+//         default:
+//         break;
+//         }
+//       }
+//     break;
+//     case YMODEM_TX_EOT:
+//     {
+//       switch( YModem_Rx_Pack_Check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
+//       {
+//           //指令包
+//         case NAK:
+//           __putchar( EOT );
+//           break;
+//         case ACK:
+//           __putchar( ACK );
+//           ymodem_tx_finish( YModem_Error_None );
+//           ym_rx_status = YMODEM_TX_IDLE;
+//           break;
+//         default:
+//           break;
+//       }
+//     }
+//       break;
+// err_tx:  case YMODEM_TX_ERR:         //在这里放弃保存文件,终止传输
+//       __putchar( CAN );
+//       ymodem_rx_finish( YMODEM_ERR );
+//       //break;                    //没有break，和下面公用代码
+//   case YMODEM_TX_EXIT:        //到这里，就收拾好，然后退出
+//       ym_rx_status = YMODEM_RX_IDLE;
+//       //*这里还需要进行某些操作，使在退出后，不会再重新进入ymodem_rx_put()函数
+//       vPortFree( ym_tx_pbuf );
+//       ym_tx_pbuf = NULL;
+//       usart_protocol_model_cur = USART_PROTOCOL_DEFAULT;
+//       return;
+//     default:
+//       break;
+//   }
+// }
+
