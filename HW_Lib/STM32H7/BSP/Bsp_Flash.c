@@ -8,7 +8,6 @@
 #define BSP_FLASH_WRITE_UNIT 32 /* unit : byte */
 
 /* internal function */
-static bool BspFlash_ReadWord(uint32_t addr, uint8_t *p_data);
 static bool BspFlash_Get_Sector(uint32_t addr, uint32_t *p_bank, uint32_t *p_sector);
 
 /* external function */
@@ -89,9 +88,6 @@ static void BspFlash_DeInit(void)
 
 static bool BspFlash_Read_From_Addr(uint32_t addr, uint8_t *p_data, uint32_t size)
 {
-    uint8_t remain_size = 0;
-    uint32_t read_tmp = 0;
-
     if(addr && p_data && size)
     {
         for(uint32_t i = 0; i < size; i++)
@@ -150,14 +146,14 @@ static bool BspFlash_Write_To_Addr(uint32_t addr, uint8_t *p_data, uint32_t size
     remain_size = size % BSP_FLASH_WRITE_UNIT;
     if(remain_size)
     {
-        if(!BspFlash_Read_From_Addr(addr, write_tmp, sizeof(write_tmp)))
+        if(!BspFlash_Read_From_Addr(addr, write_tmp, BSP_FLASH_WRITE_UNIT))
             return false;
 
         memcpy(write_tmp, p_data, remain_size);
-        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, addr, write_tmp) != HAL_OK)
+        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, addr, (uint32_t)write_tmp) != HAL_OK)
             return false;
     
-        if(!BspFlash_Read_From_Addr(addr, read_tmp, sizeof(read_tmp)))
+        if(!BspFlash_Read_From_Addr(addr, read_tmp, BSP_FLASH_WRITE_UNIT))
             return false;
 
         if(memcmp(write_tmp, read_tmp, BSP_FLASH_WRITE_UNIT) != 0)
@@ -172,7 +168,6 @@ static bool BspFlash_Erase(uint32_t addr, uint32_t len)
     uint32_t PageError = 0;
     uint8_t sector_number;
     uint32_t erase_addr, erase_len;
-    HAL_StatusTypeDef status;
     FLASH_EraseInitTypeDef eraseinitstruct;
     
     if ((addr < FLASH_BASE_ADDR) || (addr + len >= FLASH_BASE_ADDR + FLASH_SIZE))

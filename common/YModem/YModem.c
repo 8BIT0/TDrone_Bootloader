@@ -39,18 +39,33 @@
 #define CAN                     (0x18)      /* two of these in succession abortas transfer */  
 #define CNC                     (0x43)      /* character 'C' */  
   
-static uint8_t ym_tx_status = YMODEM_RX_IDLE;
-static uint32_t ym_tx_fil_sz = 0;
-static uint8_t *ym_tx_pbuf = NULL;
-static uint8_t ym_cyc = 0;
+// static uint8_t ym_tx_status = YMODEM_RX_IDLE;
+// static uint32_t ym_tx_fil_sz = 0;
+// static uint8_t *ym_tx_pbuf = NULL;
+// static uint8_t ym_cyc = 0;
 
 /* external function */
-// static uint8_t YModem_Tx_Finish(uint8_t status);
-// static uint8_t YModem_Tx_Pack_Get(uint8_t *buf, uint8_t seek, uint8_t size);
+static YModem_Handle YModem_Obj_Init(YModem_Trans_TypeDef type, void *port_obj, \
+                                     malloc_callback malloc_cb, free_callback free_cb, \
+                                     trans_callback trans_cb, rec_start_callback rec_start_cb, \
+                                     rec_done_callback rec_done_cb, rec_pack_callback rec_pck_cb);
+static void YModem_Rx(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size);
 
 /* internal function */
 static int8_t YModem_Rx_Pack_Check(uint8_t *buf, uint32_t size);
 static bool YModem_Rx_Check_Pack_Empty(uint8_t *buf, uint32_t size);
+static void YModem_Obj_DeInit(YModem_Handle YM_hdl);
+static void YModem_SendByte(YModemObj_TypeDef *obj, uint8_t byte);
+static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size);
+static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size);
+static void YModem_EOT_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size);
+static void YModem_Check_Exit(YModemObj_TypeDef *Obj);
+
+/* external vairable */
+YModem_TypeDef YModem = {
+    .Init = YModem_Obj_Init,
+    .Rx   = YModem_Rx,
+};
 
 /* get pack type */
 static int8_t YModem_Rx_Pack_Check(uint8_t *buf, uint32_t size)
@@ -124,7 +139,8 @@ static YModem_Handle YModem_Obj_Init(YModem_Trans_TypeDef type, void *port_obj, 
     obj->malloc_cb = malloc_cb;
     obj->free_cb = free_cb;
     obj->trans_cb = trans_cb;
-    obj->trans_cb = rec_start_cb;
+    obj->start_cb = rec_start_cb;
+    obj->done_cb = rec_done_cb;
     obj->rec_pck_cb = rec_pck_cb;
 
     obj->pck_cnt = 0;
@@ -257,21 +273,19 @@ static void YModem_Check_Exit(YModemObj_TypeDef *Obj)
         case YMODEM_RX_ERR:
             YModem_SendByte(Obj, CAN);
             if (Obj->done_cb)
-                Obj->done_cb(Obj->port_obj, YModem_Rx_Error);
+                Obj->done_cb(NULL, YModem_Rx_Error);
         
         case YMODEM_RX_EXIT:
-            Obj->rx_status = YMODEM_RX_IDLE;
-            if (Obj->done_cb)
-                Obj->done_cb(Obj->port_obj, YModem_Rx_Done);
-
             YModem_Obj_DeInit((YModem_Handle)Obj);
+            if (Obj->done_cb)
+                Obj->done_cb(NULL, YModem_Rx_Done);
             break;
 
         default: break;
     }
 }
 
-static void YModem_Rx(uint32_t YM_hdl, uint8_t *buf, uint32_t size)
+static void YModem_Rx(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size)
 {
     YModemObj_TypeDef *Obj = To_YModem_Obj(YM_hdl);
 

@@ -11,7 +11,7 @@
 #include "Bsp_Uart.h" 
 #include "Bsp_Timer.h"
 
-extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+// extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern TIM_HandleTypeDef htim17;
 extern TIM_HandleTypeDef htim16;
 
@@ -61,7 +61,7 @@ void SysTick_Handler(void)
 
 void OTG_FS_IRQHandler(void)
 {
-  HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+  // HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
 }
 
 void EXTI0_IRQHandler(void)

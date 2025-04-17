@@ -49,9 +49,6 @@ DataStructure/Data_Convert_Util.c \
 DataStructure/CusQueue.c \
 common/YModem/YModem.c \
 common/util.c \
-System/storage/Storage.c \
-System/storage/Storage_Bus_Port.c \
-System/storage/Storage_Dev_Port.c \
 System/FreeRTOS/croutine.c \
 System/FreeRTOS/event_groups.c \
 System/FreeRTOS/list.c \
@@ -72,19 +69,10 @@ System/kernel/kernel_stm32h743.c \
 HW_Lib/STM32H7/BSP/Bsp_GPIO.c \
 HW_Lib/STM32H7/BSP/Bsp_SPI.c \
 HW_Lib/STM32H7/BSP/Bsp_Uart.c \
-HW_Lib/STM32H7/BSP/Bsp_USB.c \
 HW_Lib/STM32H7/BSP/Bsp_Flash.c \
 HW_Lib/STM32H7/BSP/Bsp_DMA.c \
 HW_Lib/STM32H7/BSP/Bsp_Timer.c \
 HW_Lib/STM32H7/BSP/Bsp_SDRAM.c \
-HW_Lib/STM32H7/USB/USB_DEVICE/App/usb_device.c \
-HW_Lib/STM32H7/USB/USB_DEVICE/App/usbd_desc.c \
-HW_Lib/STM32H7/USB/USB_DEVICE/App/usbd_cdc_if.c \
-HW_Lib/STM32H7/USB/USB_DEVICE/Target/usbd_conf.c \
-HW_Lib/STM32H7/USB/STM32_USB_Device_Library/Core/Src/usbd_core.c \
-HW_Lib/STM32H7/USB/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
-HW_Lib/STM32H7/USB/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
-HW_Lib/STM32H7/USB/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c  \
 HW_Lib/STM32H7/HAL_Lib/Core/Src/stm32h7xx_it.c \
 HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c  \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
@@ -114,6 +102,9 @@ HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_ll_fmc.c \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_sdram.c \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_ll_usb.c \
 HW_Lib/STM32H7/PinPort_Def/Neure/HW_Def.c
+# System/storage/Storage.c \
+# System/storage/Storage_Bus_Port.c \
+# System/storage/Storage_Dev_Port.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -193,7 +184,6 @@ C_INCLUDES =  \
 -ISystem/FreeRTOS/CMSIS_RTOS \
 -ISystem/FreeRTOS/portable/GCC/ARM_CM4F \
 -ISystem/shell \
--ISystem/storage \
 -ISystem/diskio \
 -Idebug \
 -IMAVLink \
@@ -221,6 +211,7 @@ C_INCLUDES =  \
 -IHW_Lib/STM32H7/USB/USB_DEVICE/App \
 -IHW_Lib/STM32H7/USB/USB_DEVICE/Target \
 -IHW_Lib/STM32H7/PinPort_Def/Neure \
+# -ISystem/storage
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

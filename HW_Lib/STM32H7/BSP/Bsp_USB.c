@@ -23,7 +23,7 @@ static void BspUSB_VCP_Connect_Callback(void);
 
 /* external function */
 static BspUSB_Error_List BspUSB_VCP_Init(uint32_t cus_data_addr);
-static BspUSB_Error_List BspUSB_VCP_SendData(uint8_t *p_data, uint16_t len);
+static void BspUSB_VCP_SendData(uint8_t *p_data, uint16_t len);
 static void BspUSB_VCP_Set_Rx_Callback(BspUSB_Rx_Callback_Def callback);
 static void BspUSB_VCP_Set_Tx_CPLT_Callback(BspUSB_Tx_Cplt_Callback_Def callback);
 static void BspUSB_VCP_Set_Connect_Callback(BspUSB_Connect_Callback_Def callback);
@@ -83,7 +83,7 @@ static BspUSB_Error_List BspUSB_VCP_Init(uint32_t cus_data_addr)
     return BspUSB_VCPMonitor.init_state;
 }
 
-static BspUSB_Error_List BspUSB_VCP_SendData(uint8_t *p_data, uint16_t len)
+static void BspUSB_VCP_SendData(uint8_t *p_data, uint16_t len)
 {
     uint16_t push_size = 0;
     uint16_t tx_size = 0;

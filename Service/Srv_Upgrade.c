@@ -2,7 +2,7 @@
 #include "Srv_OsCommon.h"
 #include "Srv_ComTrans.h"
 #include "Bsp_Flash.h"
-#include "Storage.h"
+// #include "Storage.h"
 #include "YModem.h"
 #include "../common/util.h"
 #include "CusQueue.h"
@@ -12,7 +12,9 @@
 
 #define PARA_TYPE           Para_Sys
 #define PARA_NAME           "Upgrade_Info"
-#define FORCE_MODE_CODE     "Force_Mode\r\n"
+#define FORCE_MODE_CODE     "Force_Mode"
+
+/* internal function */
 
 typedef struct
 {
@@ -26,6 +28,8 @@ typedef struct
 
     bool queue_inuse;
     QueueObj_TypeDef p_queue;
+
+    YModem_Handle YM_hdl;
 } SrvUpgradeObj_TypeDef;
 
 /* internal variable */
@@ -40,7 +44,7 @@ static void SrvUpgrade_JumpToApp(void);
 
 /* external function */
 static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb);
-static void SrvUpgrade_DealRec(uint8_t *p_data, uint16_t size);
+static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size);
 
 /* external variable */
 SrvUpgrade_TypeDef SrvUpgrade = {
@@ -126,7 +130,7 @@ static void SrvUpgrade_Check_ForceMode_Enable(void)
                     if (q_data != FORCE_MODE_CODE[i])
                         break;
                     
-                    SrvUpgradeObj.mode = Upgrade_Force_Mode;
+                   SrvUpgradeObj.mode = Upgrade_Force_Mode;
                 }
             }
         }
@@ -135,12 +139,28 @@ static void SrvUpgrade_Check_ForceMode_Enable(void)
     }
 }
 
+static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t p_data, uint16_t size)
+{
+
+}
+
+static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t p_data, uint16_t size)
+{
+
+}
+
+static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
+{
+    if (code == YModem_Rx_Done)
+        SrvUpgradeObj.YM_hdl = 0;
+}
+
 static void SrvUpgrade_JumpToApp(void)
 {
 }
 #endif
 
-static bool SrvUpgrade_Firmware_Download(uint8_t *p_data, uint16_t size)
+static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_t size)
 {
     if (!SrvUpgradeObj.init_state || \
         (SrvUpgradeObj.send == NULL) || \
@@ -150,14 +170,25 @@ static bool SrvUpgrade_Firmware_Download(uint8_t *p_data, uint16_t size)
 #if (CODE_TYPE == ON_BOOT)
     if (SrvUpgradeObj.mode != Upgrade_Force_Mode)
         return false;
+
+    /* Create YMdoem object */
+    if (SrvUpgradeObj.YM_hdl == 0)
+        SrvUpgradeObj.YM_hdl = YModem.Init(YModem_Rx_Pck, com_obj, \
+                                           SrvOsCommon.malloc, SrvOsCommon.free, \
+                                           (trans_callback)SrvCom.write, \
+                                           NULL, SrvUpgrade_Firmware_Rec_Done, NULL);
+    
+    YModem.Rx(SrvUpgradeObj.YM_hdl, p_data, size);
 #endif
+
+    return true;
 }
 
-static void SrvUpgrade_DealRec(uint8_t *p_data, uint16_t size)
+static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size)
 {
     if ((!SrvUpgradeObj.init_state) || \
         (SrvUpgradeObj.mode > Upgrade_Force_Mode) || \
-        (p_data == NULL)|| (size == 0))
+        (p_data == NULL))
         return;
 
     /* push data into queue */
@@ -168,7 +199,7 @@ static void SrvUpgrade_DealRec(uint8_t *p_data, uint16_t size)
     SrvUpgrade_Check_ForceMode_Enable();
 #endif
 
-    SrvUpgrade_Firmware_Download(p_data, size);
+    SrvUpgrade_Firmware_Download(com_obj, p_data, size);
 
     SrvUpgradeObj.rec_cnt ++;
 }

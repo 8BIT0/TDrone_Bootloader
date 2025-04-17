@@ -17,6 +17,9 @@
 /* internal variable */
 static BspUARTObj_TypeDef *BspUart_Obj_List[Bsp_UART_Port_Sum] = {NULL};
 
+/* internal function */
+static bool BsPUart_DeInit_DMA(BspUARTObj_TypeDef *obj);
+
 /* external function */
 static bool BspUart_Init(BspUARTObj_TypeDef *obj);
 static bool BspUart_DeInit(BspUARTObj_TypeDef *obj);
@@ -197,9 +200,22 @@ static int BspUart_Init_DMA(BspUARTObj_TypeDef *obj)
     return index;
 }
 
-static bool BsPUart_DeInit_DMA()
+static bool BsPUart_DeInit_DMA(BspUARTObj_TypeDef *obj)
 {
+    if (obj == NULL)
+        return false;
 
+    if (obj->tx_dma_hdl)
+    {
+
+    }
+
+    if (obj->rx_dma_hdl)
+    {
+
+    }
+
+    return true;
 }
 
 static int BspUart_SetIRQ(BspUARTObj_TypeDef *obj)
@@ -327,6 +343,8 @@ static bool BspUart_DeInit(BspUARTObj_TypeDef *obj)
 {
     if ((obj == NULL) || !obj->init_state || (obj->hdl == NULL))
         return false;
+    
+    BsPUart_DeInit_DMA(obj);
 
     return false;
 }
@@ -495,7 +513,6 @@ void UART_IRQ_Callback(BspUART_Port_List index)
     uint16_t len = 0;
     uint32_t isrflags = 0;
     uint32_t cr1its = 0;
-    uint32_t cr3its = 0;
 
     if ((BspUart_Obj_List[index] == NULL) || \
         BspUart_Obj_List[index]->irq_type != BspUart_IRQ_Type_Idle)
@@ -504,7 +521,6 @@ void UART_IRQ_Callback(BspUART_Port_List index)
     hdl = BspUart_Obj_List[index]->hdl;
     isrflags = READ_REG(hdl->Instance->ISR);
     cr1its = READ_REG(hdl->Instance->CR1);
-    cr3its = READ_REG(hdl->Instance->CR3);
 
     rx_dma = To_UartDMA_Handle_Ptr(BspUart_Obj_List[index]->rx_dma_hdl);
 

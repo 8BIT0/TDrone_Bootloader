@@ -105,11 +105,11 @@ bool BspSDRAM_Init(BspSDRAMObj_TypeDef *obj)
 
 	/* hsdram1.Init */
 	To_SDRAM_Handle(obj->hdl)->Instance                = FMC_SDRAM_DEVICE;
-	To_SDRAM_Handle(obj->hdl)->Init.SDBank             = FMC_SDRAM_BANK1;//BspSDRAM_Get_BankArea(obj->bank_area);
-	To_SDRAM_Handle(obj->hdl)->Init.ColumnBitsNumber   = FMC_SDRAM_COLUMN_BITS_NUM_9;//BspSDRAM_Get_ColumnBits(obj->column_bits);
-	To_SDRAM_Handle(obj->hdl)->Init.RowBitsNumber      = FMC_SDRAM_ROW_BITS_NUM_13;//BspSDRAM_Get_RowBits(obj->row_bits);
-	To_SDRAM_Handle(obj->hdl)->Init.MemoryDataWidth    = FMC_SDRAM_MEM_BUS_WIDTH_16;//BspSDRAM_Bus_Width(obj->bus_width);
-	To_SDRAM_Handle(obj->hdl)->Init.InternalBankNumber = FMC_SDRAM_INTERN_BANKS_NUM_4;//BspSDRAM_Get_BankNum(obj->bank_num);
+	To_SDRAM_Handle(obj->hdl)->Init.SDBank             = BspSDRAM_Get_BankArea(obj->bank_area);
+	To_SDRAM_Handle(obj->hdl)->Init.ColumnBitsNumber   = BspSDRAM_Get_ColumnBits(obj->column_bits);
+	To_SDRAM_Handle(obj->hdl)->Init.RowBitsNumber      = BspSDRAM_Get_RowBits(obj->row_bits);
+	To_SDRAM_Handle(obj->hdl)->Init.MemoryDataWidth    = BspSDRAM_Bus_Width(obj->bus_width);
+	To_SDRAM_Handle(obj->hdl)->Init.InternalBankNumber = BspSDRAM_Get_BankNum(obj->bank_num);
 	To_SDRAM_Handle(obj->hdl)->Init.CASLatency         = FMC_SDRAM_CAS_LATENCY_3;
 	To_SDRAM_Handle(obj->hdl)->Init.WriteProtection    = FMC_SDRAM_WRITE_PROTECTION_DISABLE;
 	To_SDRAM_Handle(obj->hdl)->Init.SDClockPeriod      = FMC_SDRAM_CLOCK_PERIOD_2;

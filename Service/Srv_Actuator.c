@@ -6,7 +6,6 @@
 #define Actuator_Free(ptr) SrvOsCommon.free(ptr)
 
 /* internal function */
-static void SrvActuator_PipeData(void);
 
 /* external function */
 static bool SrvActuator_Init(SrvActuator_ESCType_List ESC_type);
@@ -50,6 +49,7 @@ static bool SrvActuator_Init(SrvActuator_ESCType_List ESC_type)
 
 static bool SrvActuator_Lock(void)
 {
+    return false;
 }
 
 static void SrvActuator_MotoControl(int16_t *p_val)

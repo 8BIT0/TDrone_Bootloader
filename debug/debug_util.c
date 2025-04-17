@@ -78,7 +78,7 @@ void Debug_Print(DebugPrintObj_TypeDef *Obj, const char *tag, const char* fmt, .
     if (Obj->p_buf && Obj->port_obj)
     {
 	    va_start(ap, new_fmt);
-	    length = vsnprintf(Obj->p_buf, MAX_PRINT_SIZE, new_fmt, ap);
+	    length = vsnprintf((char *)Obj->p_buf, MAX_PRINT_SIZE, new_fmt, ap);
 	    va_end(ap);
 
         if (length > MAX_PRINT_SIZE)

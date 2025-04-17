@@ -33,7 +33,7 @@ typedef enum
 typedef struct
 {
     bool (*init)(SrvUpgrade_Send_Callback tx_cb);
-    void (*DealRec)(uint8_t *p_data, uint16_t size);
+    void (*DealRec)(void *com_obj, uint8_t *p_data, uint16_t size);
 } SrvUpgrade_TypeDef;
 
 extern SrvUpgrade_TypeDef SrvUpgrade;

@@ -160,8 +160,11 @@ static bool Queue_PopTo(QueueObj_TypeDef *src, QueueObj_TypeDef *dst)
 
 static Queue_state Queue_Push(QueueObj_TypeDef *obj, uint8_t *data, uint16_t size)
 {
-    if ((obj == NULL) || (obj->lenth == 0))
+    if ((obj == NULL) || (obj->lenth == 0) || (data == NULL))
         return Queue_obj_error;
+
+    if (size == 0)
+        return Queue_ok;
 
     if ((obj->state == Queue_ok) || (obj->state == Queue_empty))
     {

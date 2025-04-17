@@ -7,6 +7,7 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include "Bsp_GPIO.h"

@@ -67,7 +67,6 @@ SrvOsCommon_TypeDef SrvOsCommon = {
 
 static bool SrvOsCommon_Init(void)
 {
-    volatile uint32_t w = 0;
     uint32_t t_addr = 0;
     bool state = true;
     BspSDRAMObj_TypeDef sdram_obj;
@@ -181,7 +180,7 @@ static void SrvOsCommon_JumpToAddr(uint32_t addr)
     uint32_t jump_addr = 0;
 
     if ((addr <= (uint32_t)&__boot_e) || \
-        (addr & 0xFF000000 != (uint32_t)&__rom_s))
+        ((addr & 0xFF000000) != (uint32_t)&__rom_s))
         return;
 
     /* disable all irq before jump */
