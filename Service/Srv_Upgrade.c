@@ -146,13 +146,17 @@ static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t p_data, uint16_t si
 
 static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t p_data, uint16_t size)
 {
-
+    /* update pack into ram */
 }
 
 static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
 {
     if (code == YModem_Rx_Done)
+    {
         SrvUpgradeObj.YM_hdl = 0;
+
+        /* store firmware into external or on chip flash */
+    }
 }
 
 static void SrvUpgrade_JumpToApp(void)

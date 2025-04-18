@@ -59,7 +59,7 @@ _Min_Heap_Size = 0x2000;      /* required amount of heap  */
 _Min_Stack_Size = 0x2000; /* required amount of stack */
 
 FLASH_SIZE = 1M;
-BOOT_SIZE = 256K;
+BOOT_SIZE = 128K;
 APP_SIZE = FLASH_SIZE - BOOT_SIZE;
 
 /* Specify the memory areas */

@@ -91,14 +91,17 @@ static void Bootloader_Check(uint32_t sys_time)
 
         if (Tmp_Frimware_Buf && (rec_size <= SrvCom.queue_capicity(SrvComObj)))
         {
+            if (rec_size)
+            {
+                /* update time out tick */
+                time_out_tick = sys_time + RECEIVE_TIME_OUT;
+            }
+
             /* get received data */
             SrvCom.read(&SrvComObj, Tmp_Frimware_Buf, rec_size);            
 
             /* Use YModem receive firmware */
             SrvUpgrade.DealRec(&SrvComObj, Tmp_Frimware_Buf, rec_size);
-
-            /* update time out tick */
-            time_out_tick = sys_time + RECEIVE_TIME_OUT;
         }
     }
 }
