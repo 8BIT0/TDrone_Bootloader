@@ -1,4 +1,4 @@
-#include "Ymodem.h"
+#include "YModem.h"
 #include "../util.h"
 
 #define To_YModem_Obj(x)        ((YModemObj_TypeDef *)x)
@@ -276,9 +276,9 @@ static void YModem_Check_Exit(YModemObj_TypeDef *Obj)
                 Obj->done_cb(NULL, YModem_Rx_Error);
         
         case YMODEM_RX_EXIT:
-            YModem_Obj_DeInit((YModem_Handle)Obj);
             if (Obj->done_cb)
                 Obj->done_cb(NULL, YModem_Rx_Done);
+            YModem_Obj_DeInit((YModem_Handle)Obj);
             break;
 
         default: break;
