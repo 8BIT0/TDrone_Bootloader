@@ -18,7 +18,6 @@
 static BspUARTObj_TypeDef *BspUart_Obj_List[Bsp_UART_Port_Sum] = {NULL};
 
 /* internal function */
-static bool BsPUart_DeInit_DMA(BspUARTObj_TypeDef *obj);
 
 /* external function */
 static bool BspUart_Init(BspUARTObj_TypeDef *obj);
@@ -200,24 +199,6 @@ static int BspUart_Init_DMA(BspUARTObj_TypeDef *obj)
     return index;
 }
 
-static bool BsPUart_DeInit_DMA(BspUARTObj_TypeDef *obj)
-{
-    if (obj == NULL)
-        return false;
-
-    if (obj->tx_dma_hdl)
-    {
-
-    }
-
-    if (obj->rx_dma_hdl)
-    {
-
-    }
-
-    return true;
-}
-
 static int BspUart_SetIRQ(BspUARTObj_TypeDef *obj)
 {
     IRQn_Type irqn;
@@ -344,9 +325,25 @@ static bool BspUart_DeInit(BspUARTObj_TypeDef *obj)
     if ((obj == NULL) || !obj->init_state || (obj->hdl == NULL))
         return false;
     
-    BsPUart_DeInit_DMA(obj);
+    HAL_UART_DeInit(To_Uart_Handle_Ptr(obj->hdl));
+    if (obj->irq_type == BspUart_IRQ_Type_Idle)
+    {
+        HAL_UART_DMAStop(To_Uart_Handle_Ptr(obj->hdl));
+        __HAL_UART_DISABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_IDLE);
+    }
+    else if (obj->irq_type == BspUart_IRQ_Type_Byte)
+    {
+        HAL_UART_AbortReceive_IT(To_Uart_Handle_Ptr(obj->hdl));
+        __HAL_UART_DISABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_RXNE | UART_IT_ORE);
+    }
 
-    return false;
+    if (obj->tx_dma_hdl)
+        BspDMA.de_init(obj->tx_dma, obj->tx_stream, obj->tx_dma_hdl);
+
+    if (obj->rx_dma_hdl)
+        BspDMA.de_init(obj->rx_dma, obj->rx_stream, obj->rx_dma_hdl);
+
+    return true;
 }
 
 static bool BspUart_Set_DataBit(BspUARTObj_TypeDef *obj, uint32_t bit)

@@ -11,12 +11,10 @@ extern "C" {
 
 typedef struct
 {
+    bool (*de_init)(int8_t dma, int8_t stream, void *obj);
     bool (*regist)(int8_t dma, int8_t stream, void *obj);
     bool (*unregist)(int8_t dma, int8_t stream);
     void *(*get_handle)(int8_t dma, int8_t stream);
-#if defined AT32F435_437
-    void *(*get_channel_instance)(int8_t dma, int8_t stream);
-#endif
     void *(*get_instance)(int8_t dma, int8_t stream);
     void (*enable_irq)(int8_t dma, int8_t stream, uint32_t preempt, uint32_t sub, uint32_t mux_seq, void *arg);
     bool (*disable_irq)(int8_t dma, int8_t stream);

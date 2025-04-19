@@ -29,8 +29,10 @@ static const DMA_Stream_TypeDef* BspDMA2_Instance_List[Bsp_DMA_Stream_Sum] = {
     DMA2_Stream7};
 
 /* internal function */
+static IRQn_Type BspDMA_Get_IrqType(BspDMA_List dma, BspDMA_Stream_List stream);
 
 /* external function */
+static void BspDMA_DeInit(BspDMA_List dma, BspDMA_Stream_List stream, DMA_HandleTypeDef *hdl);
 static bool BspDMA_Regist_Obj(BspDMA_List dma, BspDMA_Stream_List stream, DMA_HandleTypeDef *hdl);
 static bool BspDMA_Unregist_Obj(BspDMA_List dma, BspDMA_Stream_List stream);
 static void *BspDMA_Get_Handle(BspDMA_List dma, BspDMA_Stream_List stream);
@@ -38,11 +40,12 @@ static void *BspDMA_Get_Instance(BspDMA_List dma, BspDMA_Stream_List stream);
 static void BspDMA_EnableIRQ(BspDMA_List dma, BspDMA_Stream_List stream, uint32_t preempt, uint32_t sub, uint32_t mux_seq, void *cb);
 
 BspDMA_TypeDef BspDMA = {
-    .regist = BspDMA_Regist_Obj,
-    .unregist = BspDMA_Unregist_Obj,
-    .get_handle = BspDMA_Get_Handle,
-    .get_instance = BspDMA_Get_Instance,
-    .enable_irq = BspDMA_EnableIRQ,
+    .de_init      = (bool (*)(int8_t, int8_t, void *))BspDMA_DeInit,
+    .regist       = (bool (*)(int8_t, int8_t, void *))BspDMA_Regist_Obj,
+    .unregist     = (bool (*)(int8_t, int8_t))BspDMA_Unregist_Obj,
+    .get_handle   = (void *(*)(int8_t, int8_t))BspDMA_Get_Handle,
+    .get_instance = (void *(*)(int8_t, int8_t))BspDMA_Get_Instance,
+    .enable_irq   = (void (*)(int8_t, int8_t, uint32_t, uint32_t, uint32_t, void *))BspDMA_EnableIRQ,
 };
 
 /* pipe external function */
@@ -87,6 +90,23 @@ static void *BspDMA_Get_Instance(BspDMA_List dma, BspDMA_Stream_List stream)
     }
 
     return NULL;
+}
+
+static void BspDMA_DeInit(BspDMA_List dma, BspDMA_Stream_List stream, DMA_HandleTypeDef *hdl)
+{
+    if ((hdl == NULL) || \
+        (dma < Bsp_DMA_1) || \
+        (dma > Bsp_DMA_2) || \
+        (stream < Bsp_DMA_Stream_0) || \
+        (stream > Bsp_DMA_Stream_7))
+        return;
+
+    HAL_DMA_DeInit(hdl);
+    IRQn_Type irq = BspDMA_Get_IrqType(dma, stream);
+    if (irq < 0)
+        return;
+
+    HAL_NVIC_DisableIRQ(irq);
 }
 
 static bool BspDMA_Regist_Obj(BspDMA_List dma, BspDMA_Stream_List stream, DMA_HandleTypeDef *hdl)
@@ -145,96 +165,52 @@ static void BspDMA_EnableIRQ(BspDMA_List dma, BspDMA_Stream_List stream, uint32_
     UNUSED(mux_seq);
     UNUSED(cb);
 
-    IRQn_Type irq;
-
-    if ((dma < Bsp_DMA_1) || (stream < Bsp_DMA_Stream_0))
+    IRQn_Type irq = BspDMA_Get_IrqType(dma, stream);
+    if (irq < 0)
         return;
+
+    HAL_NVIC_SetPriority(irq, preempt, sub);
+    HAL_NVIC_EnableIRQ(irq);
+}
+
+static IRQn_Type BspDMA_Get_IrqType(BspDMA_List dma, BspDMA_Stream_List stream)
+{
+    if ((dma < Bsp_DMA_1) || (stream < Bsp_DMA_Stream_0))
+        return -1;
 
     if (dma == Bsp_DMA_1)
     {
         switch (stream)
         {
-        case Bsp_DMA_Stream_0:
-            irq = DMA1_Stream0_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_1:
-            irq = DMA1_Stream1_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_2:
-            irq = DMA1_Stream2_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_3:
-            irq = DMA1_Stream3_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_4:
-            irq = DMA1_Stream4_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_5:
-            irq = DMA1_Stream5_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_6:
-            irq = DMA1_Stream6_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_7:
-            irq = DMA1_Stream7_IRQn;
-            break;
-
-        default:
-            return;
+        case Bsp_DMA_Stream_0: return DMA1_Stream0_IRQn;
+        case Bsp_DMA_Stream_1: return DMA1_Stream1_IRQn;
+        case Bsp_DMA_Stream_2: return DMA1_Stream2_IRQn;
+        case Bsp_DMA_Stream_3: return DMA1_Stream3_IRQn;
+        case Bsp_DMA_Stream_4: return DMA1_Stream4_IRQn;
+        case Bsp_DMA_Stream_5: return DMA1_Stream5_IRQn;
+        case Bsp_DMA_Stream_6: return DMA1_Stream6_IRQn;
+        case Bsp_DMA_Stream_7: return DMA1_Stream7_IRQn;
+        default: return -1;
         }
     }
-    else if (dma == Bsp_DMA_2)
+    
+    if (dma == Bsp_DMA_2)
     {
         switch (stream)
         {
-        case Bsp_DMA_Stream_0:
-            irq = DMA2_Stream0_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_1:
-            irq = DMA2_Stream1_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_2:
-            irq = DMA2_Stream2_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_3:
-            irq = DMA2_Stream3_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_4:
-            irq = DMA2_Stream4_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_5:
-            irq = DMA2_Stream5_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_6:
-            irq = DMA2_Stream6_IRQn;
-            break;
-
-        case Bsp_DMA_Stream_7:
-            irq = DMA2_Stream7_IRQn;
-            break;
-
-        default:
-            return;
+            case Bsp_DMA_Stream_0: return DMA2_Stream0_IRQn;
+            case Bsp_DMA_Stream_1: return DMA2_Stream1_IRQn;
+            case Bsp_DMA_Stream_2: return DMA2_Stream2_IRQn;
+            case Bsp_DMA_Stream_3: return DMA2_Stream3_IRQn;
+            case Bsp_DMA_Stream_4: return DMA2_Stream4_IRQn;
+            case Bsp_DMA_Stream_5: return DMA2_Stream5_IRQn;
+            case Bsp_DMA_Stream_6: return DMA2_Stream6_IRQn;
+            case Bsp_DMA_Stream_7: return DMA2_Stream7_IRQn;
+            default: return -1;
         }
     }
-    else
-        return;
 
-    HAL_NVIC_SetPriority(irq, preempt, sub);
-    HAL_NVIC_EnableIRQ(irq);
+    return -1;
 }
 
 static bool BspDMA_Pipe_Init(BspDMA_Pipe_TransFin_Cb fin_cb, BspDMA_Pipe_TransErr_Cb err_cb)
