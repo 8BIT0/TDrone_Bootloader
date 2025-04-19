@@ -166,9 +166,7 @@ static void SrvUpgrade_JumpToApp(void)
 
 static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_t size)
 {
-    if (!SrvUpgradeObj.init_state || \
-        (SrvUpgradeObj.send == NULL) || \
-        (p_data == NULL) || (size == 0))
+    if (!SrvUpgradeObj.init_state || (SrvUpgradeObj.send == NULL))
         return false;
 
 #if (CODE_TYPE == ON_BOOT)

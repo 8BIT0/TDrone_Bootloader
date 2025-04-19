@@ -90,7 +90,6 @@ static bool SrvComTrans_Init(SrvComObj_TypeDef *obj)
     state &= BspUart.init(To_BspUart_ObjPtr(obj->port_obj));
     state &= Queue.create_auto(&obj->rec_Q, "ComRecv", SRV_COM_QUEUE_SIZE);
 
-
     osSemaphoreDef(ComTx);
     obj->Tx_Irq_Sem = osSemaphoreCreate(osSemaphore(ComTx), 1);
 
@@ -224,15 +223,15 @@ static uint16_t SrvComTrans_DataAvailable(SrvComObj_TypeDef obj)
 
 static bool SrvComTrans_Write(SrvComObj_TypeDef *obj, uint8_t *p_data, uint16_t len)
 {
+    bool state = true;
+
     if ((obj == NULL) || !obj->init_state || (p_data == NULL) || (len == 0))
         return false;
 
-    osSemaphoreWait(obj->Tx_Irq_Sem, 0);
-    if (!BspUart.send(To_BspUart_ObjPtr(obj->port_obj), p_data, len) || \
-        osSemaphoreWait(obj->Tx_Irq_Sem, SRV_COM_TX_TIMEOUT))
-        return false;
+    state &= BspUart.send(To_BspUart_ObjPtr(obj->port_obj), p_data, len);
+    state &= (osSemaphoreWait(obj->Tx_Irq_Sem, SRV_COM_TX_TIMEOUT) == osOK) ? true : false;
 
-    return true;
+    return state;
 }
 
 static uint16_t SrvComTrans_GetRecData(SrvComObj_TypeDef *obj, uint8_t *p_data, uint16_t len)

@@ -178,9 +178,6 @@ static void YModem_SendByte(YModemObj_TypeDef *obj, uint8_t byte)
 /******************************************************** receive section ****************************************************/
 static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
 {
-    if (Obj == NULL)
-        return;
-
     switch (YModem_Rx_Pack_Check(buf, size))
     {
         case SOH:
@@ -288,9 +285,6 @@ static void YModem_Check_Exit(YModemObj_TypeDef *Obj)
 static void YModem_Rx(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size)
 {
     YModemObj_TypeDef *Obj = To_YModem_Obj(YM_hdl);
-
-    if (Obj == NULL)
-        return;
 
     if (size == 0)
     {

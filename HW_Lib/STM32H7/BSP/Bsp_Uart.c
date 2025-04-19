@@ -421,17 +421,10 @@ static bool BspUart_Transfer(BspUARTObj_TypeDef *obj, uint8_t *tx_buf, uint16_t 
     if ((obj == NULL) || (tx_buf == NULL) || (size == 0))
         return false;
 
-    /* last pack still in transmitting */
-    if(obj->monitor.tx_success_cnt != obj->monitor.tx_cnt)
-        return false;
-
     if (obj->tx_dma_hdl)
     {
-        if (obj->tx_buf)
-            memcpy(obj->tx_buf, tx_buf, size);
-
         /* send data */
-        switch (HAL_UART_Transmit_DMA(To_Uart_Handle_Ptr(obj->hdl), obj->tx_buf, size))
+        switch (HAL_UART_Transmit_DMA(To_Uart_Handle_Ptr(obj->hdl), tx_buf, size))
         {
             case HAL_OK:
                 obj->monitor.tx_cnt++;
