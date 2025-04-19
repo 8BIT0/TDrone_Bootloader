@@ -349,8 +349,7 @@ static void YModem_Rx(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size)
 
 
 
-// //**********************************************************************发送部分
-// //pbuf 是指向缓冲区的最开始的地方， pac_sz 是数据区的大小
+/******************************************************** Transmit section ****************************************************/
 // uint8 ymodem_tx_make_pac_data( char *pbuf, size_t pac_sz )
 // {
 //   uint8 ans = YMODEM_ERR;

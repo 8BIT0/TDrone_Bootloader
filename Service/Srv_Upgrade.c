@@ -23,6 +23,7 @@ typedef struct
     uint8_t sw_ver[3];
     uint32_t firmware_size;
     uint32_t firmware_max_size;
+    uint16_t pack_cnt;
     bool init_state;
     SrvUpgrade_Mode_TypeDef mode;
     uint32_t rec_cnt;
@@ -145,16 +146,24 @@ static void SrvUpgrade_Check_ForceMode_Enable(void *arg)
 
 static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t p_data, uint16_t size)
 {
-
+    SrvUpgradeObj.pack_cnt = 0;
 }
 
 static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t p_data, uint16_t size)
 {
     /* update pack into ram */
+    SrvUpgradeObj.pack_cnt ++;
 }
 
 static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
 {
+    SrvUpgradeObj.pack_cnt = 0;
+
+    if (code == YModem_Rx_Error)
+    {
+
+    }
+
     if (code == YModem_Rx_Done)
     {
         SrvUpgradeObj.YM_hdl = 0;
