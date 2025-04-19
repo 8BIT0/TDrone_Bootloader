@@ -38,7 +38,7 @@ static SrvUpgradeObj_TypeDef SrvUpgradeObj;
 static bool SrvUpgrade_Load_Firmware(void);
 #if (CODE_TYPE == ON_BOOT)
 static void SrvUpgrade_Check_ForceMode_Enable(void);
-static void SrvUpgrade_JumpToApp(void);
+static void SrvUpgrade_JumpToAddr(void);
 #endif
 
 /* external function */
@@ -50,7 +50,7 @@ SrvUpgrade_TypeDef SrvUpgrade = {
     .init = SrvUpgrade_Init,
     .DealRec = SrvUpgrade_DealRec,
 #if (CODE_TYPE == ON_BOOT)
-   .JumpToApp = SrvUpgrade_JumpToApp,
+   .JumpToApp = SrvUpgrade_JumpToAddr,
 #endif
 };
 
