@@ -59,6 +59,7 @@ typedef struct
                           trans_callback trans_cb, rec_start_callback rec_start_cb, \
                           rec_done_callback rec_done_cb, rec_pack_callback rec_pck_cb);
     void (*Rx)(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size);
+    void (*Tx)(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size);
 } YModem_TypeDef;
 
 extern YModem_TypeDef YModem;
