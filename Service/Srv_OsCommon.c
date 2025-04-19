@@ -183,11 +183,12 @@ static void SrvOsCommon_JumpToAddr(uint32_t addr)
         ((addr & 0xFF000000) != (uint32_t)&__rom_s))
         return;
 
-    /* disable all irq before jump */
-    SrvOsCommon.disable_all_irq();
-
     jump_addr = *(volatile uint32_t *)(addr + 4);
     __set_MSP(*(volatile uint32_t *)addr);
+    
+    /* disable all irq before jump */
+    SrvOsCommon.disable_all_irq();
+    
     ((Application_Func)jump_addr)();
 }
 

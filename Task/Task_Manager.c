@@ -79,6 +79,7 @@ static void Bootloader_Check(uint32_t sys_time)
         SYS_INFO("Bootloader exit", "Jump to APP");
 
         /* deinit pin and port */
+        SrvCom.de_init(&SrvComObj);
 
         SrvOsCommon.delay_ms(10);
 
