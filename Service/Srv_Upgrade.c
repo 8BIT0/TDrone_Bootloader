@@ -38,7 +38,7 @@ static SrvUpgradeObj_TypeDef SrvUpgradeObj;
 /* internanl function */
 #if (CODE_TYPE == ON_BOOT)
 static bool SrvUpgrade_Load_Firmware(void);
-static void SrvUpgrade_Check_ForceMode_Enable(void);
+static void SrvUpgrade_Check_ForceMode_Enable(void *arg);
 #endif
 
 /* external function */
@@ -91,7 +91,7 @@ static bool SrvUpgrade_Load_Firmware(void)
 }
 
 /* if in boot mode check force code input */
-static void SrvUpgrade_Check_ForceMode_Enable(void)
+static void SrvUpgrade_Check_ForceMode_Enable(void *arg)
 {
     uint16_t q_size = 0;
     uint8_t q_data = 0;
@@ -109,7 +109,7 @@ static void SrvUpgrade_Check_ForceMode_Enable(void)
 
             if (!Queue.peek(&SrvUpgradeObj.p_queue, 0, &q_data, 1))
                 break;
-
+            
             if (q_data != FORCE_MODE_CODE[0])
             {
                 Queue.pop(&SrvUpgradeObj.p_queue, &q_data, 1);
@@ -129,11 +129,13 @@ static void SrvUpgrade_Check_ForceMode_Enable(void)
                     if (q_data != FORCE_MODE_CODE[i])
                         break;
                     
-                   SrvUpgradeObj.mode = Upgrade_Force_Mode;
+                    SrvUpgradeObj.mode = Upgrade_Force_Mode;
                 }
             }
         }
-
+        
+        if (SrvUpgradeObj.mode == Upgrade_Force_Mode)
+            SrvCom.write(arg, (uint8_t *)"\r\nswitch to force mode\r\n", strlen("\r\nswitch to force mode\r\n"));
         SrvUpgradeObj.queue_inuse = false;
     }
 }
@@ -166,7 +168,10 @@ static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_
 
 #if (CODE_TYPE == ON_BOOT)
     if (SrvUpgradeObj.mode != Upgrade_Force_Mode)
+    {
+        SrvCom.write(com_obj, p_data, size);
         return false;
+    }
 #endif
 
     /* Create YMdoem object */
@@ -193,7 +198,7 @@ static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size)
 
 #if (CODE_TYPE == ON_BOOT)
     /* if in boot mode check force code input */
-    SrvUpgrade_Check_ForceMode_Enable();
+    SrvUpgrade_Check_ForceMode_Enable(com_obj);
 #endif
 
     SrvUpgrade_Firmware_Download(com_obj, p_data, size);
