@@ -36,8 +36,8 @@ typedef struct
 static SrvUpgradeObj_TypeDef SrvUpgradeObj;
 
 /* internanl function */
-static bool SrvUpgrade_Load_Firmware(void);
 #if (CODE_TYPE == ON_BOOT)
+static bool SrvUpgrade_Load_Firmware(void);
 static void SrvUpgrade_Check_ForceMode_Enable(void);
 #endif
 
