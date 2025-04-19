@@ -23,6 +23,7 @@
         "stm32h7xx_hal_def.h": "c",
         "fchw_config.h": "c",
         "debug_util.h": "c",
-        "bsp_usb.h": "c"
+        "bsp_usb.h": "c",
+        "kernel.h": "c"
     }
 }

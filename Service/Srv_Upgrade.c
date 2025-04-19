@@ -6,7 +6,6 @@
 #include "YModem.h"
 #include "../common/util.h"
 #include "CusQueue.h"
-#include "../FCHW_Config.h"
 
 #define UPGRADE_QUEUE_SIZE  (2 Kb)
 
@@ -50,6 +49,9 @@ static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size);
 SrvUpgrade_TypeDef SrvUpgrade = {
     .init = SrvUpgrade_Init,
     .DealRec = SrvUpgrade_DealRec,
+#if (CODE_TYPE == ON_BOOT)
+   .JumpToApp = SrvUpgrade_JumpToApp,
+#endif
 };
 
 static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
@@ -139,6 +141,17 @@ static void SrvUpgrade_Check_ForceMode_Enable(void)
     }
 }
 
+static void SrvUpgrade_JumpToAddr(void)
+{
+    uint32_t app_addr = *(volatile uint32_t *)(App_Address_Base + 4);
+    void (*app_entry)(void) = (void (*)(void))app_addr;
+    
+    __set_MSP(*(volatile uint32_t *)App_Address_Base);
+    SrvOsCommon.disable_all_irq();
+    app_entry();
+}
+#endif
+
 static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t p_data, uint16_t size)
 {
 
@@ -159,11 +172,6 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
     }
 }
 
-static void SrvUpgrade_JumpToApp(void)
-{
-}
-#endif
-
 static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_t size)
 {
     if (!SrvUpgradeObj.init_state || (SrvUpgradeObj.send == NULL))
@@ -172,6 +180,7 @@ static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_
 #if (CODE_TYPE == ON_BOOT)
     if (SrvUpgradeObj.mode != Upgrade_Force_Mode)
         return false;
+#endif
 
     /* Create YMdoem object */
     if (SrvUpgradeObj.YM_hdl == 0)
@@ -181,7 +190,6 @@ static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_
                                            NULL, SrvUpgrade_Firmware_Rec_Done, NULL);
     
     YModem.Rx(SrvUpgradeObj.YM_hdl, p_data, size);
-#endif
 
     return true;
 }
