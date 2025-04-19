@@ -68,8 +68,8 @@ MEMORY
 DTCMRAM (xrw)           : ORIGIN = 0x20000000,              LENGTH = 128K
 RAM_D1 (xrw)            : ORIGIN = 0x24000000,              LENGTH = 480K
 RAM_D1_Perph_Part(xrw)  : ORIGIN = 0x24078000,              LENGTH = 32K
-SDRAM_OS_Part (xrw)     : ORIGIN = 0xC0000000,              LENGTH = 2M
-SDRAM_SEC1 (xrw)        : ORIGIN = 0xC0200000,              LENGTH = 6M
+SDRAM_OS_Part (xrw)     : ORIGIN = 0xC0000000,              LENGTH = 4M
+SDRAM_SEC1 (xrw)        : ORIGIN = 0xC0400000,              LENGTH = 4M
 SDRAM_SEC2 (xrw)        : ORIGIN = 0xC0800000,              LENGTH = 8M
 SDRAM_SEC3 (xrw)        : ORIGIN = 0xD0000000,              LENGTH = 16M
 RAM_D2 (xrw)            : ORIGIN = 0x30000000,              LENGTH = 288K   

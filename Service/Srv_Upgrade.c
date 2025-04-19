@@ -22,7 +22,7 @@ typedef struct
     bool upgrade_on_bootup;
     uint8_t sw_ver[3];
     uint32_t firmware_size;
-    uint32_t firmware_max_size;
+    uint8_t *firmware_buf;
     uint16_t pack_cnt;
     bool init_state;
     SrvUpgrade_Mode_TypeDef mode;
@@ -59,7 +59,9 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
     SrvUpgradeObj.init_state = false;
     SrvUpgradeObj.upgrade_on_bootup = false;
     SrvUpgradeObj.mode = Upgrade_Normal_Mode;
-    SrvUpgradeObj.firmware_max_size = App_Section_Size;
+    SrvUpgradeObj.firmware_buf = SrvOsCommon.malloc(App_Section_Size);
+    if (SrvUpgradeObj.firmware_buf == NULL)
+        return false;
 
     /* init queue */
     if (!Queue.create_auto(&SrvUpgradeObj.p_queue, "Upgrade_Queue", UPGRADE_QUEUE_SIZE))
