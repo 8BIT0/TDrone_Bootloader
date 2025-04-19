@@ -6,6 +6,7 @@
 #include "YModem.h"
 #include "../common/util.h"
 #include "CusQueue.h"
+#include "../FCHW_Config.h"
 
 #define UPGRADE_QUEUE_SIZE  (2 Kb)
 
@@ -38,7 +39,6 @@ static SrvUpgradeObj_TypeDef SrvUpgradeObj;
 static bool SrvUpgrade_Load_Firmware(void);
 #if (CODE_TYPE == ON_BOOT)
 static void SrvUpgrade_Check_ForceMode_Enable(void);
-static void SrvUpgrade_JumpToAddr(void);
 #endif
 
 /* external function */
@@ -49,9 +49,6 @@ static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size);
 SrvUpgrade_TypeDef SrvUpgrade = {
     .init = SrvUpgrade_Init,
     .DealRec = SrvUpgrade_DealRec,
-#if (CODE_TYPE == ON_BOOT)
-   .JumpToApp = SrvUpgrade_JumpToAddr,
-#endif
 };
 
 static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
@@ -139,16 +136,6 @@ static void SrvUpgrade_Check_ForceMode_Enable(void)
 
         SrvUpgradeObj.queue_inuse = false;
     }
-}
-
-static void SrvUpgrade_JumpToAddr(void)
-{
-    uint32_t app_addr = *(volatile uint32_t *)(App_Address_Base + 4);
-    void (*app_entry)(void) = (void (*)(void))app_addr;
-    
-    __set_MSP(*(volatile uint32_t *)App_Address_Base);
-    SrvOsCommon.disable_all_irq();
-    app_entry();
 }
 #endif
 

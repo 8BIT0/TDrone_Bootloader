@@ -73,17 +73,19 @@ static void Bootloader_Check(uint32_t sys_time)
     uint16_t rec_size = 0;
 
     /* nothing receive when 100ms when power on */
-    // if (sys_time >= time_out_tick)
-    // {
-    //     SYS_INFO("Wait Firmware", "Time Out");
-    //     SYS_INFO("Bootloader exit", "Jump to APP");
+    if (sys_time >= time_out_tick)
+    {
+        SYS_INFO("Wait Firmware", "Time Out");
+        SYS_INFO("Bootloader exit", "Jump to APP");
 
-    //     SrvOsCommon.delay_ms(10);
+        /* deinit pin and port */
 
-    //     /* jump to app */
-    //     // SrvOsCommon.jump_to_addr();
-    // }
-    // else
+        SrvOsCommon.delay_ms(10);
+
+        /* jump to app */
+        SrvOsCommon.jump_to_addr(App_Address_Base);
+    }
+    else
     {
         /* check com port received size */
         if (SrvCom.available)

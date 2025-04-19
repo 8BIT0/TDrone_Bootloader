@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../FCHW_Config.h"
 
 typedef void (*SrvUpgrade_Send_Callback)(uint8_t *p_data, uint16_t len);
 
@@ -34,9 +33,6 @@ typedef enum
 typedef struct
 {
     bool (*init)(SrvUpgrade_Send_Callback tx_cb);
-#if (CODE_TYPE == ON_BOOT)
-    void (*JumpToApp)(void);
-#endif
     void (*DealRec)(void *com_obj, uint8_t *p_data, uint16_t size);
 } SrvUpgrade_TypeDef;
 
