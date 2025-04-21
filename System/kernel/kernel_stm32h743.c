@@ -270,6 +270,9 @@ void Kernel_BaseTick_DeInit(void)
 {
     HAL_TIM_Base_Stop_IT(&htim17);
     HAL_TIM_Base_Stop_IT(&htim16);
+  	
+	HAL_NVIC_DisableIRQ(TIM17_IRQn);
+	HAL_NVIC_DisableIRQ(TIM16_IRQn);
 
     HAL_TIM_Base_DeInit(&htim17);
     HAL_TIM_Base_DeInit(&htim16);
