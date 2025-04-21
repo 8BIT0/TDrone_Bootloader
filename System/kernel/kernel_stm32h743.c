@@ -21,9 +21,7 @@ bool Kernel_TickTimer_Init = false;
 static bool KernelClock_Init(void);
 bool Kernel_BaseTick_Init(void);
 bool Kernel_Sys_BaseTick_Init(void);
-#if (SDRAM_EN == ON)
 void Kernel_MPU_Config(void);
-#endif
 
 bool Kernel_Init(void)
 {
@@ -33,7 +31,7 @@ bool Kernel_Init(void)
 
     HAL_Init();
 
-    return Kernel_BaseTick_Init() & KernelClock_Init() & Kernel_Sys_BaseTick_Init();
+    return KernelClock_Init() & Kernel_BaseTick_Init() & Kernel_Sys_BaseTick_Init();
 }
 
 void Kernel_MPU_Config(void)
