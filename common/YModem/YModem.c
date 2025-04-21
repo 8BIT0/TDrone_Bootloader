@@ -138,7 +138,6 @@ static YModem_Handle YModem_Obj_Init(void *port_obj, malloc_callback malloc_cb, 
 
     obj->pck_cnt = 0;
     obj->pck_size = 0;
-    obj->seek = 0;
     obj->rx_status = YMODEM_RX_IDLE;
 
     return (YModem_Handle)obj;
@@ -194,7 +193,6 @@ static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size
                     YModem_SendByte(Obj, ACK);
                     YModem_SendByte(Obj, 'C');
                     
-                    Obj->seek = 0;
                     Obj->rx_status = YMODEM_RX_ACK;
                     return;
                 }
@@ -221,9 +219,8 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
             Obj->pck_size = ((buf[0] == SOH) ? YMODEM_DATA_SIZE_128 : YMODEM_DATA_SIZE_1024);
 
             if (Obj->rec_pck_cb)
-                Obj->rec_pck_cb(&buf[PACKET_HEADER], Obj->seek, Obj->pck_size);
+                Obj->rec_pck_cb(NULL, &buf[PACKET_HEADER], Obj->pck_size);
 
-            Obj->seek += Obj->pck_size;
             YModem_SendByte(Obj, 'C');
         break;
 

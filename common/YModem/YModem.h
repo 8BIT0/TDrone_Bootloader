@@ -13,7 +13,7 @@ typedef uint32_t YModem_Handle;
 
 typedef void (*trans_callback)(void *port_arg, uint8_t *p_data, uint16_t size);
 typedef void (*rec_start_callback)(void *arg, uint8_t p_data, uint16_t size);
-typedef void (*rec_pack_callback)(void *arg, uint8_t p_data, uint16_t size);
+typedef void (*rec_pack_callback)(void *arg, uint8_t *p_data, uint16_t size);
 typedef void (*rec_done_callback)(void *arg, uint8_t code);
 typedef void* (*malloc_callback)(uint32_t size);
 typedef void (*free_callback)(void *ptr);
@@ -35,7 +35,6 @@ typedef struct
     uint8_t rx_status;
     void *port_obj;
     void *cus_obj;
-    uint32_t seek;
     
     malloc_callback malloc_cb;
     free_callback free_cb;
