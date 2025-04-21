@@ -1,6 +1,5 @@
 #include "Srv_Upgrade.h"
 #include "Srv_OsCommon.h"
-#include "Srv_ComTrans.h"
 #include "Bsp_Flash.h"
 // #include "Storage.h"
 #include "YModem.h"
@@ -12,7 +11,10 @@
 
 #define PARA_TYPE           Para_Sys
 #define PARA_NAME           "Upgrade_Info"
+
+#if (CODE_TYPE == ON_BOOT)
 #define FORCE_MODE_CODE     "Force_Mode"
+#endif
 
 /* internal function */
 
@@ -140,7 +142,7 @@ static void SrvUpgrade_Check_ForceMode_Enable(void *arg)
         }
         
         if (SrvUpgradeObj.mode == Upgrade_Force_Mode)
-            SrvCom.write(arg, (uint8_t *)"\r\nswitch to force mode\r\n", strlen("\r\nswitch to force mode\r\n"));
+            SrvUpgradeObj.send(arg, (uint8_t *)"\r\nswitch to force mode\r\n", strlen("\r\nswitch to force mode\r\n"));
         SrvUpgradeObj.queue_inuse = false;
     }
 }
@@ -182,7 +184,7 @@ static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_
 #if (CODE_TYPE == ON_BOOT)
     if (SrvUpgradeObj.mode != Upgrade_Force_Mode)
     {
-        SrvCom.write(com_obj, p_data, size);
+        SrvUpgradeObj.send(com_obj, p_data, size);
         return false;
     }
 #endif
@@ -190,7 +192,7 @@ static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_
     /* Create YMdoem object */
     if (SrvUpgradeObj.YM_hdl == 0)
         SrvUpgradeObj.YM_hdl = YModem.Init(com_obj, SrvOsCommon.malloc, SrvOsCommon.free, \
-                                           (trans_callback)SrvCom.write, \
+                                           SrvUpgradeObj.send, \
                                            NULL, SrvUpgrade_Firmware_Rec_Done, NULL);
     
     YModem.Rx(SrvUpgradeObj.YM_hdl, p_data, size);

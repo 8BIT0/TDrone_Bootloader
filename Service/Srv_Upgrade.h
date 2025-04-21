@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-typedef void (*SrvUpgrade_Send_Callback)(uint8_t *p_data, uint16_t len);
+typedef void (*SrvUpgrade_Send_Callback)(void *port_obj, uint8_t *p_data, uint16_t len);
 
 #pragma pack(1)
 typedef struct
