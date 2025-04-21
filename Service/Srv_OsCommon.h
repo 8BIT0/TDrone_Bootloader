@@ -26,6 +26,7 @@ typedef struct
     bool (*set_systimer_period)(uint32_t period);
     bool (*systimer_disable)(void);
     bool (*systimer_enable)(void);
+    void (*systimer_deinit)(void);
 
     void *(*malloc)(uint32_t size);
     void (*free)(void *ptr);

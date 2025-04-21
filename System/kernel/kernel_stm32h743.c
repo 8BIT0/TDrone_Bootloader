@@ -19,8 +19,8 @@ TIM_HandleTypeDef htim16;
 bool Kernel_TickTimer_Init = false;
 
 static bool KernelClock_Init(void);
-bool HAL_BaseTick_Init(void);
 bool Kernel_BaseTick_Init(void);
+bool Kernel_Sys_BaseTick_Init(void);
 #if (SDRAM_EN == ON)
 void Kernel_MPU_Config(void);
 #endif
@@ -33,7 +33,7 @@ bool Kernel_Init(void)
 
     HAL_Init();
 
-    return HAL_BaseTick_Init() & KernelClock_Init() & Kernel_BaseTick_Init();
+    return Kernel_BaseTick_Init() & KernelClock_Init() & Kernel_Sys_BaseTick_Init();
 }
 
 void Kernel_MPU_Config(void)
@@ -133,7 +133,7 @@ static bool KernelClock_Init(void)
     return true;
 }
 
-bool Kernel_BaseTick_Init(void)
+bool Kernel_Sys_BaseTick_Init(void)
 {
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
@@ -268,7 +268,16 @@ bool Kernel_Set_SysTimer_TickUnit(uint32_t unit)
   return false;
 }
 
-bool HAL_BaseTick_Init(void)
+void Kernel_BaseTick_DeInit(void)
+{
+    HAL_TIM_Base_Stop_IT(&htim17);
+    HAL_TIM_Base_Stop_IT(&htim16);
+
+    HAL_TIM_Base_DeInit(&htim17);
+    HAL_TIM_Base_DeInit(&htim16);
+}
+
+bool Kernel_BaseTick_Init(void)
 {
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};

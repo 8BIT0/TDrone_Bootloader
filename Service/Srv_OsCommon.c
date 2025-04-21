@@ -58,6 +58,7 @@ SrvOsCommon_TypeDef SrvOsCommon = {
     .set_systimer_period = Kernel_Set_PeriodValue,
     .systimer_tick_to_us = Kernel_TickVal_To_Us,
     .systimer_disable = Kernel_DisableTimer_IRQ,
+    .systimer_deinit = Kernel_BaseTick_DeInit,
     .systimer_enable = Kernel_EnableTimer_IRQ,
     .disable_all_irq = __disable_irq,
     .enable_all_irq = __enable_irq,
