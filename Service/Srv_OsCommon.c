@@ -178,8 +178,7 @@ static void SrvOsCommon_JumpToAddr(uint32_t addr)
 {
     uint32_t jump_addr = 0;
 
-    if ((addr <= (uint32_t)&__boot_e) || \
-        ((addr & 0xFF000000) != (uint32_t)&__rom_s))
+    if ((addr < (uint32_t)&__boot_e) || ((addr & 0xFF000000) != (uint32_t)&__rom_s))
         return;
 
     jump_addr = *(volatile uint32_t *)(addr + 4);
