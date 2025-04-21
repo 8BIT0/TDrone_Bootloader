@@ -81,7 +81,7 @@ FLASH_BANK_2 (rx)       : ORIGIN = 0x8100000,               LENGTH = FLASH_SIZE
 }
 
 __sdram_s1_s = ORIGIN(SDRAM_SEC1);
-__sdram_s1_e = __sdram_s1_s + 6M;
+__sdram_s1_e = __sdram_s1_s + 4M;
 __sdram_s2_s = ORIGIN(SDRAM_SEC2);
 __sdram_s2_e = __sdram_s2_s + 8M;
 __sdram_s3_s = ORIGIN(SDRAM_SEC3);

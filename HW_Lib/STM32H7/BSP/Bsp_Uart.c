@@ -22,7 +22,6 @@ static BspUARTObj_TypeDef *BspUart_Obj_List[Bsp_UART_Port_Sum] = {NULL};
 /* external function */
 static bool BspUart_Init(BspUARTObj_TypeDef *obj);
 static bool BspUart_DeInit(BspUARTObj_TypeDef *obj);
-static bool BspUart_DeInit(BspUARTObj_TypeDef *obj);
 static bool BspUart_Set_DataBit(BspUARTObj_TypeDef *obj, uint32_t bit);
 static bool BspUart_Set_Parity(BspUARTObj_TypeDef *obj, uint32_t parity);
 static bool BspUart_Set_StopBit(BspUARTObj_TypeDef *obj, uint32_t stop_bit);
@@ -259,7 +258,6 @@ static bool BspUart_Init(BspUARTObj_TypeDef *obj)
     To_Uart_Handle_Ptr(obj->hdl)->Init.ClockPrescaler = UART_PRESCALER_DIV1;
     To_Uart_Handle_Ptr(obj->hdl)->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
     To_Uart_Handle_Ptr(obj->hdl)->AdvancedInit.OverrunDisable = UART_ADVFEATURE_OVERRUN_DISABLE;
-    To_Uart_Handle_Ptr(obj->hdl)->AdvancedInit.DMADisableonRxError = UART_ADVFEATURE_DMA_DISABLEONRXERROR;
 
     /* swap tx rx pin */
     if (obj->pin_swap)
@@ -292,7 +290,7 @@ static bool BspUart_Init(BspUARTObj_TypeDef *obj)
     switch (obj->irq_type)
     {
         case BspUart_IRQ_Type_Idle: __HAL_UART_ENABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_IDLE); break;
-        case BspUart_IRQ_Type_Byte: __HAL_UART_ENABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_RXNE | UART_IT_ORE); break;
+        case BspUart_IRQ_Type_Byte: __HAL_UART_ENABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_RXNE | UART_IT_ERR | UART_IT_ORE); break;
         default: return false;
     }
 

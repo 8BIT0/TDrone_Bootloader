@@ -28,15 +28,8 @@ typedef enum
     YModem_Rx_Error         = -4,
 } YModem_ErrorCode_TypeDef;
 
-typedef enum
-{
-    YModem_Rx_Pck = 0,
-    YModem_Tx_Pck,
-} YModem_Trans_TypeDef;
-
 typedef struct
 {
-    uint8_t type;
     uint16_t pck_cnt;
     uint16_t pck_size;
     uint8_t rx_status;
@@ -54,8 +47,7 @@ typedef struct
 
 typedef struct
 {
-    YModem_Handle (*Init)(YModem_Trans_TypeDef type, void *port_obj, \
-                          malloc_callback malloc_cb, free_callback free_cb, \
+    YModem_Handle (*Init)(void *port_obj, malloc_callback malloc_cb, free_callback free_cb, \
                           trans_callback trans_cb, rec_start_callback rec_start_cb, \
                           rec_done_callback rec_done_cb, rec_pack_callback rec_pck_cb);
     void (*Rx)(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size);

@@ -189,8 +189,7 @@ static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_
 
     /* Create YMdoem object */
     if (SrvUpgradeObj.YM_hdl == 0)
-        SrvUpgradeObj.YM_hdl = YModem.Init(YModem_Rx_Pck, com_obj, \
-                                           SrvOsCommon.malloc, SrvOsCommon.free, \
+        SrvUpgradeObj.YM_hdl = YModem.Init(com_obj, SrvOsCommon.malloc, SrvOsCommon.free, \
                                            (trans_callback)SrvCom.write, \
                                            NULL, SrvUpgrade_Firmware_Rec_Done, NULL);
     

@@ -39,7 +39,6 @@ static bool SrvOsCommon_Init(void);
 static void SrvOsCommon_JumpToAddr(uint32_t addr);
 
 /* external vriable */
-extern uint32_t __sdram_s1_s;
 uint8_t __attribute__((section(".Os_Section"))) ucHeap[ configTOTAL_HEAP_SIZE ];
 
 SrvOsCommon_TypeDef SrvOsCommon = {
