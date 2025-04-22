@@ -183,8 +183,6 @@ static void SrvOsCommon_JumpToAddr(uint32_t addr)
     if ((addr < (uint32_t)&__boot_e) || ((addr & 0xFF000000) != (uint32_t)&__rom_s))
         return;
 
-    BspSDRAM_DeInit(&OsHeap_Monitor.sdram_obj);
-
     jump_addr = *(volatile uint32_t *)(addr + 4);
     __set_MSP(*(volatile uint32_t *)addr);
     
