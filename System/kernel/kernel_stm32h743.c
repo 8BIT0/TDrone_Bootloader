@@ -244,8 +244,6 @@ bool Kernel_Set_SysTimer_TickUnit(uint32_t unit)
 
 void Kernel_BaseTick_DeInit(void)
 {
-    __HAL_RCC_SYSCFG_CLK_DISABLE();
-
     HAL_TIM_Base_Stop_IT(&htim16);
     HAL_TIM_Base_Stop_IT(&htim17);
 
