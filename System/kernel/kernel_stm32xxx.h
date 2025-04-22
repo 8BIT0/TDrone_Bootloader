@@ -8,7 +8,6 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include "stm32h7xx.h"
 
 #ifdef __cplusplus
 }

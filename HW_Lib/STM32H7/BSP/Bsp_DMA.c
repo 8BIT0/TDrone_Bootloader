@@ -30,6 +30,8 @@ static const DMA_Stream_TypeDef* BspDMA2_Instance_List[Bsp_DMA_Stream_Sum] = {
 
 /* internal function */
 static IRQn_Type BspDMA_Get_IrqType(BspDMA_List dma, BspDMA_Stream_List stream);
+static bool dma1_clk_init = false;
+static bool dma2_clk_init = false;
 
 /* external function */
 static void BspDMA_DeInit(BspDMA_List dma, BspDMA_Stream_List stream, DMA_HandleTypeDef *hdl);
@@ -62,9 +64,6 @@ BspDMA_Pipe_TypeDef BspDMA_Pipe = {
 /* DMA2_Stream7 for DataPipe Use */
 static void *BspDMA_Get_Instance(BspDMA_List dma, BspDMA_Stream_List stream)
 {
-    static bool dma1_clk_init = false;
-    static bool dma2_clk_init = false;
-
     if ((dma < Bsp_DMA_1) || (stream < Bsp_DMA_Stream_0))
         return NULL;
 
@@ -100,6 +99,17 @@ static void BspDMA_DeInit(BspDMA_List dma, BspDMA_Stream_List stream, DMA_Handle
         (stream < Bsp_DMA_Stream_0) || \
         (stream > Bsp_DMA_Stream_7))
         return;
+
+    if (dma1_clk_init)
+    {
+        __HAL_RCC_DMA1_CLK_DISABLE();
+        dma1_clk_init = false;
+    }
+    else if (dma2_clk_init)
+    {
+        __HAL_RCC_DMA2_CLK_DISABLE();
+        dma2_clk_init = false;
+    }
 
     HAL_DMA_DeInit(hdl);
     IRQn_Type irq = BspDMA_Get_IrqType(dma, stream);

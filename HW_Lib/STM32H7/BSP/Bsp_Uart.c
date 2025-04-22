@@ -198,7 +198,7 @@ static int BspUart_Init_DMA(BspUARTObj_TypeDef *obj)
     return index;
 }
 
-static int BspUart_SetIRQ(BspUARTObj_TypeDef *obj)
+static int BspUart_SetIRQ(BspUARTObj_TypeDef *obj, bool state)
 {
     IRQn_Type irqn;
     int8_t index = Bspuart_None_Index;
@@ -230,8 +230,13 @@ static int BspUart_SetIRQ(BspUARTObj_TypeDef *obj)
     else
         return Bspuart_None_Index;
 
-    HAL_NVIC_SetPriority(irqn, 5, 0);
-    HAL_NVIC_EnableIRQ(irqn);
+    if (state)
+    {
+        HAL_NVIC_SetPriority(irqn, 5, 0);
+        HAL_NVIC_EnableIRQ(irqn);
+    }
+    else
+        HAL_NVIC_DisableIRQ(irqn);
 
     return index;
 }
@@ -297,7 +302,7 @@ static bool BspUart_Init(BspUARTObj_TypeDef *obj)
     __HAL_UART_DISABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_ERR);
     __HAL_UART_DISABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_PE);
 
-    if (BspUart_SetIRQ(obj) < 0)
+    if (BspUart_SetIRQ(obj, true) < 0)
         return false;
 
     if (obj->irq_type == BspUart_IRQ_Type_Idle)
@@ -323,7 +328,23 @@ static bool BspUart_DeInit(BspUARTObj_TypeDef *obj)
     if ((obj == NULL) || !obj->init_state || (obj->hdl == NULL))
         return false;
     
-    HAL_UART_DeInit(To_Uart_Handle_Ptr(obj->hdl));
+    if (To_Uart_Handle_Ptr(obj->hdl)->Instance == USART1)
+    {
+        __HAL_RCC_USART1_CLK_DISABLE();
+    }
+    else if (To_Uart_Handle_Ptr(obj->hdl)->Instance == UART4)
+    {
+        __HAL_RCC_UART4_CLK_DISABLE();
+    }
+    else if (To_Uart_Handle_Ptr(obj->hdl)->Instance == USART6)
+    {
+        __HAL_RCC_USART6_CLK_DISABLE();
+    }
+    else if (To_Uart_Handle_Ptr(obj->hdl)->Instance == UART7)
+    {
+        __HAL_RCC_UART7_CLK_DISABLE();
+    }
+    
     if (obj->irq_type == BspUart_IRQ_Type_Idle)
     {
         HAL_UART_DMAStop(To_Uart_Handle_Ptr(obj->hdl));
@@ -334,6 +355,11 @@ static bool BspUart_DeInit(BspUARTObj_TypeDef *obj)
         HAL_UART_AbortReceive_IT(To_Uart_Handle_Ptr(obj->hdl));
         __HAL_UART_DISABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_RXNE | UART_IT_ORE);
     }
+
+    if (BspUart_SetIRQ(obj, false) < 0)
+        return false;
+
+    HAL_UART_DeInit(To_Uart_Handle_Ptr(obj->hdl));
 
     if (obj->tx_dma_hdl)
         BspDMA.de_init(obj->tx_dma, obj->tx_stream, obj->tx_dma_hdl);
