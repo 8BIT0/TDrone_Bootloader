@@ -127,15 +127,6 @@ bool Kernel_Sys_BaseTick_Init(void)
 	if (HAL_TIM_Base_Init(&htim16) != HAL_OK)
 		return false;
 
-	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-	if (HAL_TIM_ConfigClockSource(&htim16, &sClockSourceConfig) != HAL_OK)
-		return false;
-
-	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim16, &sMasterConfig) != HAL_OK)
-		return false;
-
 	if(HAL_TIM_Base_Start_IT(&htim16) != HAL_OK)
 		return false;
 	
@@ -253,7 +244,7 @@ void Kernel_BaseTick_DeInit(void)
 
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 {
-	if(htim_base->Instance == TIM16)
+	if (htim_base->Instance == TIM16)
 	{
 		/* Peripheral clock enable */
 		__HAL_RCC_TIM16_CLK_ENABLE();
@@ -262,7 +253,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 		HAL_NVIC_SetPriority(TIM16_IRQn, 14, 0);
 		HAL_NVIC_EnableIRQ(TIM16_IRQn);
 	}
-	else if(htim_base->Instance == TIM17)
+	else if (htim_base->Instance == TIM17)
 	{
 		/* Peripheral clock enable */
 		__HAL_RCC_TIM17_CLK_ENABLE();
@@ -299,15 +290,6 @@ bool Kernel_BaseTick_Init(void)
 	htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	htim17.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 	if (HAL_TIM_Base_Init(&htim17) != HAL_OK)
-		return false;
-
-	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-	if (HAL_TIM_ConfigClockSource(&htim17, &sClockSourceConfig) != HAL_OK)
-		return false;
-
-	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim17, &sMasterConfig) != HAL_OK)
 		return false;
 
 	if(HAL_TIM_Base_Start_IT(&htim17) != HAL_OK)
