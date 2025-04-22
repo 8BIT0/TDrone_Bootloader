@@ -25,6 +25,8 @@ typedef struct
 
     uint32_t t_w_cnt;           /* test write count */
     uint32_t t_w_failed_cnt;    /* test write failed count */
+    
+    BspSDRAMObj_TypeDef sdram_obj;
 }SrvOsCommon_HeapMonitor_TypeDef;
 
 /* internal vriable */
@@ -69,21 +71,20 @@ static bool SrvOsCommon_Init(void)
 {
     uint32_t t_addr = 0;
     bool state = true;
-    BspSDRAMObj_TypeDef sdram_obj;
     memset(&OsHeap_Monitor, 0, sizeof(SrvOsCommon_HeapMonitor_TypeDef));
 
     OsHeap_Monitor.sdram_state = false;
-    sdram_obj.hdl = malloc(SDRAM_HandleType_Size);
-    if (sdram_obj.hdl)
+    OsHeap_Monitor.sdram_obj.hdl = malloc(SDRAM_HandleType_Size);
+    if (OsHeap_Monitor.sdram_obj.hdl)
     {
-        sdram_obj.bank_num      = BspSDRAM_BankNum_4;
-        sdram_obj.bank_area     = BspSDRAM_Bank_1;
-        sdram_obj.bus_width     = BspSDRAM_BusWidth_16;
-        sdram_obj.column_bits   = BspSDRAM_Column_9Bits;
-        sdram_obj.row_bits      = BspSDRAM_Row_13Bits;
+        OsHeap_Monitor.sdram_obj.bank_num      = BspSDRAM_BankNum_4;
+        OsHeap_Monitor.sdram_obj.bank_area     = BspSDRAM_Bank_1;
+        OsHeap_Monitor.sdram_obj.bus_width     = BspSDRAM_BusWidth_16;
+        OsHeap_Monitor.sdram_obj.column_bits   = BspSDRAM_Column_9Bits;
+        OsHeap_Monitor.sdram_obj.row_bits      = BspSDRAM_Row_13Bits;
 
         /* init sdram if have */
-        if (BspSDRAM_Init(&sdram_obj))
+        if (BspSDRAM_Init(&OsHeap_Monitor.sdram_obj))
         {
             /* sdram test */
             OsHeap_Monitor.sdram_state = true;
@@ -181,6 +182,8 @@ static void SrvOsCommon_JumpToAddr(uint32_t addr)
 
     if ((addr < (uint32_t)&__boot_e) || ((addr & 0xFF000000) != (uint32_t)&__rom_s))
         return;
+
+    BspSDRAM_DeInit(&OsHeap_Monitor.sdram_obj);
 
     jump_addr = *(volatile uint32_t *)(addr + 4);
     __set_MSP(*(volatile uint32_t *)addr);

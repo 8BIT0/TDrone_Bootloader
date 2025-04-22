@@ -57,6 +57,7 @@ typedef struct
 } BspSDRAMObj_TypeDef;
 
 bool BspSDRAM_Init(BspSDRAMObj_TypeDef *obj);
+void BspSDRAM_DeInit(BspSDRAMObj_TypeDef *obj);
 
 #ifdef __cplusplus
 }

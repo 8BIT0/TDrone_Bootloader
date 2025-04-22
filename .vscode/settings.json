@@ -24,6 +24,7 @@
         "fchw_config.h": "c",
         "debug_util.h": "c",
         "bsp_usb.h": "c",
-        "kernel.h": "c"
+        "kernel.h": "c",
+        "bsp_sdram_def.h": "c"
     }
 }

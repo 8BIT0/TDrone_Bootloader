@@ -179,3 +179,11 @@ bool BspSDRAM_Init(BspSDRAMObj_TypeDef *obj)
     return true;
 }
 
+void BspSDRAM_DeInit(BspSDRAMObj_TypeDef *obj)
+{
+    if ((obj == NULL) || (obj->hdl == NULL))
+        return;
+
+    HAL_SDRAM_DeInit(To_SDRAM_Handle(obj->hdl));
+}
+
