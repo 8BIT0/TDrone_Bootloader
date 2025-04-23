@@ -188,7 +188,8 @@ static void SrvOsCommon_JumpToAddr(uint32_t addr)
     
     /* disable all irq before jump */
     SrvOsCommon.disable_all_irq();
-    
+   __set_CONTROL(0);
+
     ((Application_Func)jump_addr)();
 }
 

@@ -241,6 +241,7 @@ void Kernel_BaseTick_DeInit(void)
 
 	HAL_TIM_Base_DeInit(&htim16);
 	HAL_TIM_Base_DeInit(&htim17);
+	HAL_NVIC_DisableIRQ(PendSV_IRQn);
 }
 
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
