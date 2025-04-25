@@ -15,7 +15,7 @@
 #define BspUart_Opr_TimeOut 100 // 100ms
 
 /* internal variable */
-static BspUARTObj_TypeDef *BspUart_Obj_List[Bsp_UART_Port_Sum] = {NULL};
+static volatile BspUARTObj_TypeDef *BspUart_Obj_List[Bsp_UART_Port_Sum] = {NULL};
 
 /* internal function */
 
@@ -522,8 +522,8 @@ static bool BspUart_Set_Tx_Callback(BspUARTObj_TypeDef *obj, BspUART_Callback ca
 /******************************** irq callback ***********************************/
 void UART_IRQ_Callback(BspUART_Port_List index)
 {
-    static UART_HandleTypeDef *hdl = NULL;
-    static DMA_HandleTypeDef *rx_dma = NULL;
+    static volatile UART_HandleTypeDef *hdl = NULL;
+    static volatile DMA_HandleTypeDef *rx_dma = NULL;
     uint16_t len = 0;
     uint32_t isrflags = 0;
     uint32_t cr1its = 0;
@@ -544,18 +544,17 @@ void UART_IRQ_Callback(BspUART_Port_List index)
         (RESET == (cr1its & USART_CR1_IDLEIE)))
         return;
 
-    len = BspUart_Obj_List[index]->rx_size - __HAL_DMA_GET_COUNTER(rx_dma);
     __HAL_UART_CLEAR_IDLEFLAG(hdl);
+    len = BspUart_Obj_List[index]->rx_size - __HAL_DMA_GET_COUNTER(rx_dma);
     BspUart_DMAStopRx(index);
+    SCB_InvalidateDCache_by_Addr((uint32_t *)BspUart_Obj_List[index]->rx_buf, BspUart_Obj_List[index]->rx_size);
+
     if (len)
     {
-        SCB_InvalidateDCache();
-
         /* idle receive callback process */
         if (BspUart_Obj_List[index]->RxCallback)
             BspUart_Obj_List[index]->RxCallback(BspUart_Obj_List[index]->cust_data_addr,
-                                                BspUart_Obj_List[index]->rx_buf,
-                                                len);
+                                                BspUart_Obj_List[index]->rx_buf, len);
 
         BspUart_Obj_List[index]->monitor.rx_cnt++;
     }

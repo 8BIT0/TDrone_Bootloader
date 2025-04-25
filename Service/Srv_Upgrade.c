@@ -72,6 +72,7 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
 #if (CODE_TYPE == ON_BOOT)
     /* check storage system data section */
     /* check upgrade on boot up */
+    SrvUpgrade_Load_Firmware();
 
     /* init on chip flash */
     if (!BspFlash.init())
@@ -148,15 +149,17 @@ static void SrvUpgrade_Check_ForceMode_Enable(void *arg)
 }
 #endif
 
-static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t p_data, uint16_t size)
+static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size)
 {
     SrvUpgradeObj.pack_cnt = 0;
+    Queue.reset(&SrvUpgradeObj.p_queue);
 }
 
-static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t p_data, uint16_t size)
+static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size)
 {
     /* update pack into ram */
     SrvUpgradeObj.pack_cnt ++;
+    Queue.reset(&SrvUpgradeObj.p_queue);
 }
 
 static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
@@ -174,28 +177,52 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
 
         /* store firmware into external or on chip flash */
     }
+
+    Queue.reset(&SrvUpgradeObj.p_queue);
+    SrvUpgradeObj.mode = Upgrade_Normal_Mode;
 }
 
 static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_t size)
 {
-    if (!SrvUpgradeObj.init_state || (SrvUpgradeObj.send == NULL))
-        return false;
+    uint8_t *p_tmp = NULL;
+    uint16_t p_size = 0;
 
 #if (CODE_TYPE == ON_BOOT)
     if (SrvUpgradeObj.mode != Upgrade_Force_Mode)
     {
-        SrvUpgradeObj.send(com_obj, p_data, size);
+        if (SrvUpgradeObj.send && p_data && size)
+            SrvUpgradeObj.send(com_obj, p_data, size);
+
         return false;
     }
 #endif
+
+    if (!SrvUpgradeObj.init_state || (SrvUpgradeObj.send == NULL))
+        return false;
 
     /* Create YMdoem object */
     if (SrvUpgradeObj.YM_hdl == 0)
         SrvUpgradeObj.YM_hdl = YModem.Init(com_obj, SrvOsCommon.malloc, SrvOsCommon.free, \
                                            SrvUpgradeObj.send, \
-                                           NULL, SrvUpgrade_Firmware_Rec_Done, NULL);
+                                           SrvUpgrade_Firmware_Rec_Start, \
+                                           SrvUpgrade_Firmware_Rec_Done, \
+                                           SrvUpgrade_Firmware_Rec_Pack);
     
-    YModem.Rx(SrvUpgradeObj.YM_hdl, p_data, size);
+    p_size = Queue.size(SrvUpgradeObj.p_queue);
+    if (p_size)
+    {
+        p_tmp = SrvOsCommon.malloc(p_size);
+        
+        for (uint16_t i = 0; i < p_size; i++)
+        {
+            Queue.peek(&SrvUpgradeObj.p_queue, i, &p_tmp[i], 1);
+        }
+    }
+
+    YModem.Rx(SrvUpgradeObj.YM_hdl, p_tmp, p_size);
+
+    if (p_tmp)
+        SrvOsCommon.free(p_tmp);
 
     return true;
 }
@@ -210,12 +237,12 @@ static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size)
     /* push data into queue */
     Queue.push(&SrvUpgradeObj.p_queue, p_data, size);
 
+    SrvUpgrade_Firmware_Download(com_obj, p_data, size);
+
 #if (CODE_TYPE == ON_BOOT)
     /* if in boot mode check force code input */
     SrvUpgrade_Check_ForceMode_Enable(com_obj);
 #endif
-
-    SrvUpgrade_Firmware_Download(com_obj, p_data, size);
 
     SrvUpgradeObj.rec_cnt ++;
 }

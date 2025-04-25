@@ -12,8 +12,8 @@ extern "C" {
 typedef uint32_t YModem_Handle;
 
 typedef void (*trans_callback)(void *port_arg, uint8_t *p_data, uint16_t size);
-typedef void (*rec_start_callback)(void *arg, uint8_t p_data, uint16_t size);
-typedef void (*rec_pack_callback)(void *arg, uint8_t *p_data, uint16_t size);
+typedef void (*rec_start_callback)(void *arg, uint8_t *p_data, uint16_t size, uint8_t *p_payload, uint16_t payload_size);
+typedef void (*rec_pack_callback)(void *arg, uint8_t *p_data, uint16_t size, uint8_t *p_payload, uint16_t payload_size);
 typedef void (*rec_done_callback)(void *arg, uint8_t code);
 typedef void* (*malloc_callback)(uint32_t size);
 typedef void (*free_callback)(void *ptr);
@@ -23,9 +23,9 @@ typedef enum
     YModem_Error_None       = 0,
     YModem_Rx_Done          = 1,
     YModem_Pack_Error       = -1,
-    YModem_CMD_Code_Error   = -2,
-    YModem_Pack_CRC_Error   = -3,
-    YModem_Rx_Error         = -4,
+    YModem_Pack_CRC_Error   = -2,
+    YModem_Rx_Error         = -3,
+    YModem_Pack_Incomplete  = -4,
 } YModem_ErrorCode_TypeDef;
 
 typedef struct

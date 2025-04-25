@@ -50,7 +50,7 @@ void Task_Main_Logic(void const *arg)
     SrvCom.init(&SrvComObj);
     SrvUpgrade.init((SrvUpgrade_Send_Callback)SrvCom.write);
     
-    Tmp_Frimware_Buf = SrvOsCommon.malloc(SrvCom.queue_capicity(SrvComObj));
+    Tmp_Frimware_Buf = SrvOsCommon.malloc(2048);
     if (Tmp_Frimware_Buf == NULL)
         SYS_INFO("Bootloader", "Tmp_Frimware_Buf malloc error");
 
@@ -73,27 +73,27 @@ static void Bootloader_Check(uint32_t sys_time)
     uint16_t rec_size = 0;
 
     /* nothing receive when 100ms when power on */
-    if (sys_time >= time_out_tick)
-    {
-        SYS_INFO("Wait Firmware", "Time Out");
-        SYS_INFO("Bootloader exit", "Jump to APP");
+    // if (sys_time >= time_out_tick)
+    // {
+    //     SYS_INFO("Wait Firmware", "Time Out");
+    //     SYS_INFO("Bootloader exit", "Jump to APP");
 
-        SrvOsCommon.delay_ms(10);
+    //     SrvOsCommon.delay_ms(10);
 
-        /* deinit pin and port */
-        SrvCom.de_init(&SrvComObj);
-        SrvOsCommon.systimer_deinit();
+    //     /* deinit pin and port */
+    //     SrvCom.de_init(&SrvComObj);
+    //     SrvOsCommon.systimer_deinit();
 
-        /* jump to app */
-        SrvOsCommon.jump_to_addr(App_Address_Base);
-    }
-    else
+    //     /* jump to app */
+    //     SrvOsCommon.jump_to_addr(App_Address_Base);
+    // }
+    // else
     {
         /* check com port received size */
         if (SrvCom.available)
-            rec_size = SrvCom.available(SrvComObj);
+            rec_size = SrvCom.available(&SrvComObj);
 
-        if (Tmp_Frimware_Buf && (rec_size <= SrvCom.queue_capicity(SrvComObj)))
+        if (Tmp_Frimware_Buf)
         {
             if (rec_size)
             {
