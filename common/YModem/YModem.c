@@ -39,7 +39,7 @@
 #define ACK                     (0x06)      /* receive OK */  
 #define NAK                     (0x15)      /* receiver error; retry */  
 #define CAN                     (0x18)      /* two of these in succession abortas transfer */  
-#define CNC                     (0x43)      /* character 'C' */  
+#define CNC                     (0x43)      /* character CNC */  
 
 /* external function */
 static YModem_Handle YModem_Obj_Init(void *port_obj, malloc_callback malloc_cb, free_callback free_cb, \
@@ -192,7 +192,7 @@ static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size
                         Obj->start_cb(Obj->port_obj, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size);
                     
                     YModem_SendByte(Obj, ACK);
-                    YModem_SendByte(Obj, 'C');
+                    YModem_SendByte(Obj, CNC);
                     
                     Obj->rx_status = YMODEM_RX_ACK;
                     return;
@@ -221,9 +221,7 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
 
             if (Obj->rec_pck_cb)
                 Obj->rec_pck_cb(NULL, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size);
-
-            YModem_SendByte(Obj, 'C');
-        break;
+            break;
 
         case EOT:
             YModem_SendByte(Obj, NAK);
@@ -248,7 +246,7 @@ static void YModem_EOT_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
     switch (YModem_Rx_Pack_Check(Obj, buf, size))
     {
         case EOT:
-            YModem_SendByte(Obj, ACK);
+            YModem_SendByte(Obj, CNC);
             Obj->rx_status = YMODEM_RX_EXIT;
             break;
 
@@ -284,7 +282,7 @@ static void YModem_Rx(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size)
 
     if (size == 0)
     {
-        YModem_SendByte(Obj, 'C');
+        YModem_SendByte(Obj, CNC);
         return;
     }
     

@@ -35,7 +35,7 @@ typedef struct
     uint8_t rx_status;
     void *port_obj;
     void *cus_obj;
-    
+
     malloc_callback malloc_cb;
     free_callback free_cb;
     trans_callback trans_cb;
