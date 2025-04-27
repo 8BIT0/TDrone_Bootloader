@@ -3,7 +3,6 @@
 #include "HW_Def.h"
 #include "Dev_Led.h"
 #include "Srv_OsCommon.h"
-#include "shell_port.h"
 #include "cmsis_os.h"
 #include "Srv_ComTrans.h"
 #include "Srv_Upgrade.h"

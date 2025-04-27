@@ -25,7 +25,8 @@ typedef struct
     uint8_t sw_ver[3];
     uint32_t firmware_size;
     uint8_t *firmware_buf;
-    uint16_t pack_cnt;
+    uint16_t pack_ok_cnt;
+    uint16_t pack_err_cnt;
     bool init_state;
     SrvUpgrade_Mode_TypeDef mode;
     uint32_t rec_cnt;
@@ -151,20 +152,28 @@ static void SrvUpgrade_Check_ForceMode_Enable(void *arg)
 
 static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size)
 {
-    SrvUpgradeObj.pack_cnt = 0;
+    SrvUpgradeObj.pack_ok_cnt = 0;
     Queue.reset(&SrvUpgradeObj.p_queue);
 }
 
-static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size)
+static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size, bool err)
 {
     /* update pack into ram */
-    SrvUpgradeObj.pack_cnt ++;
+    if (!err)
+    {
+        SrvUpgradeObj.pack_ok_cnt ++;
+    }
+    else
+    {
+        SrvUpgradeObj.pack_err_cnt ++;
+    }
+
     Queue.reset(&SrvUpgradeObj.p_queue);
 }
 
 static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
 {
-    SrvUpgradeObj.pack_cnt = 0;
+    SrvUpgradeObj.pack_ok_cnt = 0;
 
     if (code == YModem_Rx_Error)
     {

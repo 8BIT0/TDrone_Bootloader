@@ -4,7 +4,6 @@
 #include "kernel.h"
 #include "HW_Def.h"
 #include "Bsp_SDRAM.h"
-#include "shell_port.h"
 
 typedef void (*Application_Func)(void);
 
@@ -204,5 +203,5 @@ static void SrvOsCommon_DelayUntil(uint32_t *prev_time, uint32_t ms)
         osDelayUntil(prev_time, ms);
 }
 
-SHELL_EXPORT_CMD(SHELL_CMD_PERMISSION(0) | SHELL_CMD_TYPE(SHELL_TYPE_CMD_FUNC) | SHELL_CMD_DISABLE_RETURN, reboot, Kernel_reboot, System ReBoot);
+// SHELL_EXPORT_CMD(SHELL_CMD_PERMISSION(0) | SHELL_CMD_TYPE(SHELL_TYPE_CMD_FUNC) | SHELL_CMD_DISABLE_RETURN, reboot, Kernel_reboot, System ReBoot);
 

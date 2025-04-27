@@ -33,13 +33,13 @@
 #define YMODEM_PAC_EMPTY        2       //包校验正确，但是里面是空值，在（IDLE状态，判断是否需要结束，退出）
 
 /* ASCII control codes: */  
-#define SOH                     (0x01)      /* start of 128-byte data packet */  
-#define STX                     (0x02)      /* start of 1024-byte data packet */  
-#define EOT                     (0x04)      /* end of transmission */  
-#define ACK                     (0x06)      /* receive OK */  
-#define NAK                     (0x15)      /* receiver error; retry */  
-#define CAN                     (0x18)      /* two of these in succession abortas transfer */  
-#define CNC                     (0x43)      /* character CNC */  
+#define SOH                     ((uint8_t)0x01)      /* start of 128-byte data packet */  
+#define STX                     ((uint8_t)0x02)      /* start of 1024-byte data packet */  
+#define EOT                     ((uint8_t)0x04)      /* end of transmission */  
+#define ACK                     ((uint8_t)0x06)      /* receive OK */  
+#define NAK                     ((uint8_t)0x15)      /* receiver error; retry */  
+#define CAN                     ((uint8_t)0x18)      /* two of these in succession abortas transfer */  
+#define CNC                     ((uint8_t)0x43)      /* character CNC */  
 
 /* external function */
 static YModem_Handle YModem_Obj_Init(void *port_obj, malloc_callback malloc_cb, free_callback free_cb, \
@@ -66,7 +66,6 @@ YModem_TypeDef YModem = {
 /* get pack type */
 static int8_t YModem_Rx_Pack_Check(YModemObj_TypeDef *obj, uint8_t *buf, uint32_t size)
 {
-    uint32_t index = 1;
     uint16_t pck_crc = 0;
     uint16_t chk_crc = 0;
 
@@ -77,6 +76,10 @@ static int8_t YModem_Rx_Pack_Check(YModemObj_TypeDef *obj, uint8_t *buf, uint32_
     if ((buf[0] == SOH) || (buf[0] == STX))
     {
         obj->pck_size = (buf[0] == SOH) ? YMODEM_DATA_SIZE_128 : YMODEM_DATA_SIZE_1024;
+    }
+    else if (buf[0] == EOT)
+    {
+        return EOT;
     }
     else
         return (int8_t)YModem_Pack_Error;
@@ -162,7 +165,7 @@ static void YModem_Obj_DeInit(YModem_Handle YM_hdl)
 
 static void YModem_SendByte(YModemObj_TypeDef *obj, uint8_t byte)
 {
-    uint8_t t_data = byte;
+    volatile uint8_t t_data = byte;
 
     if ((obj == NULL) || (obj->trans_cb == NULL) || (obj->port_obj == NULL))
         return;
@@ -220,7 +223,7 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
             YModem_SendByte(Obj, ACK);
 
             if (Obj->rec_pck_cb)
-                Obj->rec_pck_cb(NULL, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size);
+                Obj->rec_pck_cb(NULL, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, false);
             break;
 
         case EOT:
@@ -231,9 +234,14 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
         case CAN: Obj->rx_status = YMODEM_RX_ERR; break;
         case YModem_Pack_Incomplete: break;
         case YModem_Pack_CRC_Error:
-            YModem_SendByte(Obj, CAN);
-            Obj->rx_status = YMODEM_RX_ERR;
+        case YModem_Pack_Error:
+            YModem_SendByte(Obj, NAK);
+            if (Obj->rec_pck_cb)
+                Obj->rec_pck_cb(NULL, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, true);
             break;
+            // YModem_SendByte(Obj, CAN);
+            // Obj->rx_status = YMODEM_RX_ERR;
+            // break;
         default: YModem_SendByte(Obj, NAK); break;
     }
 }
@@ -280,9 +288,10 @@ static void YModem_Rx(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size)
 {
     YModemObj_TypeDef *Obj = To_YModem_Obj(YM_hdl);
 
-    if (size == 0)
+    if ((size == 0))
     {
-        YModem_SendByte(Obj, CNC);
+        if (Obj->rx_status == YMODEM_RX_IDLE)
+            YModem_SendByte(Obj, CNC);
         return;
     }
     

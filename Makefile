@@ -183,7 +183,6 @@ C_INCLUDES =  \
 -ISystem/FreeRTOS/include \
 -ISystem/FreeRTOS/CMSIS_RTOS \
 -ISystem/FreeRTOS/portable/GCC/ARM_CM4F \
--ISystem/shell \
 -ISystem/diskio \
 -Idebug \
 -IMAVLink \

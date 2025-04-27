@@ -139,10 +139,10 @@ static void SrvComTrans_Tx_Callback(uint32_t cust_data_addr, uint8_t *buff, uint
         osSemaphoreRelease(p_obj->Tx_Irq_Sem);
 }
 
+uint8_t test_2 = 0;
 static void SrvComTrans_Rx_Callback(uint32_t cust_data_addr, uint8_t *buff, uint16_t size)
 {
     SrvComObj_TypeDef *p_obj = (SrvComObj_TypeDef *)cust_data_addr;
-    uint16_t i = 0;
 
     if ((p_obj == NULL) || !p_obj->init_state || (buff == NULL) || (size == 0))
         return;
@@ -160,6 +160,7 @@ static void SrvComTrans_Rx_Callback(uint32_t cust_data_addr, uint8_t *buff, uint
         /* if queue is in use or full, update temporary buff */
         memcpy(p_obj->p_buf_2 + p_obj->buf_2_size, buff, size);
         p_obj->buf_2_size += size;
+        test_2 ++;
     }
 }
 
@@ -193,7 +194,6 @@ static bool SrvComTrans_Write(SrvComObj_TypeDef *obj, uint8_t *p_data, uint16_t 
 
 static uint16_t SrvComTrans_GetRecData(SrvComObj_TypeDef *obj, uint8_t *p_data, uint16_t len)
 {
-    uint16_t queue_size = 0;
     uint16_t read_size = 0;
     uint16_t rec_size = len;
 
