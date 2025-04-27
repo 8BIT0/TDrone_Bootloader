@@ -63,7 +63,7 @@ void Task_Main_Logic(void const *arg)
         Bootloader_Check(sys_time);
 
         /* run system statistic in this task */
-        osDelay(10);
+        osDelay(25);
     }
 }
 
