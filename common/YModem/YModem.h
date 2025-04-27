@@ -12,7 +12,7 @@ extern "C" {
 typedef uint32_t YModem_Handle;
 
 typedef void (*trans_callback)(void *port_arg, uint8_t *p_data, uint16_t size);
-typedef void (*rec_start_callback)(void *arg, uint8_t *p_data, uint16_t size, uint8_t *p_payload, uint16_t payload_size);
+typedef void (*rec_start_callback)(void *arg, uint8_t *p_data, uint16_t size, uint8_t *p_payload, uint16_t payload_size, bool err);
 typedef void (*rec_pack_callback)(void *arg, uint8_t *p_data, uint16_t size, uint8_t *p_payload, uint16_t payload_size, bool err);
 typedef void (*rec_done_callback)(void *arg, uint8_t code);
 typedef void* (*malloc_callback)(uint32_t size);
@@ -26,6 +26,7 @@ typedef enum
     YModem_Pack_CRC_Error   = -2,
     YModem_Rx_Error         = -3,
     YModem_Pack_Incomplete  = -4,
+    YModem_Rx_TimeOut       = -5,
 } YModem_ErrorCode_TypeDef;
 
 typedef struct
@@ -35,6 +36,9 @@ typedef struct
     uint8_t rx_status;
     void *port_obj;
     void *cus_obj;
+
+    uint32_t t_sys;
+    uint32_t t_update;
 
     malloc_callback malloc_cb;
     free_callback free_cb;
@@ -49,7 +53,7 @@ typedef struct
     YModem_Handle (*Init)(void *port_obj, malloc_callback malloc_cb, free_callback free_cb, \
                           trans_callback trans_cb, rec_start_callback rec_start_cb, \
                           rec_done_callback rec_done_cb, rec_pack_callback rec_pck_cb);
-    void (*Rx)(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size);
+    void (*Rx)(YModem_Handle YM_hdl, uint32_t t_update, uint32_t t_sys, uint8_t *buf, uint32_t size);
     void (*Tx)(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size);
 } YModem_TypeDef;
 

@@ -150,9 +150,19 @@ static void SrvUpgrade_Check_ForceMode_Enable(void *arg)
 }
 #endif
 
-static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size)
+static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size, bool err)
 {
     SrvUpgradeObj.pack_ok_cnt = 0;
+
+    if (!err)
+    {
+
+    }
+    else
+    {
+
+    }
+
     Queue.reset(&SrvUpgradeObj.p_queue);
 }
 
@@ -195,6 +205,10 @@ static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_
 {
     uint8_t *p_tmp = NULL;
     uint16_t p_size = 0;
+    uint32_t update_time = 0;
+
+    if (size)
+        update_time = SrvOsCommon.get_os_ms();
 
 #if (CODE_TYPE == ON_BOOT)
     if (SrvUpgradeObj.mode != Upgrade_Force_Mode)
@@ -228,7 +242,7 @@ static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_
         }
     }
 
-    YModem.Rx(SrvUpgradeObj.YM_hdl, p_tmp, p_size);
+    YModem.Rx(SrvUpgradeObj.YM_hdl, update_time, SrvOsCommon.get_os_ms(), p_tmp, p_size);
 
     if (p_tmp)
         SrvOsCommon.free(p_tmp);

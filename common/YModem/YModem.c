@@ -39,13 +39,16 @@
 #define ACK                     ((uint8_t)0x06)      /* receive OK */  
 #define NAK                     ((uint8_t)0x15)      /* receiver error; retry */  
 #define CAN                     ((uint8_t)0x18)      /* two of these in succession abortas transfer */  
-#define CNC                     ((uint8_t)0x43)      /* character CNC */  
+#define CNC                     ((uint8_t)0x43)      /* character CNC */
+#define FIN                     ((uint8_t)0x4F)
+
+#define YMODEM_REC_TIMEOUT      100                 /* unit: ms */
 
 /* external function */
 static YModem_Handle YModem_Obj_Init(void *port_obj, malloc_callback malloc_cb, free_callback free_cb, \
                                      trans_callback trans_cb, rec_start_callback rec_start_cb, \
                                      rec_done_callback rec_done_cb, rec_pack_callback rec_pck_cb);
-static void YModem_Rx(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size);
+static void YModem_Rx(YModem_Handle YM_hdl, uint32_t t_update, uint32_t t_sys, uint8_t *buf, uint32_t size);
 
 /* internal function */
 static int8_t YModem_Rx_Pack_Check(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size);
@@ -91,6 +94,9 @@ static int8_t YModem_Rx_Pack_Check(YModemObj_TypeDef *obj, uint8_t *buf, uint32_
             if (buf[1] + buf[2] != 0xff)
                 return YModem_Pack_Error;
         }
+
+        if (obj->t_update && ((obj->t_sys - obj->t_update) >= YMODEM_REC_TIMEOUT))
+            return (int8_t)YModem_Rx_TimeOut;
 
         return (int8_t)YModem_Pack_Incomplete;
     }
@@ -192,11 +198,11 @@ static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size
                 {
                     /* get file name and size from first pack */
                     if (Obj->start_cb)
-                        Obj->start_cb(Obj->port_obj, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size);
+                        Obj->start_cb(Obj->port_obj, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, false);
                     
                     YModem_SendByte(Obj, ACK);
                     YModem_SendByte(Obj, CNC);
-                    
+
                     Obj->rx_status = YMODEM_RX_ACK;
                     return;
                 }
@@ -207,6 +213,14 @@ static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size
 
         case EOT: Obj->rx_status = YMODEM_RX_EXIT; break;
         case YModem_Pack_Incomplete: break;
+        case YModem_Rx_TimeOut:
+            YModem_SendByte(Obj, CAN);
+            if (Obj->start_cb)
+                Obj->start_cb(Obj->port_obj, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, true);
+
+            Obj->rx_status = YMODEM_RX_IDLE;
+            break;
+
         default: Obj->rx_status = YMODEM_RX_ERR; break;
     }
 }
@@ -235,13 +249,12 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
         case YModem_Pack_Incomplete: break;
         case YModem_Pack_CRC_Error:
         case YModem_Pack_Error:
+        case YModem_Rx_TimeOut:
             YModem_SendByte(Obj, NAK);
             if (Obj->rec_pck_cb)
                 Obj->rec_pck_cb(NULL, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, true);
             break;
-            // YModem_SendByte(Obj, CAN);
-            // Obj->rx_status = YMODEM_RX_ERR;
-            // break;
+        
         default: YModem_SendByte(Obj, NAK); break;
     }
 }
@@ -277,6 +290,10 @@ static void YModem_Check_Exit(YModemObj_TypeDef *Obj)
         case YMODEM_RX_EXIT:
             if (Obj->done_cb)
                 Obj->done_cb(NULL, YModem_Rx_Done);
+            
+            Obj->t_update = 0;
+            Obj->t_sys = 0;
+
             YModem_Obj_DeInit((YModem_Handle)Obj);
             break;
 
@@ -284,17 +301,24 @@ static void YModem_Check_Exit(YModemObj_TypeDef *Obj)
     }
 }
 
-static void YModem_Rx(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size)
+static void YModem_Rx(YModem_Handle YM_hdl, uint32_t t_update, uint32_t t_sys, uint8_t *buf, uint32_t size)
 {
     YModemObj_TypeDef *Obj = To_YModem_Obj(YM_hdl);
 
-    if ((size == 0))
+    if (Obj == NULL)
+        return;
+
+    if (size == 0)
     {
         if (Obj->rx_status == YMODEM_RX_IDLE)
             YModem_SendByte(Obj, CNC);
         return;
     }
-    
+
+    Obj->t_sys = t_sys;
+    if (t_update)
+        Obj->t_update = t_update;
+
     switch (Obj->rx_status)
     {
         case YMODEM_RX_IDLE: YModem_Idle_Proc(Obj, buf, size); break;
