@@ -39,7 +39,6 @@
 #define NAK                     ((uint8_t)0x15)      /* receiver error; retry */  
 #define CAN                     ((uint8_t)0x18)      /* two of these in succession abortas transfer */  
 #define CNC                     ((uint8_t)0x43)      /* character CNC */
-#define FIN                     ((uint8_t)0x4F)
 
 #define YMODEM_REC_TIMEOUT      100                 /* unit: ms */
 
