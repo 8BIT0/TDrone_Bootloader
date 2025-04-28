@@ -211,18 +211,23 @@ static void SrvUpgrade_Firmware_Rec_EOT(void *arg, uint8_t *p_data, uint16_t siz
 
 static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
 {
+    SrvUpgradeObj.YM_hdl = 0;
     SrvUpgradeObj.pack_ok_cnt = 0;
 
     if (code == YModem_Rx_Error)
     {
         SrvOsCommon.delay_ms(50);
-        SrvUpgradeObj.send(arg, "YModem error\r\n", strlen("YModem error\r\n")); 
+        SrvUpgradeObj.send(arg, "YModem error\r\n", strlen("YModem error\r\n"));
+
+        memset(SrvUpgradeObj.firmware_name, '\0', strlen(SrvUpgradeObj.firmware_name));
+        memset(SrvUpgradeObj.firmware_buf, 0, SrvUpgradeObj.firmware_rec_size);
+        SrvUpgradeObj.firmware_rec_size = 0;
+        SrvUpgradeObj.firmware_size = 0;
+        SrvOsCommon.free(SrvUpgradeObj.firmware_name); 
     }
 
     if (code == YModem_Rx_Done)
     {
-        SrvUpgradeObj.YM_hdl = 0;
-
         /* store firmware into external or on chip flash */
        if (SrvUpgradeObj.send)
        {
