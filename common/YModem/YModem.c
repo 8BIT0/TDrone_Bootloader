@@ -13,6 +13,7 @@
 #define YMODEM_RX_EOT           2
 #define YMODEM_RX_ERR           3
 #define YMODEM_RX_EXIT          4
+#define YMODEM_RX_DONE          5
 
 #define YMODEM_TX_IDLE          0
 #define YMODEM_TX_IDLE_ACK      1
@@ -46,7 +47,7 @@
 
 /* external function */
 static YModem_Handle YModem_Obj_Init(void *port_obj, malloc_callback malloc_cb, free_callback free_cb, \
-                                     trans_callback trans_cb, rec_start_callback rec_start_cb, \
+                                     trans_callback trans_cb, rec_start_callback rec_start_cb, rec_eot_callback rec_eot_cb,\
                                      rec_done_callback rec_done_cb, rec_pack_callback rec_pck_cb);
 static void YModem_Rx(YModem_Handle YM_hdl, uint32_t t_update, uint32_t t_sys, uint8_t *buf, uint32_t size);
 
@@ -82,19 +83,20 @@ static int8_t YModem_Rx_Pack_Check(YModemObj_TypeDef *obj, uint8_t *buf, uint32_
     }
     else if (buf[0] == EOT)
     {
+        obj->pck_size = 1;
         return EOT;
     }
     else
         return (int8_t)YModem_Pack_Error;
 
+    if (size > 3)
+    {
+        if (buf[1] + buf[2] != 0xff)
+            return YModem_Pack_Error;
+    }
+
     if (size < obj->pck_size)
     {
-        if (size > 3)
-        {
-            if (buf[1] + buf[2] != 0xff)
-                return YModem_Pack_Error;
-        }
-
         if (obj->t_update && ((obj->t_sys - obj->t_update) >= YMODEM_REC_TIMEOUT))
             return (int8_t)YModem_Rx_TimeOut;
 
@@ -125,7 +127,9 @@ static bool YModem_Rx_Check_Pack_Empty(uint8_t *buf, uint32_t size)
     return (chk == 0) ? true : false;
 }
 
-static YModem_Handle YModem_Obj_Init(void *port_obj, malloc_callback malloc_cb, free_callback free_cb, trans_callback trans_cb, rec_start_callback rec_start_cb, rec_done_callback rec_done_cb, rec_pack_callback rec_pck_cb)
+static YModem_Handle YModem_Obj_Init(void *port_obj, malloc_callback malloc_cb, free_callback free_cb, \
+                                     trans_callback trans_cb, rec_start_callback rec_start_cb, rec_eot_callback rec_eot_cb,\
+                                     rec_done_callback rec_done_cb, rec_pack_callback rec_pck_cb)
 {
     YModemObj_TypeDef *obj = NULL;
 
@@ -147,6 +151,7 @@ static YModem_Handle YModem_Obj_Init(void *port_obj, malloc_callback malloc_cb, 
     obj->start_cb = rec_start_cb;
     obj->done_cb = rec_done_cb;
     obj->rec_pck_cb = rec_pck_cb;
+    obj->rec_eot_cb = rec_eot_cb;
 
     obj->pck_cnt = 0;
     obj->pck_size = 0;
@@ -267,11 +272,31 @@ static void YModem_EOT_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
     switch (YModem_Rx_Pack_Check(Obj, buf, size))
     {
         case EOT:
+            YModem_SendByte(Obj, ACK);
             YModem_SendByte(Obj, CNC);
-            Obj->rx_status = YMODEM_RX_EXIT;
+            Obj->rx_status = YMODEM_RX_DONE;
+            if (Obj->rec_eot_cb)
+                Obj->rec_eot_cb(NULL, buf, Obj->pck_size);
             break;
 
         default: Obj->rx_status = YMODEM_RX_ERR; break;
+    }
+}
+
+static void YModem_RX_Done_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
+{
+    bool test = false;
+
+    if (Obj == NULL)
+        return;
+
+    if (YModem_Rx_Pack_Check(Obj, buf, size) > 0)
+    {
+        /* final pack carry empty data in payload section (all 0) */
+        // if (YModem_Rx_Check_Pack_Empty(&buf[PACKET_HEADER], size - YMODEM_FUNC_BYTE_SIZE))
+
+        YModem_SendByte(Obj, ACK);
+        Obj->rx_status = YMODEM_RX_EXIT;
     }
 }
 
@@ -285,11 +310,11 @@ static void YModem_Check_Exit(YModemObj_TypeDef *Obj)
         case YMODEM_RX_ERR:
             YModem_SendByte(Obj, CAN);
             if (Obj->done_cb)
-                Obj->done_cb(NULL, YModem_Rx_Error);
+                Obj->done_cb(Obj->port_obj, YModem_Rx_Error);
         
         case YMODEM_RX_EXIT:
             if (Obj->done_cb)
-                Obj->done_cb(NULL, YModem_Rx_Done);
+                Obj->done_cb(Obj->port_obj, YModem_Rx_Done);
             
             Obj->t_update = 0;
             Obj->t_sys = 0;
@@ -321,9 +346,10 @@ static void YModem_Rx(YModem_Handle YM_hdl, uint32_t t_update, uint32_t t_sys, u
 
     switch (Obj->rx_status)
     {
-        case YMODEM_RX_IDLE: YModem_Idle_Proc(Obj, buf, size); break;
-        case YMODEM_RX_ACK:  YModem_Ack_Proc(Obj, buf, size);  break;
-        case YMODEM_RX_EOT:  YModem_EOT_Proc(Obj, buf, size);  break;
+        case YMODEM_RX_IDLE: YModem_Idle_Proc(Obj, buf, size);    break;
+        case YMODEM_RX_ACK:  YModem_Ack_Proc(Obj, buf, size);     break;
+        case YMODEM_RX_EOT:  YModem_EOT_Proc(Obj, buf, size);     break;
+        case YMODEM_RX_DONE: YModem_RX_Done_Proc(Obj, buf, size); break;
         default: Obj->rx_status = YMODEM_RX_ERR; break;
     }
 

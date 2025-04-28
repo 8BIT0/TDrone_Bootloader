@@ -150,11 +150,11 @@ static void SrvUpgrade_Check_ForceMode_Enable(void *arg)
 }
 #endif
 
-static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size, bool err)
+static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size, bool valid)
 {
     SrvUpgradeObj.pack_ok_cnt = 0;
 
-    if (!err)
+    if (!valid)
     {
 
     }
@@ -166,12 +166,15 @@ static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t *p_data, uint16_t p
     Queue.reset(&SrvUpgradeObj.p_queue);
 }
 
-static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size, bool err)
+static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size, bool valid)
 {
     /* update pack into ram */
-    if (!err)
+    if (!valid)
     {
         SrvUpgradeObj.pack_ok_cnt ++;
+        if (SrvUpgradeObj.firmware_buf)
+            memcpy(SrvUpgradeObj.firmware_buf + SrvUpgradeObj.firmware_size, p_payload, payload_size);
+        SrvUpgradeObj.firmware_size += payload_size;
     }
     else
     {
@@ -181,13 +184,19 @@ static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t *p_data, uint16_t pa
     Queue.reset(&SrvUpgradeObj.p_queue);
 }
 
+static void SrvUpgrade_Firmware_Rec_EOT(void *arg, uint8_t *p_data, uint16_t size)
+{
+    Queue.reset(&SrvUpgradeObj.p_queue);
+}
+
 static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
 {
     SrvUpgradeObj.pack_ok_cnt = 0;
 
     if (code == YModem_Rx_Error)
     {
-
+        SrvOsCommon.delay_ms(50);
+        SrvUpgradeObj.send(arg, "YModem error\r\n", strlen("YModem error\r\n")); 
     }
 
     if (code == YModem_Rx_Done)
@@ -195,6 +204,11 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
         SrvUpgradeObj.YM_hdl = 0;
 
         /* store firmware into external or on chip flash */
+       if (SrvUpgradeObj.send)
+       {
+            SrvOsCommon.delay_ms(50);
+            SrvUpgradeObj.send(arg, "YModem finish\r\n", strlen("YModem finish\r\n"));
+       }
     }
 
     Queue.reset(&SrvUpgradeObj.p_queue);
@@ -228,6 +242,7 @@ static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_
         SrvUpgradeObj.YM_hdl = YModem.Init(com_obj, SrvOsCommon.malloc, SrvOsCommon.free, \
                                            SrvUpgradeObj.send, \
                                            SrvUpgrade_Firmware_Rec_Start, \
+                                           SrvUpgrade_Firmware_Rec_EOT, \
                                            SrvUpgrade_Firmware_Rec_Done, \
                                            SrvUpgrade_Firmware_Rec_Pack);
     
