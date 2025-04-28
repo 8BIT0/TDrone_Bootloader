@@ -23,7 +23,9 @@ typedef struct
     SrvUpgrade_Send_Callback send;
     bool upgrade_on_bootup;
     uint8_t sw_ver[3];
+    uint8_t *firmware_name;
     uint32_t firmware_size;
+    uint32_t firmware_rec_size;
     uint8_t *firmware_buf;
     uint16_t pack_ok_cnt;
     uint16_t pack_err_cnt;
@@ -152,15 +154,33 @@ static void SrvUpgrade_Check_ForceMode_Enable(void *arg)
 
 static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size, bool valid)
 {
+    char *p_file_name = NULL;
+    char *p_file_size = NULL;
+    uint16_t offset = 0;
     SrvUpgradeObj.pack_ok_cnt = 0;
 
-    if (!valid)
+    if (valid && (p_payload != NULL))
     {
+        /* get file name */
+        p_file_name = (char *)p_payload;
 
-    }
-    else
-    {
+        /* get file size */
+        offset = strlen(p_file_name) + 1;
+        p_file_size = (char *)(p_payload + offset);
 
+        for (uint16_t i = 0; i < strlen(p_file_size); i++)
+        {
+            if (p_file_size[i] == 0x20)
+                p_file_size[i] = '\0';
+        }
+
+        SrvUpgradeObj.firmware_name = SrvOsCommon.malloc(strlen(p_file_name) + 1);
+        if (SrvUpgradeObj.firmware_name)
+        {
+            memcpy(SrvUpgradeObj.firmware_name, p_file_name, strlen(p_file_name) + 1);
+            SrvUpgradeObj.firmware_size = atoi(p_file_size);
+        }
+        SrvUpgradeObj.firmware_rec_size = 0;
     }
 
     Queue.reset(&SrvUpgradeObj.p_queue);
@@ -169,12 +189,12 @@ static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t *p_data, uint16_t p
 static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t *p_data, uint16_t pack_size, uint8_t *p_payload, uint16_t payload_size, bool valid)
 {
     /* update pack into ram */
-    if (!valid)
+    if (valid)
     {
         SrvUpgradeObj.pack_ok_cnt ++;
+        SrvUpgradeObj.firmware_rec_size += payload_size;
         if (SrvUpgradeObj.firmware_buf)
-            memcpy(SrvUpgradeObj.firmware_buf + SrvUpgradeObj.firmware_size, p_payload, payload_size);
-        SrvUpgradeObj.firmware_size += payload_size;
+            memcpy(SrvUpgradeObj.firmware_buf + SrvUpgradeObj.firmware_rec_size, p_payload, payload_size);
     }
     else
     {
@@ -208,6 +228,14 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
        {
             SrvOsCommon.delay_ms(50);
             SrvUpgradeObj.send(arg, "YModem finish\r\n", strlen("YModem finish\r\n"));
+
+            /* print / firmware name / firmware size / receive size / */
+       }
+
+       /* check firmware size */
+       if (SrvUpgradeObj.firmware_rec_size >= SrvUpgradeObj.firmware_size)
+       {
+            /* update firmware data to flash and storage */
        }
     }
 

@@ -203,7 +203,7 @@ static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size
                 {
                     /* get file name and size from first pack */
                     if (Obj->start_cb)
-                        Obj->start_cb(Obj->port_obj, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, false);
+                        Obj->start_cb(Obj->port_obj, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, true);
                     
                     YModem_SendByte(Obj, ACK);
                     YModem_SendByte(Obj, CNC);
@@ -221,7 +221,7 @@ static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size
         case YModem_Rx_TimeOut:
             YModem_SendByte(Obj, CAN);
             if (Obj->start_cb)
-                Obj->start_cb(Obj->port_obj, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, true);
+                Obj->start_cb(Obj->port_obj, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, false);
 
             Obj->rx_status = YMODEM_RX_IDLE;
             break;
@@ -242,7 +242,7 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
             YModem_SendByte(Obj, ACK);
 
             if (Obj->rec_pck_cb)
-                Obj->rec_pck_cb(NULL, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, false);
+                Obj->rec_pck_cb(NULL, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, true);
             break;
 
         case EOT:
@@ -257,7 +257,7 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
         case YModem_Rx_TimeOut:
             YModem_SendByte(Obj, NAK);
             if (Obj->rec_pck_cb)
-                Obj->rec_pck_cb(NULL, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, true);
+                Obj->rec_pck_cb(NULL, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, false);
             break;
         
         default: YModem_SendByte(Obj, NAK); break;
@@ -293,8 +293,6 @@ static void YModem_RX_Done_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t s
     if (YModem_Rx_Pack_Check(Obj, buf, size) > 0)
     {
         /* final pack carry empty data in payload section (all 0) */
-        // if (YModem_Rx_Check_Pack_Empty(&buf[PACKET_HEADER], size - YMODEM_FUNC_BYTE_SIZE))
-
         YModem_SendByte(Obj, ACK);
         Obj->rx_status = YMODEM_RX_EXIT;
     }
