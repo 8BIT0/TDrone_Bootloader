@@ -3,25 +3,25 @@
 #include "stm32h7xx_hal.h"
 
 /* external function */
-static bool Bsp_QSPI_Init(BspQSPI_Config_TypeDef *obj);
-static bool Bsp_QSPI_Command(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t dummy_cyc, uint32_t nb_data, uint32_t cmd);
-static bool Bsp_QSPI_Polling(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cmd, uint32_t cyc, uint32_t nb_data, uint32_t match, uint32_t mask);
-static bool Bsp_QSPI_MemMap(BspQSPI_Config_TypeDef *obj, uint32_t cmd);
-static bool Bsp_QSPI_Recv(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len);
-static bool Bsp_QSPI_Trans(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len);
+static bool BspQSPI_Init(BspQSPI_Config_TypeDef *obj);
+static bool BspQSPI_Command(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t dummy_cyc, uint32_t nb_data, uint32_t cmd);
+static bool BspQSPI_Polling(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cmd, uint32_t cyc, uint32_t nb_data, uint32_t match, uint32_t mask);
+static bool BspQSPI_MemMap(BspQSPI_Config_TypeDef *obj, uint32_t cmd);
+static bool BspQSPI_Recv(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len);
+static bool BspQSPI_Trans(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len);
 
 BspQSpi_TypeDef BspQspi = {
-    .init    = Bsp_QSPI_Init,
-    .cmd     = Bsp_QSPI_Command,
-    .polling = Bsp_QSPI_Polling,
-    .memmap  = Bsp_QSPI_MemMap,
-    .rx      = Bsp_QSPI_Recv,
-    .tx      = Bsp_QSPI_Trans,
+    .init    = BspQSPI_Init,
+    .cmd     = BspQSPI_Command,
+    .polling = BspQSPI_Polling,
+    .memmap  = BspQSPI_MemMap,
+    .rx      = BspQSPI_Recv,
+    .tx      = BspQSPI_Trans,
 };
 
-__attribute__((weak)) void Bsp_QSPI_PinInit(void) { return; }
+__attribute__((weak)) void BspQSPI_Pin_Init(void) { return; }
 
-static bool Bsp_QSPI_Init(BspQSPI_Config_TypeDef *obj)
+static bool BspQSPI_Init(BspQSPI_Config_TypeDef *obj)
 {
     RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
@@ -37,7 +37,7 @@ static bool Bsp_QSPI_Init(BspQSPI_Config_TypeDef *obj)
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
         return false;
 
-    Bsp_QSPI_PinInit();
+    BspQSPI_Pin_Init();
 
     __HAL_RCC_QSPI_CLK_ENABLE();
 
@@ -58,7 +58,7 @@ static bool Bsp_QSPI_Init(BspQSPI_Config_TypeDef *obj)
     return true;
 }
 
-static bool Bsp_QSPI_Trans(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len)
+static bool BspQSPI_Trans(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len)
 {
 	QSPI_CommandTypeDef s_command;
     bool state = true;
@@ -89,7 +89,7 @@ static bool Bsp_QSPI_Trans(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t 
     return false;
 }
 
-static bool Bsp_QSPI_Recv(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len)
+static bool BspQSPI_Recv(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len)
 {
 	QSPI_CommandTypeDef s_command;
 
@@ -118,7 +118,7 @@ static bool Bsp_QSPI_Recv(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t c
     return false;
 }
 
-static bool Bsp_QSPI_Command(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cyc, uint32_t nb_data, uint32_t cmd)
+static bool BspQSPI_Command(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cyc, uint32_t nb_data, uint32_t cmd)
 {
     QSPI_CommandTypeDef s_command;
 
@@ -146,7 +146,7 @@ static bool Bsp_QSPI_Command(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_
     return true;
 }
 
-static bool Bsp_QSPI_Polling(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cmd, uint32_t cyc, uint32_t nb_data, uint32_t match, uint32_t mask)
+static bool BspQSPI_Polling(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cmd, uint32_t cyc, uint32_t nb_data, uint32_t match, uint32_t mask)
 {
 	QSPI_CommandTypeDef s_command;
 	QSPI_AutoPollingTypeDef s_config;
@@ -183,7 +183,7 @@ static bool Bsp_QSPI_Polling(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_
     return true;
 }
 
-static bool Bsp_QSPI_MemMap(BspQSPI_Config_TypeDef *obj, uint32_t cmd)
+static bool BspQSPI_MemMap(BspQSPI_Config_TypeDef *obj, uint32_t cmd)
 {
 	QSPI_CommandTypeDef s_command;
 	QSPI_MemoryMappedTypeDef s_mem_mapped_cfg;
