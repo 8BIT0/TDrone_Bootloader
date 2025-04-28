@@ -8,10 +8,15 @@ def Port_Scan():
     ports = serial.tools.list_ports.comports()
     available_ports = []
     index = 0
-    for port, desc, hwid in sorted(ports):
-        print(index, "\t<----------->\t", port, "\t", desc)
-        available_ports.append(port)
-        index += 1
+
+    if len(ports) == 0:
+        print("No device attach")
+    else:
+        for port, desc, hwid in sorted(ports):
+            print("{}\t<----------->\t{}\t{}".format(index, port, desc))
+            available_ports.append(port)
+            index += 1
+
     return available_ports
 
 def main():
@@ -28,21 +33,36 @@ def main():
         try:
             input_code_i = int(input_code)
             if int(input_code_i) >= available_ports.__len__():
-                print("input over range:", input_code_i)
+                print("input over range: {}".format(input_code_i))
                 continue
             else:
-                print("selected port:", available_ports[input_code_i])
+                print("selected port: {}".format(available_ports[input_code_i]))
                 break
         except ValueError:
-            print("Invalid input:", input_code)
+            print("Invalid input:{}".format(input_code))
             continue
 
     # connect port
-    # try:
-    #     ser = serial.Serial(available_ports[input_code_i], 115200)
-    #     print("connect port:", available_ports[input_code_i])
-    # except serial.SerialException as e:
-    #     print("Error:", e)
-    #     sys.exit(1)
+    try:
+        ser = serial.Serial(available_ports[input_code_i], 460800)
+        print("connect port: {}".format(available_ports[input_code_i]))
+    except serial.SerialException as e:
+        print("Error: {}".format(e))
+        sys.exit(1)
+
+    # search firmware path
+    firmware_path = os.getcwd() + os.sep + 'build' + os.sep
+    print("Firmware path {}".format(firmware_path))
+    for root, dirs, files in os.walk(firmware_path):
+        for file in files:
+            if file.endswith('.bin'):
+                file_path = os.path.join(root, file)
+                print(file_path)
+
+    # while True:
+    #     ser.write('Force_Mode')
+    #     while True:
+    #         t = ser.read()
+    #         print(t)
 
 main()
