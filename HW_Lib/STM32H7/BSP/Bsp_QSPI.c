@@ -19,59 +19,7 @@ BspQSpi_TypeDef BspQspi = {
     .tx      = Bsp_QSPI_Trans,
 };
 
-static bool Bsp_QSPI_PinInit(BspQSPI_Config_TypeDef *obj)
-{
-    bool pin_state = false;
-    BspGPIO_Obj_TypeDef pin_tmp;
-
-    memset(&pin_tmp, 0, sizeof(BspGPIO_Obj_TypeDef));
-    if ((obj == NULL) || \
-        (obj->pin.port_clk == NULL) || \
-        (obj->pin.port_ncs == NULL) || \
-        (obj->pin.port_io0 == NULL) || \
-        (obj->pin.port_io1 == NULL) || \
-        (obj->pin.port_io2 == NULL) || \
-        (obj->pin.port_io3 == NULL))
-        return false;
-
-    /* CLK */
-    pin_tmp.port = obj->pin.port_clk;
-    pin_tmp.pin = obj->pin.pin_clk;
-    pin_tmp.alternate = obj->pin.alt_clk;
-    pin_state = BspGPIO.alt_init(pin_tmp, GPIO_MODE_AF_PP);
-
-    /* NCS */
-    pin_tmp.port = obj->pin.port_ncs;
-    pin_tmp.pin = obj->pin.pin_ncs;
-    pin_tmp.alternate = obj->pin.alt_ncs;
-    pin_state &= BspGPIO.alt_init(pin_tmp, GPIO_MODE_AF_PP);
-
-    /* BK1_IO0 */
-    pin_tmp.port = obj->pin.port_io0;
-    pin_tmp.pin = obj->pin.pin_io0;
-    pin_tmp.alternate = obj->pin.alt_io0;
-    pin_state &= BspGPIO.alt_init(pin_tmp, GPIO_MODE_AF_PP);
-    
-    /* BK1_IO1 */
-    pin_tmp.port = obj->pin.port_io1;
-    pin_tmp.pin = obj->pin.pin_io1;
-    pin_tmp.alternate = obj->pin.alt_io1;
-    pin_state &= BspGPIO.alt_init(pin_tmp, GPIO_MODE_AF_PP);
-    
-    /* BK1_IO2 */
-    pin_tmp.port = obj->pin.port_io2;
-    pin_tmp.pin = obj->pin.pin_io2;
-    pin_tmp.alternate = obj->pin.alt_io2;
-    pin_state &= BspGPIO.alt_init(pin_tmp, GPIO_MODE_AF_PP);
-    
-    /* BK1_IO3 */
-    pin_tmp.port = obj->pin.port_io3;
-    pin_tmp.pin = obj->pin.pin_io3;
-    pin_tmp.alternate = obj->pin.alt_io3;
-    pin_state &= BspGPIO.alt_init(pin_tmp, GPIO_MODE_AF_PP);
-
-    return pin_state;
-}
+__attribute__((weak)) void Bsp_QSPI_PinInit(void) { return; }
 
 static bool Bsp_QSPI_Init(BspQSPI_Config_TypeDef *obj)
 {
@@ -89,22 +37,22 @@ static bool Bsp_QSPI_Init(BspQSPI_Config_TypeDef *obj)
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
         return false;
 
-    if (!Bsp_QSPI_PinInit(obj))
-        return false;
+    Bsp_QSPI_PinInit();
 
     __HAL_RCC_QSPI_CLK_ENABLE();
 
-    obj->p_qspi.Instance                = QUADSPI;
-	HAL_QSPI_DeInit(obj->p_qspi);
-	obj->p_qspi.Init.ClockPrescaler     = 1;
-	obj->p_qspi.Init.FifoThreshold      = 32;
-	obj->p_qspi.Init.SampleShifting     = QSPI_SAMPLE_SHIFTING_HALFCYCLE;
-	obj->p_qspi.Init.FlashSize          = 22;
-	obj->p_qspi.Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;
-	obj->p_qspi.Init.ClockMode          = QSPI_CLOCK_MODE_3;
-	obj->p_qspi.Init.FlashID            = QSPI_FLASH_ID_1;
-	obj->p_qspi.Init.DualFlash          = QSPI_DUALFLASH_DISABLE;
-	HAL_QSPI_Init(obj->p_qspi);
+    To_QSPI_Handle_Ptr(obj->p_qspi)->Instance                = QUADSPI;
+	HAL_QSPI_DeInit(To_QSPI_Handle_Ptr(obj->p_qspi));
+
+	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.ClockPrescaler     = 1;
+	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.FifoThreshold      = 32;
+	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.SampleShifting     = QSPI_SAMPLE_SHIFTING_HALFCYCLE;
+	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.FlashSize          = 22;
+	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;
+	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.ClockMode          = QSPI_CLOCK_MODE_3;
+	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.FlashID            = QSPI_FLASH_ID_1;
+	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.DualFlash          = QSPI_DUALFLASH_DISABLE;
+	HAL_QSPI_Init(To_QSPI_Handle_Ptr(obj->p_qspi));
 
     obj->init_state = true;
     return true;
@@ -113,6 +61,7 @@ static bool Bsp_QSPI_Init(BspQSPI_Config_TypeDef *obj)
 static bool Bsp_QSPI_Trans(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len)
 {
 	QSPI_CommandTypeDef s_command;
+    bool state = true;
 
     if ((obj == NULL) || \
         (obj->p_qspi == NULL) || \
@@ -133,11 +82,11 @@ static bool Bsp_QSPI_Trans(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t 
     s_command.Instruction       = cmd;
     
     /* send command */
-    if ((HAL_QSPI_Command(obj->p_qspi, &s_command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) || \
-        (HAL_QSPI_Transmit(obj->p_qspi, p_data, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK))
-        return false;
+    if ((HAL_QSPI_Command(obj->p_qspi, &s_command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) && \
+        (HAL_QSPI_Transmit(obj->p_qspi, p_data, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK))
+        return true;
 
-    return true;
+    return false;
 }
 
 static bool Bsp_QSPI_Recv(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len)
@@ -162,11 +111,11 @@ static bool Bsp_QSPI_Recv(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t c
 	s_command.Address     		= addr;
 	s_command.Instruction 		= cmd;
 
-    if ((HAL_QSPI_Command(obj->p_qspi, &s_command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) || \
-        (HAL_QSPI_Receive(obj->p_qspi, p_data, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK))
-        return false;
+    if ((HAL_QSPI_Command(obj->p_qspi, &s_command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) && \
+        (HAL_QSPI_Receive(obj->p_qspi, p_data, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK))
+        return true;
 
-    return true;
+    return false;
 }
 
 static bool Bsp_QSPI_Command(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cyc, uint32_t nb_data, uint32_t cmd)

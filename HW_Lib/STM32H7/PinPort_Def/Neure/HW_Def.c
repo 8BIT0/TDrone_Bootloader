@@ -92,6 +92,55 @@ BspGPIO_Obj_TypeDef USB_DctPin = {
     .port = USB_DETECT_INT_PORT,
 };
 
+void BspQSPI_Pin_Init(void)
+{
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    __HAL_RCC_GPIOD_CLK_ENABLE();
+    __HAL_RCC_GPIOD_CLK_ENABLE();
+    __HAL_RCC_GPIOE_CLK_ENABLE();
+    __HAL_RCC_GPIOD_CLK_ENABLE();
+
+    /****************************************************** 
+		PB2     ------> QUADSPI_CLK	
+		PB6     ------> QUADSPI_BK1_NCS 		
+		PD11    ------> QUADSPI_BK1_IO0
+		PD12    ------> QUADSPI_BK1_IO1		
+		PE2     ------> QUADSPI_BK1_IO2	
+		PD13    ------> QUADSPI_BK1_IO3
+	*******************************************************/
+		
+    GPIO_InitStruct.Mode        = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull        = GPIO_NOPULL;
+    GPIO_InitStruct.Speed       = GPIO_SPEED_FREQ_VERY_HIGH;
+    
+    GPIO_InitStruct.Pin         = GPIO_PIN_2;
+    GPIO_InitStruct.Alternate   = GPIO_AF9_QUADSPI;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin         = GPIO_PIN_6;
+    GPIO_InitStruct.Alternate   = GPIO_AF10_QUADSPI;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    
+    GPIO_InitStruct.Pin         = GPIO_PIN_11;
+    GPIO_InitStruct.Alternate   = GPIO_AF9_QUADSPI;
+    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+    
+    GPIO_InitStruct.Pin         = GPIO_PIN_12;
+    GPIO_InitStruct.Alternate   = GPIO_AF9_QUADSPI;
+    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+    
+    GPIO_InitStruct.Pin         = GPIO_PIN_2;
+    GPIO_InitStruct.Alternate   = GPIO_AF9_QUADSPI;
+    HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+    
+    GPIO_InitStruct.Pin         = GPIO_PIN_13;
+    GPIO_InitStruct.Alternate   = GPIO_AF9_QUADSPI;
+    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+}
+
 void BspSDRAM_Pin_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct ={0};

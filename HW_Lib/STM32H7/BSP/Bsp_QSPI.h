@@ -3,6 +3,8 @@
 
 #include "Bsp_QSPI_Port_Def.h"
 
+#define To_QSPI_Handle_Ptr(x) ((QSPI_HandleTypeDef *)x)
+
 extern BspQSpi_TypeDef BspQspi;
 
 #endif

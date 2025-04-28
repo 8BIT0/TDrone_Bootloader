@@ -1,5 +1,4 @@
 #include "Bsp_SDRAM.h"
-#include "Bsp_GPIO.h"
 
 #define To_SDRAM_Handle(x) ((SDRAM_HandleTypeDef *)x)
 

@@ -5,30 +5,6 @@
 #include <stdint.h>
 #include <string.h>
 
-typedef struct
-{
-    void *port_clk;
-    void *port_ncs;
-    void *port_io0;
-    void *port_io1;
-    void *port_io2;
-    void *port_io3;
-
-    uint32_t pin_clk;
-    uint32_t pin_ncs;
-    uint32_t pin_io0;
-    uint32_t pin_io1;
-    uint32_t pin_io2;
-    uint32_t pin_io3;
-
-    uint32_t alt_clk;
-    uint32_t alt_ncs;
-    uint32_t alt_io0;
-    uint32_t alt_io1;
-    uint32_t alt_io2;
-    uint32_t alt_io3;
-} BspQSPI_PinConfig_TypeDef;
-
 typedef enum
 {
     BsPQSPI_Polling = 0,
@@ -40,7 +16,6 @@ typedef struct
     bool init_state;
     void *p_qspi;
     BspQSPI_Mode_List mode;
-    BspQSPI_PinConfig_TypeDef pin;
     bool dma_enable;
 } BspQSPI_Config_TypeDef;
 

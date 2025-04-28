@@ -73,6 +73,7 @@ HW_Lib/STM32H7/BSP/Bsp_Flash.c \
 HW_Lib/STM32H7/BSP/Bsp_DMA.c \
 HW_Lib/STM32H7/BSP/Bsp_Timer.c \
 HW_Lib/STM32H7/BSP/Bsp_SDRAM.c \
+HW_Lib/STM32H7/BSP/Bsp_QSPI.c \
 HW_Lib/STM32H7/HAL_Lib/Core/Src/stm32h7xx_it.c \
 HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c  \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
@@ -96,6 +97,7 @@ HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_i2c.c \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_i2c_ex.c \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_exti.c \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_spi.c \
+HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_qspi.c \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd.c \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd_ex.c \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_ll_fmc.c \

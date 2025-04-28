@@ -29,6 +29,8 @@
         "stm32h7xx.h": "c",
         "bsp_spi.h": "c",
         "stm32h7xx_hal.h": "c",
-        "stm32h743xx.h": "c"
+        "stm32h743xx.h": "c",
+        "bsp_qspi_port_def.h": "c",
+        "bsp_gpio.h": "c"
     }
 }
