@@ -31,8 +31,6 @@
 #define PACKET_OVERHEAD         (PACKET_HEADER + PACKET_TRAILER)  
 #define PACKET_TIMEOUT          (1)  
 
-#define YMODEM_PAC_EMPTY        2       //包校验正确，但是里面是空值，在（IDLE状态，判断是否需要结束，退出）
-
 /* ASCII control codes: */  
 #define SOH                     ((uint8_t)0x01)      /* start of 128-byte data packet */  
 #define STX                     ((uint8_t)0x02)      /* start of 1024-byte data packet */  
