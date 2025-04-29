@@ -30,9 +30,38 @@ typedef uint16_t (*DevQSPIW25Qxx_Bus_SendCMD_Callback)(uint32_t addr, void *cmd,
 #define DevQSPIW25Qxx_FLASH_ID                  0XEF4017    /* W25Q64 JEDEC ID */
 #define DevQSPIW25Qxx_Mem_Addr                  0x90000000  /* memory map mode address */
 
+typedef enum
+{
+    AddrLine_None = 0,
+    AddrLine_1,
+    AddrLine_4,
+} DevQSPIW25Qxx_AddrLine_TypeDef;
+
+typedef enum
+{
+    DataLine_None = 0,
+    DataLine_1,
+    DataLine_4,
+} DevQSPIW25Qxx_DataLine_TypeDef;
+
+typedef struct
+{
+    DevQSPIW25Qxx_AddrLine_TypeDef addr_Line;
+    DevQSPIW25Qxx_DataLine_TypeDef data_line;
+    uint32_t dummy_cycle;
+    uint32_t cmd_code;
+} DevQSPIW25Qxx_CMD_TypeDef;
+
+typedef bool (*bus_cmd)(void *bus_obj, DevQSPIW25Qxx_CMD_TypeDef cmd);
+typedef uint16_t (*bus_read)(void *bus_obj, uint8_t *p_rx, uint16_t size);
+
 typedef struct
 {
     bool init;
+    uint32_t dev_id;
+
+    bus_cmd trans_cmd;
+    bus_read read;
 } DevQSPIW25QxxObj_TypeDef;
 
 typedef struct
