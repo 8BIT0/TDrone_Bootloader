@@ -522,8 +522,8 @@ static bool BspUart_Set_Tx_Callback(BspUARTObj_TypeDef *obj, BspUART_Callback ca
 /******************************** irq callback ***********************************/
 void UART_IRQ_Callback(BspUART_Port_List index)
 {
-    static volatile UART_HandleTypeDef *hdl = NULL;
-    static volatile DMA_HandleTypeDef *rx_dma = NULL;
+    static UART_HandleTypeDef *hdl = NULL;
+    static DMA_HandleTypeDef *rx_dma = NULL;
     uint16_t len = 0;
     uint32_t isrflags = 0;
     uint32_t cr1its = 0;
@@ -699,7 +699,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
                 BspUart_Obj_List[index]->monitor.ore_cnt ++;
 
                 uint8_t temp = huart->Instance->RDR;
-                HAL_UART_Receive_IT((UART_HandleTypeDef *)(BspUart_Obj_List[index]->hdl), &BspUart_Obj_List[index]->rx_single_byte, 1);
+                HAL_UART_Receive_IT((UART_HandleTypeDef *)(BspUart_Obj_List[index]->hdl), (uint8_t *)&BspUart_Obj_List[index]->rx_single_byte, 1);
             }
         }
     }

@@ -40,7 +40,7 @@ Task/Task_Manager.c \
 debug/debug_util.c \
 debug/trace_analysiser.c \
 Device/Dev_Led.c \
-Device/Dev_W25Qxx.c \
+Device/Dev_W25Qxx_QSPI.c \
 Service/Srv_Actuator.c \
 Service/Srv_OsCommon.c \
 Service/Srv_ComTrans.c \

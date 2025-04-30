@@ -217,9 +217,9 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
     if (code == YModem_Rx_Error)
     {
         SrvOsCommon.delay_ms(50);
-        SrvUpgradeObj.send(arg, "YModem error\r\n", strlen("YModem error\r\n"));
+        SrvUpgradeObj.send(arg, (uint8_t *)("YModem error\r\n"), strlen("YModem error\r\n"));
 
-        memset(SrvUpgradeObj.firmware_name, '\0', strlen(SrvUpgradeObj.firmware_name));
+        memset(SrvUpgradeObj.firmware_name, '\0', strlen((const char *)SrvUpgradeObj.firmware_name));
         memset(SrvUpgradeObj.firmware_buf, 0, SrvUpgradeObj.firmware_rec_size);
         SrvUpgradeObj.firmware_rec_size = 0;
         SrvUpgradeObj.firmware_size = 0;
@@ -232,7 +232,7 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
        if (SrvUpgradeObj.send)
        {
             SrvOsCommon.delay_ms(50);
-            SrvUpgradeObj.send(arg, "YModem finish\r\n", strlen("YModem finish\r\n"));
+            SrvUpgradeObj.send(arg, (uint8_t *)("YModem finish\r\n"), strlen("YModem finish\r\n"));
 
             /* print / firmware name / firmware size / receive size / */
        }

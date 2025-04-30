@@ -46,31 +46,48 @@ typedef enum
 
 typedef struct
 {
-    DevQSPIW25Qxx_AddrLine_TypeDef addr_Line;
+    DevQSPIW25Qxx_AddrLine_TypeDef addr_line;
     DevQSPIW25Qxx_DataLine_TypeDef data_line;
     uint32_t dummy_cycle;
+    uint32_t trans_size;
     uint32_t cmd_code;
-} DevQSPIW25Qxx_CMD_TypeDef;
+    uint32_t addr;
+} DevQSPIW25Qxx_BusCMD_TypeDef;
 
-typedef bool (*bus_cmd)(void *bus_obj, DevQSPIW25Qxx_CMD_TypeDef cmd);
-typedef uint16_t (*bus_read)(void *bus_obj, uint8_t *p_rx, uint16_t size);
+typedef struct
+{
+    uint32_t match;
+    uint32_t mask;
+} DevQSPIW25Qxx_BusCFG_TypeDef;
+
+typedef bool (*bus_cmd)(void *bus_obj, DevQSPIW25Qxx_BusCMD_TypeDef cmd);
+typedef bool (*bus_polling)(void *bus_obj, DevQSPIW25Qxx_BusCMD_TypeDef cmd, DevQSPIW25Qxx_BusCFG_TypeDef cfg);
+typedef bool (*bus_mem_map)(void *bus_obj, uint32_t reg);
+typedef uint16_t (*bus_read)(void *bus_obj, uint8_t *p_rx);
+typedef bool (*bus_write)(void *bus_obj, uint8_t *p_tx);
 
 typedef struct
 {
     bool init;
     uint32_t dev_id;
 
+    void *p_bus;
     bus_cmd trans_cmd;
     bus_read read;
+    bus_write write;
+    bus_polling polling;
+    bus_mem_map mem_map;
 } DevQSPIW25QxxObj_TypeDef;
 
 typedef struct
 {
-    bool (*init)(DevQSPIW25QxxObj_TypeDef *obj);
-    bool (*read_sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_rx, uint16_t len);
-    bool (*write_sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_tx, uint16_t len);
-    bool (*erase_sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr);
-    bool (*erase_chip)(DevQSPIW25QxxObj_TypeDef *obj);
+    bool (*Init)(DevQSPIW25QxxObj_TypeDef *obj);
+    bool (*Reset)(DevQSPIW25QxxObj_TypeDef *obj);
+    bool (*MemoryMap)(DevQSPIW25QxxObj_TypeDef *obj);
+    bool (*Erase_Chip)(DevQSPIW25QxxObj_TypeDef *obj);
+    bool (*Erase_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr);
+    bool (*Read_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_rx, uint16_t len);
+    bool (*Write_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_tx, uint16_t len);
 } DevQSPIW25Qxx_TypeDef;
 
 extern DevQSPIW25Qxx_TypeDef DevQSPIW25Qxx;

@@ -178,7 +178,7 @@ static void YModem_SendByte(YModemObj_TypeDef *obj, uint8_t byte)
     if ((obj == NULL) || (obj->trans_cb == NULL) || (obj->port_obj == NULL))
         return;
 
-    obj->trans_cb(obj->port_obj, &t_data, 1);
+    obj->trans_cb(obj->port_obj, (uint8_t *)&t_data, 1);
 }
 
 /******************************************************** receive section ****************************************************/
@@ -282,8 +282,6 @@ static void YModem_EOT_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
 
 static void YModem_RX_Done_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
 {
-    bool test = false;
-
     if (Obj == NULL)
         return;
 

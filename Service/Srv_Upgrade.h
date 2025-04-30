@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
 
 typedef void (*SrvUpgrade_Send_Callback)(void *port_obj, uint8_t *p_data, uint16_t len);
 

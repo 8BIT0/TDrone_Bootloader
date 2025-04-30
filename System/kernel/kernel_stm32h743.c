@@ -116,9 +116,6 @@ static bool KernelClock_Init(void)
 
 bool Kernel_Sys_BaseTick_Init(void)
 {
-	TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-	TIM_MasterConfigTypeDef sMasterConfig = {0};
-	
 	htim16.Instance = TIM16;
 	htim16.Init.Prescaler = 15;
 	htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -282,9 +279,6 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
 
 bool Kernel_BaseTick_Init(void)
 {
-	TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-	TIM_MasterConfigTypeDef sMasterConfig = {0};
-
 	htim17.Instance = TIM17;
 	htim17.Init.Prescaler = 0;
 	htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
