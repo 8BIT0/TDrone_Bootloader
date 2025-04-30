@@ -1,6 +1,10 @@
 #ifndef __DEV_W25QXX_QSPI_H
 #define __DEV_W25QXX_QSPI_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -92,4 +96,7 @@ typedef struct
 
 extern DevQSPIW25Qxx_TypeDef DevQSPIW25Qxx;
 
+#ifdef __cplusplus
+}
+#endif
 #endif

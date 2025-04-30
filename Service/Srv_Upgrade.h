@@ -1,6 +1,10 @@
 #ifndef __SRV_UPGRADE_H
 #define __SRV_UPGRADE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -38,5 +42,9 @@ typedef struct
 } SrvUpgrade_TypeDef;
 
 extern SrvUpgrade_TypeDef SrvUpgrade;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

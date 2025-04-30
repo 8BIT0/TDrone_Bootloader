@@ -7,6 +7,10 @@
 #include "cmsis_os.h"
 #include "../common/util.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct
 {
     bool init_state;
@@ -34,5 +38,9 @@ typedef struct
 } SrvComTrans_TypeDef;
 
 extern SrvComTrans_TypeDef SrvCom;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
