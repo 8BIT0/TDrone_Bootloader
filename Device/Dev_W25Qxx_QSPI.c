@@ -58,7 +58,7 @@ static bool DevQSPI_W25Qxx_ReadDevID(DevQSPIW25QxxObj_TypeDef *obj)
 	uint8_t	DeviceID_Tmp[3] = {0};    
 	DevQSPIW25Qxx_BusCMD_TypeDef cmd_cfg = Def_CMD;
 	
-    if ((obj == NULL) || (obj->p_bus == NULL) || (obj->trans_cmd == NULL))
+    if ((obj == NULL) || (obj->trans_cmd == NULL))
         return false;
 
     /* read deive id firset */
@@ -67,7 +67,7 @@ static bool DevQSPI_W25Qxx_ReadDevID(DevQSPIW25QxxObj_TypeDef *obj)
     cmd_cfg.trans_size = 3;
     cmd_cfg.cmd_code   = DevQSPIW25Qxx_CMD_JedecID;
 
-    if (!obj->trans_cmd(obj->p_bus, cmd_cfg) | !obj->read(obj->p_bus, DeviceID_Tmp))
+    if (!obj->trans_cmd(cmd_cfg) | !obj->read(DeviceID_Tmp))
         return false;
 
     obj->dev_id = (DeviceID_Tmp[0] << 16) | (DeviceID_Tmp[1] << 8 ) | DeviceID_Tmp[2];
@@ -86,11 +86,11 @@ static bool DevQSPI_W25Qxx_Reset(DevQSPIW25QxxObj_TypeDef *obj)
     cmd_cfg.trans_size = 0;
     cmd_cfg.cmd_code   = DevQSPIW25Qxx_CMD_EnableReset;
 
-    if ((obj == NULL) || (obj->p_bus == NULL) || (obj->trans_cmd == NULL))
+    if ((obj == NULL) || (obj->trans_cmd == NULL))
         return false;
 
     /* enable reset */
-    if (!obj->trans_cmd(obj->p_bus, cmd_cfg))
+    if (!obj->trans_cmd(cmd_cfg))
         return false;
 
     /* wait polling to the end */
@@ -100,7 +100,7 @@ static bool DevQSPI_W25Qxx_Reset(DevQSPIW25QxxObj_TypeDef *obj)
     /* reset perform */
     cmd_cfg.cmd_code   = DevQSPIW25Qxx_CMD_ResetDevice;
 
-    if (!obj->trans_cmd(obj->p_bus, cmd_cfg))
+    if (!obj->trans_cmd(cmd_cfg))
         return false;
 
     /* wait polling to the end */
@@ -115,7 +115,7 @@ static bool DevQSPI_W25Qxx_AutoPollingMem(DevQSPIW25QxxObj_TypeDef *obj)
     DevQSPIW25Qxx_BusCMD_TypeDef cmd = Def_CMD;
     DevQSPIW25Qxx_BusCFG_TypeDef cfg;
 
-    if ((obj == NULL) || (obj->p_bus == NULL) || (obj->polling == NULL))
+    if ((obj == NULL) || (obj->polling == NULL))
         return false;
 
     memset(&cfg, 0, sizeof(DevQSPIW25Qxx_BusCFG_TypeDef));
@@ -127,7 +127,7 @@ static bool DevQSPI_W25Qxx_AutoPollingMem(DevQSPIW25QxxObj_TypeDef *obj)
     cfg.match = 0;
     cfg.mask  = DevQSPIW25Qxx_Status_REG1_BUSY;
 
-    if (!obj->polling(obj->p_bus, cmd, cfg))
+    if (!obj->polling(cmd, cfg))
         return false;
 
     return true;
@@ -135,7 +135,7 @@ static bool DevQSPI_W25Qxx_AutoPollingMem(DevQSPIW25QxxObj_TypeDef *obj)
 
 static bool DevQSPI_W25Qxx_MemMap(DevQSPIW25QxxObj_TypeDef *obj)
 {
-    if ((obj == NULL) || (obj->p_bus == NULL) || (obj->mem_map == NULL))
+    if ((obj == NULL) || (obj->mem_map == NULL))
         return false;
 
     /* reset */

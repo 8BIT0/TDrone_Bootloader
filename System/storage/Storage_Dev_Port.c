@@ -3,6 +3,7 @@
 #include "Storage_Def.h"
 #include "Srv_OsCommon.h"
 #include "Dev_W25Qxx.h"
+#include "Dev_W25Qxx_QSPI.h"
 
 #include "HW_Def.h"
 #include "debug_util.h"
@@ -59,6 +60,7 @@ static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev)
 
     if (ext_dev->chip_type == Storage_ChipType_W25Qxx)
     {
+#if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
         ext_dev->obj = Storage_Dev_Malloc(sizeof(DevW25QxxObj_TypeDef));
         if (ext_dev->obj == NULL)
             return false;
@@ -71,6 +73,13 @@ static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev)
 
         STORAGE_DEV_INFO(" W25Qxx selected\r\n");
         return true;
+#elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
+        ext_dev->obj = Storage_Dev_Malloc(sizeof(DevQSPIW25QxxObj_TypeDef));
+        if (ext_dev->obj == NULL)
+            return false;
+
+        To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->trans_cmd = StoragePort_Api.trans_cmd;
+#endif
     }
     
     return false;
