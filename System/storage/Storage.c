@@ -23,7 +23,7 @@
 
 /* internal vriable */
 Storage_Monitor_TypeDef Storage_Monitor;
-#if (FLASH_CHIP_STATE == ON)
+#if (FLASH_CHIP_STATE != Storage_ChipBus_None)
 static uint8_t page_data_tmp[Storage_TabSize * 2] __attribute__((aligned(4))) = {0};
 #else
 static uint8_t page_data_tmp[1];
@@ -84,11 +84,9 @@ static bool Storage_Init(StorageDevObj_TypeDef *ExtDev)
     memset(&Storage_Monitor, 0, sizeof(Storage_Monitor));
 
     Storage_Monitor.init_state = false;
-    if (!BspFlash.init())
-        return false;
 
     /* external flash init */
-#if (FLASH_CHIP_STATE == ON)
+#if (FLASH_CHIP_STATE != Storage_ChipBus_None)
     if (ExtDev == NULL)
         return false;
 

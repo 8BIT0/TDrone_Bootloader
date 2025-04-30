@@ -9,9 +9,9 @@ extern "C" {
 #include <string.h>
 #include <stdbool.h>
 
-#define To_NormalSPI_Obj(x) (*((BspSPI_Config_TypeDef *)x))
-#define To_NormalSPI_ObjPtr(x) ((BspSPI_Config_TypeDef *)x)
-#define ToSPI_BusAPI(x) ((BspSpi_TypeDef *)x)
+#define To_NormalSPI_Obj(x)     (*((BspSPI_Config_TypeDef *)x))
+#define To_NormalSPI_ObjPtr(x)  ((BspSPI_Config_TypeDef *)x)
+#define To_SPI_BusAPI(x)        ((BspSpi_TypeDef *)x)
 
 typedef struct
 {

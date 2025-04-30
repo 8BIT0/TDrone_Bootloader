@@ -2,6 +2,12 @@
 
 const uint8_t HWVer[3] = {0, 0, 5};
 
+#if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
+SPI_HandleTypeDef ExtFlash_Bus_InstObj;
+#elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
+QSPI_HandleTypeDef ExtFlash_Bus_InstObj;
+#endif
+
 DebugPinObj_TypeDef Debug_PC0 = {
     .port = GPIOC,
     .pin = GPIO_PIN_0,

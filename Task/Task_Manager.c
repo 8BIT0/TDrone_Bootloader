@@ -7,6 +7,10 @@
 #include "Srv_ComTrans.h"
 #include "Srv_Upgrade.h"
 
+/* test code */
+#include "Storage_Bus_Port.h"
+/* test code */
+
 #define WINDOW_SIZE 100         /* unit: ms */
 #define RECEIVE_TIME_OUT 3000   /* unit: ms */
 
@@ -26,6 +30,8 @@ static void Bootloader_Check(uint32_t sys_time);
 void Task_Manager_Init(void)
 {
     DevLED.init(Led1);
+
+    /* heap memory init */
     SrvOsCommon.init();
 
     osThreadDef(MainTask, Task_Main_Logic, osPriorityLow, 0, (1 Kb));
@@ -53,6 +59,11 @@ void Task_Main_Logic(void const *arg)
     if (Tmp_Frimware_Buf == NULL)
         SYS_INFO("Bootloader", "Tmp_Frimware_Buf malloc error");
 
+    /* storage hardware module init */
+    /* test code */
+    StoragePort_Api.init(SrvOsCommon.malloc, SrvOsCommon.free);
+    /* test code */
+
     while(1)
     {
         sys_time = SrvOsCommon.get_os_ms();
@@ -70,6 +81,7 @@ void Task_Main_Logic(void const *arg)
 static void Bootloader_Check(uint32_t sys_time)
 {
     uint16_t rec_size = 0;
+    bool jump = false;
 
     /* nothing receive when 100ms when power on */
     // if (sys_time >= time_out_tick)
@@ -84,7 +96,7 @@ static void Bootloader_Check(uint32_t sys_time)
     //     SrvOsCommon.systimer_deinit();
 
     //     /* jump to app */
-    //     SrvOsCommon.jump_to_addr(App_Address_Base);
+    //     jump = true;
     // }
     // else
     {
@@ -106,6 +118,12 @@ static void Bootloader_Check(uint32_t sys_time)
             /* Use YModem receive firmware */
             SrvUpgrade.DealRec(&SrvComObj, Tmp_Frimware_Buf, rec_size);
         }
+
+        /* check upgrade state */
+
     }
+
+    // if (jump)
+    //     SrvOsCommon.jump_to_addr(App_Address_Base);
 }
 

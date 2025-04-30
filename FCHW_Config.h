@@ -14,7 +14,7 @@
 #define Storage_ChipBus_QSpi    (Storage_ChipBus_Spi + 1)
 
 #define SDRAM_ENABLE_STATE      ON
-#define FLASH_CHIP_ENABLE_STATE OFF
+#define FLASH_CHIP_ENABLE_STATE ON
 #define RADIO_NUM               1
 
 #define Storage_InfoPageSize Flash_Storage_InfoPageSize
@@ -37,7 +37,7 @@ extern uint32_t __sdram_s1_e;
 
 #define SDRAM_EN            SDRAM_ENABLE_STATE
 #define SD_CARD             SD_CARD_ENABLE_STATE
-#define FLASH_CHIP_STATE    FLASH_CHIP_ENABLE_STATE
+#define FLASH_CHIP_STATE    Storage_ChipBus_QSpi
 #define RADIO_UART_NUM      RADIO_NUM
 
 #define FC_SDRAM_Base_Addr  ((uint32_t)(&__sdram_s1_s))

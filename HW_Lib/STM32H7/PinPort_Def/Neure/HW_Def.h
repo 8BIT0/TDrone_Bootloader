@@ -8,6 +8,7 @@ extern "C" {
 #include "Bsp_GPIO.h"
 #include "Bsp_DMA.h"
 #include "Bsp_SPI.h"
+#include "Bsp_QSPI.h"
 #include "Bsp_Uart.h"
 #include "Bsp_Flash.h"
 #include "debug_util.h"
@@ -99,21 +100,26 @@ extern const uint8_t HWVer[3];
 #define RECEIVER_CRSF_TX_DMA Bsp_DMA_None               // Bsp_DMA_1
 #define RECEIVER_CRSF_TX_DMA_STREAM Bsp_DMA_Stream_None // Bsp_DMA_Stream_5
 
-#if (FLASH_CHIP_STATE == ON)
-#define ExtFlash_Bus_Type Storage_ChipBus_Spi
-#define ExtFlash_Bus_Clock_Div SPI_MCLK_DIV_4
-#define ExtFlash_Chip_Type Storage_ChipType_W25Qxx
-#define ExtFlash_Bus_Api BspSPI
-#define ExtFLash_Bus_Instance (void *)SPI2
-#define ExtFlash_Bus_CLKPhase SPI_CLOCK_PHASE_2EDGE
-#define ExtFlash_Bus_CLKPolarity SPI_CLOCK_POLARITY_HIGH
-#define ExtFlash_CS_Pin ExtFlash_CSPin
-#define ExtFlash_Bus_Pin ExtFlash_SPIPin
+#if (FLASH_CHIP_STATE != Storage_ChipBus_None)
+    #if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
+        #define ExtFlash_Bus_Clock_Div SPI_MCLK_DIV_4
+        #define ExtFlash_Chip_Type Storage_ChipType_W25Qxx
+        #define ExtFlash_Bus_Api BspSPI
+        #define ExtFLash_Bus_Instance (void *)SPI2
+        #define ExtFlash_Bus_CLKPhase SPI_CLOCK_PHASE_2EDGE
+        #define ExtFlash_Bus_CLKPolarity SPI_CLOCK_POLARITY_HIGH
+        #define ExtFlash_CS_Pin ExtFlash_CSPin
+        #define ExtFlash_Bus_Pin ExtFlash_SPIPin
+        extern SPI_HandleTypeDef ExtFlash_Bus_InstObj;
+    #elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
+        #define ExtFlash_Bus_Api BspQspi
+        #define ExtFlash_Bus_Instance (void *)QUADSPI
+        extern QSPI_HandleTypeDef ExtFlash_Bus_InstObj;
+    #endif
 
 #define App_Firmware_Addr W25QXX_BASE_ADDRESS
 #define App_Firmware_Size (1 Mb)
 
-#define ExtFlash_Dev_Api (void *)(&DevW25Qxx)
 #define ExtFlash_Start_Addr (App_Firmware_Addr + App_Firmware_Size)
 
 #define ExtFlash_Storage_DefaultData FLASH_DEFAULT_DATA
@@ -134,12 +140,9 @@ extern const uint8_t HWVer[3];
 extern BspGPIO_Obj_TypeDef ExtFlash_CSPin;
 extern BspSPI_PinConfig_TypeDef ExtFlash_SPIPin;
 #else
-#define ExtFlash_Bus_Type Storage_ChipBus_None
-
 #define App_Firmware_Addr 0
 #define App_Firmware_Size (0 Mb)
 
-#define ExtFlash_Dev_Api NULL
 #define ExtFlash_Start_Addr (App_Firmware_Addr + App_Firmware_Size)
 
 #define ExtFlash_Storage_DefaultData FLASH_DEFAULT_DATA

@@ -7,8 +7,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-typedef uint16_t (*DevQSPIW25Qxx_Bus_Trans_Callback)(uint32_t addr, uint8_t *p_tx, uint8_t *p_rx, uint16_t len);
-typedef uint16_t (*DevQSPIW25Qxx_Bus_SendCMD_Callback)(uint32_t addr, void *cmd, uint16_t len);
+#define To_DevQSPIW25Qxx_API(x)                 ((DevQSPIW25Qxx_TypeDef *)x)
+#define To_DevQSPIW25Qxx_OBJ(x)                 ((DevQSPIW25QxxObj_TypeDef *)x)
 
 #define DevQSPIW25Qxx_CMD_EnableReset           0x66        /* reset enable */
 #define DevQSPIW25Qxx_CMD_ResetDevice           0x99        /* device reset */

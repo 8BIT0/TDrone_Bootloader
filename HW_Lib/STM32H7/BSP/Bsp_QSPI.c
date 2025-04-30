@@ -3,7 +3,7 @@
 #include "stm32h7xx_hal.h"
 
 /* external function */
-static bool BspQSPI_Init(BspQSPI_Config_TypeDef *obj);
+static bool BspQSPI_Init(BspQSPI_Config_TypeDef *obj, void *qspi_hdl);
 static bool BspQSPI_Command(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t dummy_cyc, uint32_t nb_data, uint32_t cmd);
 static bool BspQSPI_Polling(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cmd, uint32_t cyc, uint32_t nb_data, uint32_t match, uint32_t mask);
 static bool BspQSPI_MemMap(BspQSPI_Config_TypeDef *obj, uint32_t cmd);
@@ -21,14 +21,15 @@ BspQSpi_TypeDef BspQspi = {
 
 __attribute__((weak)) void BspQSPI_Pin_Init(void) { return; }
 
-static bool BspQSPI_Init(BspQSPI_Config_TypeDef *obj)
+static bool BspQSPI_Init(BspQSPI_Config_TypeDef *obj, void *qspi_hdl)
 {
     RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
-    if ((obj == NULL) || (obj->p_qspi == NULL))
+    if ((obj == NULL) || (qspi_hdl == NULL))
         return false;
     
     obj->init_state = false;
+    obj->p_qspi = qspi_hdl;
 
     /* clock init */
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_QSPI;
@@ -40,18 +41,20 @@ static bool BspQSPI_Init(BspQSPI_Config_TypeDef *obj)
 
     __HAL_RCC_QSPI_CLK_ENABLE();
 
-    To_QSPI_Handle_Ptr(obj->p_qspi)->Instance                = QUADSPI;
-	HAL_QSPI_DeInit(To_QSPI_Handle_Ptr(obj->p_qspi));
+    if (HAL_QSPI_DeInit(To_QSPI_Handle_Ptr(obj->p_qspi)) != HAL_OK)
+        return false;
+    
+    To_QSPI_Handle_Ptr(obj->p_qspi)->Init.ClockPrescaler     = 1;
+    To_QSPI_Handle_Ptr(obj->p_qspi)->Init.FifoThreshold      = 32;
+    To_QSPI_Handle_Ptr(obj->p_qspi)->Init.SampleShifting     = QSPI_SAMPLE_SHIFTING_HALFCYCLE;
+    To_QSPI_Handle_Ptr(obj->p_qspi)->Init.FlashSize          = 22;
+    To_QSPI_Handle_Ptr(obj->p_qspi)->Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;
+    To_QSPI_Handle_Ptr(obj->p_qspi)->Init.ClockMode          = QSPI_CLOCK_MODE_3;
+    To_QSPI_Handle_Ptr(obj->p_qspi)->Init.FlashID            = QSPI_FLASH_ID_1;
+    To_QSPI_Handle_Ptr(obj->p_qspi)->Init.DualFlash          = QSPI_DUALFLASH_DISABLE;
 
-	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.ClockPrescaler     = 1;
-	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.FifoThreshold      = 32;
-	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.SampleShifting     = QSPI_SAMPLE_SHIFTING_HALFCYCLE;
-	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.FlashSize          = 22;
-	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;
-	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.ClockMode          = QSPI_CLOCK_MODE_3;
-	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.FlashID            = QSPI_FLASH_ID_1;
-	To_QSPI_Handle_Ptr(obj->p_qspi)->Init.DualFlash          = QSPI_DUALFLASH_DISABLE;
-	HAL_QSPI_Init(To_QSPI_Handle_Ptr(obj->p_qspi));
+    if (HAL_QSPI_Init(To_QSPI_Handle_Ptr(obj->p_qspi)) != HAL_OK)
+        return false;
 
     obj->init_state = true;
     return true;

@@ -5,23 +5,19 @@
 #include <stdint.h>
 #include <string.h>
 
-typedef enum
-{
-    BsPQSPI_Polling = 0,
-    BsPQSPI_Irq,
-} BspQSPI_Mode_List;
+#define To_QSPI_Obj(x)      (*((BspQSPI_Config_TypeDef *)x))
+#define To_QSPI_ObjPtr(x)   ((BspQSPI_Config_TypeDef *)x)
+#define To_QSPI_BusAPI(x)   ((BspQSpi_TypeDef *)x)
 
 typedef struct
 {
     bool init_state;
     void *p_qspi;
-    BspQSPI_Mode_List mode;
-    bool dma_enable;
 } BspQSPI_Config_TypeDef;
 
 typedef struct
 {
-    bool (*init)(BspQSPI_Config_TypeDef *obj);
+    bool (*init)(BspQSPI_Config_TypeDef *obj, void *qspi_hdl);
     bool (*tx)(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len);
     bool (*rx)(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len);
     bool (*cmd)(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cyc, uint32_t nb_data, uint32_t cmd);
