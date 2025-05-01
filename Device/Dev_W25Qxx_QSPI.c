@@ -143,7 +143,7 @@ static bool DevQSPI_W25Qxx_MemMap(DevQSPIW25QxxObj_TypeDef *obj)
         return false;
 
     /* set memory mapped */
-    if (!obj->mem_map(obj->p_bus, DevQSPIW25Qxx_CMD_FastReadQuad_IO))
+    if (!obj->mem_map(DevQSPIW25Qxx_CMD_FastReadQuad_IO))
         return false;
 
     return true;
@@ -154,7 +154,7 @@ static bool DevQSPI_W25Qxx_WriteEnable(DevQSPIW25QxxObj_TypeDef *obj)
     DevQSPIW25Qxx_BusCMD_TypeDef cmd = Def_CMD;
     DevQSPIW25Qxx_BusCFG_TypeDef cfg;
     
-    if ((obj == NULL) || (obj->p_bus == NULL) || (obj->trans_cmd == NULL) || (obj->polling == NULL))
+    if ((obj == NULL) || (obj->trans_cmd == NULL) || (obj->polling == NULL))
         return false;
 
     cmd.addr_line = AddrLine_None;
@@ -162,7 +162,7 @@ static bool DevQSPI_W25Qxx_WriteEnable(DevQSPIW25QxxObj_TypeDef *obj)
     cmd.cmd_code  = DevQSPIW25Qxx_CMD_WriteEnable;
         
     /* send enable command */
-    if (!obj->trans_cmd(obj->p_bus, cmd))
+    if (!obj->trans_cmd(cmd))
         return false;
     
     cmd.data_line = DataLine_1;
@@ -174,7 +174,7 @@ static bool DevQSPI_W25Qxx_WriteEnable(DevQSPIW25QxxObj_TypeDef *obj)
     cfg.match = 0x02;
 
     /* polling state */
-    if (!obj->polling(obj->p_bus, cmd, cfg))
+    if (!obj->polling(cmd, cfg))
         return false;
 
     return true;
@@ -184,7 +184,7 @@ static bool DevQSPI_W25Qxx_EraseAddr(DevQSPIW25QxxObj_TypeDef *obj, uint32_t add
 {
     DevQSPIW25Qxx_BusCMD_TypeDef cmd = Def_CMD;
 
-    if ((obj == NULL) || (obj->p_bus == NULL) || (obj->trans_cmd == NULL))
+    if ((obj == NULL) || (obj->trans_cmd == NULL))
         return false;
 
     if (!DevQSPI_W25Qxx_WriteEnable(obj))
@@ -196,7 +196,7 @@ static bool DevQSPI_W25Qxx_EraseAddr(DevQSPIW25QxxObj_TypeDef *obj, uint32_t add
     cmd.addr      = addr;
 
     /* send command */
-    if (!obj->trans_cmd(obj->p_bus, cmd))
+    if (!obj->trans_cmd(cmd))
         return false;
 
     /* polling status */
@@ -211,7 +211,7 @@ static bool DevQSPI_W25Qxx_EraseChip(DevQSPIW25QxxObj_TypeDef *obj)
     DevQSPIW25Qxx_BusCMD_TypeDef cmd = Def_CMD;
     DevQSPIW25Qxx_BusCFG_TypeDef cfg;
     
-    if ((obj == NULL) || (obj->p_bus == NULL) || (obj->trans_cmd == NULL))
+    if ((obj == NULL) || (obj->trans_cmd == NULL))
         return false;
 
     if (!DevQSPI_W25Qxx_WriteEnable(obj))
@@ -222,7 +222,7 @@ static bool DevQSPI_W25Qxx_EraseChip(DevQSPIW25QxxObj_TypeDef *obj)
     cmd.cmd_code  = DevQSPIW25Qxx_CMD_ChipErase;
 
     /* send clear command */
-    if (!obj->trans_cmd(obj->p_bus, cmd))
+    if (!obj->trans_cmd(cmd))
         return false;
 
     cmd.data_line = DataLine_1;
@@ -233,7 +233,7 @@ static bool DevQSPI_W25Qxx_EraseChip(DevQSPIW25QxxObj_TypeDef *obj)
     cfg.match = 0x00;
 
     /* polling status */
-    if (!obj->polling(obj->p_bus, cmd, cfg))
+    if (!obj->polling(cmd, cfg))
         return false;
 
     return true;
@@ -243,7 +243,7 @@ static bool DevQSPI_W25Qxx_WritePage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t add
 {
     DevQSPIW25Qxx_BusCMD_TypeDef cmd = Def_CMD;
 
-    if ((obj == NULL) || (obj->p_bus == NULL) || (obj->trans_cmd == NULL) || \
+    if ((obj == NULL) || (obj->trans_cmd == NULL) || \
         (obj->write == NULL) || (p_data == NULL) || (len == 0))
         return false;
 
@@ -258,11 +258,11 @@ static bool DevQSPI_W25Qxx_WritePage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t add
     cmd.cmd_code   = DevQSPIW25Qxx_CMD_QuadInputPageProgram;
 
     /* set write command */
-    if (!obj->trans_cmd(obj->p_bus, cmd))
+    if (!obj->trans_cmd(cmd))
         return false;
 
     /* transmit data */
-    if (!obj->write(obj->p_bus, p_data))
+    if (!obj->write(p_data))
         return false;
 
     /* polling status */
@@ -276,7 +276,7 @@ static bool DevQSPI_W25Qxx_ReadPage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr
 {
     DevQSPIW25Qxx_BusCMD_TypeDef cmd = Def_CMD;
 
-    if ((obj == NULL) || (obj->p_bus == NULL) || (obj->trans_cmd == NULL) || (obj->read == NULL) || (p_data == NULL) || (len == 0))
+    if ((obj == NULL) || (obj->trans_cmd == NULL) || (obj->read == NULL) || (p_data == NULL) || (len == 0))
         return false;
 
     cmd.addr_line   = AddrLine_4;
@@ -287,11 +287,11 @@ static bool DevQSPI_W25Qxx_ReadPage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr
     cmd.cmd_code    = DevQSPIW25Qxx_CMD_FastReadQuad_IO;
 
     /* send read command */
-    if (!obj->trans_cmd(obj->p_bus, cmd))
+    if (!obj->trans_cmd(cmd))
         return false;
 
     /* receive data */
-    if (!obj->read(obj->p_bus, p_data))
+    if (!obj->read(p_data))
         return false;
 
     /* polling status */
