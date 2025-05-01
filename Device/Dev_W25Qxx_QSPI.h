@@ -64,8 +64,8 @@ typedef struct
     uint32_t mask;
 } DevQSPIW25Qxx_BusCFG_TypeDef;
 
-typedef bool (*bus_cmd)(DevQSPIW25Qxx_BusCMD_TypeDef cmd);
-typedef bool (*bus_polling)(DevQSPIW25Qxx_BusCMD_TypeDef cmd, DevQSPIW25Qxx_BusCFG_TypeDef cfg);
+typedef bool (*bus_cmd)(DevQSPIW25Qxx_BusCMD_TypeDef *cmd);
+typedef bool (*bus_polling)(DevQSPIW25Qxx_BusCMD_TypeDef *cmd, DevQSPIW25Qxx_BusCFG_TypeDef *cfg);
 typedef bool (*bus_mem_map)(uint32_t reg);
 typedef uint16_t (*bus_read)(uint8_t *p_rx);
 typedef bool (*bus_write)(uint8_t *p_tx);

@@ -2,19 +2,28 @@
 
 /* external function */
 static void *Storage_External_Chip_Bus_Init(StorageBus_Malloc_Callback p_malloc, StorageBus_Free_Callback p_free);
+#if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
 static bool Storage_External_Chip_SelectPin_Ctl(bool state);
 static uint16_t Storage_External_Chip_BusTx(uint8_t *p_data, uint16_t len, uint32_t time_out);
 static uint16_t Storage_External_Chip_BusRx(uint8_t *p_data, uint16_t len, uint32_t time_out);
 static uint16_t Storage_External_Chip_BusTrans(uint8_t *tx, uint8_t *rx, uint16_t len, uint32_t time_out);
+#elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
+
+#endif
 
 StorageBusApi_TypeDef StoragePort_Api = {
-    .init       = Storage_External_Chip_Bus_Init,
-    .bus_tx     = Storage_External_Chip_BusTx,
-    .bus_rx     = Storage_External_Chip_BusRx,
-    .bus_trans  = Storage_External_Chip_BusTrans,
+    .init               = Storage_External_Chip_Bus_Init,
 #if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
-    .cs_ctl     = Storage_External_Chip_SelectPin_Ctl,
+    .bus_tx             = Storage_External_Chip_BusTx,
+    .bus_rx             = Storage_External_Chip_BusRx,
+    .bus_trans          = Storage_External_Chip_BusTrans,
+    .cs_ctl             = Storage_External_Chip_SelectPin_Ctl,
 #elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
+    // .bus_trans_cmd      = ,
+    // .bus_status_polling = ,
+    // .bus_mem_map        = ,
+    // .bus_read           = ,
+    // .bus_write          = ,
 #endif
 };
 
@@ -56,56 +65,45 @@ static void* Storage_External_Chip_Bus_Init(StorageBus_Malloc_Callback p_malloc,
     return NULL;
 }
 
+#if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
 static bool Storage_External_Chip_SelectPin_Ctl(bool state)
 {
-#if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
     BspGPIO.write(ExtFlash_CS_Pin, state);
     return true;
-#endif
-
-    return false;
 }
 
 static uint16_t Storage_External_Chip_BusTx(uint8_t *p_data, uint16_t len, uint32_t time_out)
 {
-#if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
     if (p_data && len)
     {
         if (ExtFlash_Bus_Api.trans(&ExtFlash_Bus_InstObj, p_data, len, time_out))
             return len;
     }
-#elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
-
-#endif
 
     return 0;
 }
 
 static uint16_t Storage_External_Chip_BusRx(uint8_t *p_data, uint16_t len, uint32_t time_out)
 {
-#if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
     if (p_data && len)
     {
         if (ExtFlash_Bus_Api.receive(&ExtFlash_Bus_InstObj, p_data, len, time_out))
             return len;
     }
-#elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
-#endif
 
     return 0;
 }
 
 static uint16_t Storage_External_Chip_BusTrans(uint8_t *tx, uint8_t *rx, uint16_t len, uint32_t time_out)
 {
-#if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
     if (tx && rx && len)
     {
         if (ExtFlash_Bus_Api.trans_receive(&ExtFlash_Bus_InstObj, tx, rx, len, time_out))
             return len;
     }
-#elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
-
-#endif
 
     return 0;
 }
+#elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
+
+#endif
