@@ -77,9 +77,14 @@ static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev)
         ext_dev->obj = Storage_Dev_Malloc(sizeof(DevQSPIW25QxxObj_TypeDef));
         if (ext_dev->obj == NULL)
             return false;
-
+        
+        To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->init      = false;
         To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->trans_cmd = StoragePort_Api.bus_trans_cmd;
-#endif
+        To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->mem_map   = StoragePort_Api.bus_mem_map;
+        To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->polling   = StoragePort_Api.bus_status_polling;
+        To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->read      = StoragePort_Api.bus_read;
+        To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->write     = StoragePort_Api.bus_write;
+#endif                      
     }
     
     return false;

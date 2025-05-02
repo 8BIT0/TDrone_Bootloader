@@ -7,75 +7,70 @@
  * 
  * NOTICED: STORAGE MODULE ONLY SUPPORT NOR-FLASH
  */
+#include <stdlib.h>
 #include "Storage.h"
-#include "shell_port.h"
-#include "util.h"
-#include "HW_Def.h"
+#include "../Dep/util.h"
 #include "Storage_Bus_Port.h"
 #include "Storage_Dev_Port.h"
-#include "Srv_OsCommon.h"
-#include "debug_util.h"
 
-#define STORAGE_TAG                     "[ STORAGE INFO ] "
-#define STORAGE_INFO(fmt, ...)          Debug_Print(&DebugPort, STORAGE_TAG, fmt, ##__VA_ARGS__)
+#define STORAGE_VERSION_LEN             3
+#define STORAGE_TAG                     "Storage module"
+#define STORAGE_INFO(stage, fmt, ...)   Debug_Print(STORAGE_TAG, stage, fmt, ##__VA_ARGS__)
+
+#define STORAGE_DEBUG                   1
 
 #define Item_Capacity_Per_Tab           (Storage_TabSize / sizeof(Storage_Item_TypeDef))
+#define TabNum                          (Storage_Item_Capacity / (Flash_Storage_TabSize / StorageItem_Size))
+#define TabSize                         (TabNum * Flash_Storage_TabSize)
+
+__attribute__((weak)) void* Storage_Malloc(uint32_t size) {return malloc(size);}
+__attribute__((weak)) void Storage_Free(void **ptr)
+{
+    if ((ptr == NULL) || (*ptr == NULL))
+        return;
+
+    free(*ptr);
+    *ptr = NULL;
+}
 
 /* internal vriable */
 Storage_Monitor_TypeDef Storage_Monitor;
-#if (FLASH_CHIP_STATE != Storage_ChipBus_None)
-static uint8_t page_data_tmp[Storage_TabSize * 2] __attribute__((aligned(4))) = {0};
-#else
-static uint8_t page_data_tmp[1];
-#endif
-
-static bool Storage_Clear_Tab(uint32_t addr, uint32_t tab_num);
-static bool Storage_Establish_Tab(Storage_ParaClassType_List class);
+static uint8_t page_data_tmp[(Storage_TabSize * 2)] __attribute__((aligned(4))) = {0};
+const uint8_t version[STORAGE_VERSION_LEN] = {0, 0, 1};
 
 /* internal function */
 static bool Storage_Build_StorageInfo(void);
 static bool Storage_Get_StorageInfo(void);
 static bool Storage_Format(void);
+static bool Storage_UpdateBaseInfo(void);
 static bool Storage_Compare_ItemSlot_CRC(const Storage_Item_TypeDef item);
 static bool Storage_Comput_ItemSlot_CRC(Storage_Item_TypeDef *p_item);
 static Storage_BaseSecInfo_TypeDef* Storage_Get_SecInfo(Storage_FlashInfo_TypeDef *info, Storage_ParaClassType_List class);
 static bool Storage_DeleteSingleDataSlot(uint32_t slot_addr, uint8_t *p_data, Storage_BaseSecInfo_TypeDef *p_Sec);
 static Storage_ErrorCode_List Storage_FreeSlot_CheckMerge(uint32_t slot_addr, Storage_FreeSlot_TypeDef *slot_info, Storage_BaseSecInfo_TypeDef *p_Sec);
-static bool Storage_Link_FreeSlot(uint32_t front_free_addr, uint32_t behind_free_addr, uint32_t new_free_addr, Storage_FreeSlot_TypeDef *new_free_slot);
+static Link_State_List Storage_Link_FreeSlot(uint32_t front_free_addr, uint32_t behind_free_addr, uint32_t new_free_addr, Storage_FreeSlot_TypeDef *new_free_slot, Storage_BaseSecInfo_TypeDef *p_Sec);
 static Storage_ErrorCode_List Storage_ItemSlot_Update(uint32_t tab_addr, uint8_t item_index, Storage_BaseSecInfo_TypeDef *p_Sec, Storage_Item_TypeDef item);
-static void Storage_Module_Format(void);
+static bool Storage_Clear_Tab(uint32_t addr, uint32_t tab_num);
+static bool Storage_Establish_Tab(Storage_ParaClassType_List class);
+static bool Storage_Fill_ReserveSec(uint32_t addr);
 
 /* external function */
 static bool Storage_Init(StorageDevObj_TypeDef *ExtDev);
 static Storage_ItemSearchOut_TypeDef Storage_Search(Storage_ParaClassType_List _class, const char *name);
-static Storage_ErrorCode_List Storage_DeleteItem(Storage_ParaClassType_List _class, const char *name, uint32_t size);
+static Storage_ErrorCode_List Storage_DeleteItem(Storage_ParaClassType_List _class, const char *name);
 static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _class, const char *name, uint8_t *p_data, uint16_t size);
 static Storage_ErrorCode_List Storage_SlotData_Update(Storage_ParaClassType_List _class, storage_handle data_slot_hdl, uint8_t *p_data, uint16_t size);
-static Storage_ErrorCode_List Storage_Get_Data(Storage_ParaClassType_List _class, Storage_Item_TypeDef item, uint8_t *p_data, uint16_t size);
+static Storage_ErrorCode_List Storage_Get_Data(Storage_ParaClassType_List _class, Storage_Item_TypeDef item, uint8_t *p_data, uint16_t *size);
 static Storage_ErrorCode_List Storage_Get_DevInfo(StorageDevObj_TypeDef *info);
-static bool Storage_Write_Section(uint32_t addr, uint8_t *p_data, uint16_t len);
-static bool Storage_Read_Section(uint32_t addr, uint8_t *p_data, uint16_t len);
-static bool Storage_Erase_Section(uint32_t addr, uint16_t len);
-
-static bool Storage_Firmware_Format(void);
-static bool Storage_Frimware_Read(uint32_t addr_offset, uint8_t *p_data, uint16_t size);
-static bool Storage_Firmware_Write(Storage_MediumType_List medium, uint32_t addr_offset, uint8_t *p_data, uint16_t size);
 
 Storage_TypeDef Storage = {
     .init = Storage_Init,
     .search = Storage_Search,
     .create = Storage_CreateItem,
+    .delete = Storage_DeleteItem,
     .get = Storage_Get_Data,
     .update = Storage_SlotData_Update,
     .get_dev_info = Storage_Get_DevInfo,
-
-    .write_section = Storage_Write_Section,
-    .read_section = Storage_Read_Section,
-    .erase_section = Storage_Erase_Section,
-
-    .format_firmware = Storage_Firmware_Format,
-    .read_firmware = Storage_Frimware_Read,
-    .write_firmware = Storage_Firmware_Write,
 };
 
 static bool Storage_Init(StorageDevObj_TypeDef *ExtDev)
@@ -86,79 +81,95 @@ static bool Storage_Init(StorageDevObj_TypeDef *ExtDev)
     Storage_Monitor.init_state = false;
 
     /* external flash init */
-#if (FLASH_CHIP_STATE != Storage_ChipBus_None)
     if (ExtDev == NULL)
         return false;
 
     Storage_Monitor.ExtDev_ptr = NULL;
-    bus_cfg = StoragePort_Api.init(SrvOsCommon.malloc, SrvOsCommon.free);
+    /* doing bus init on your hardware platform */
+    bus_cfg = StoragePort_Api.init(Storage_Malloc, Storage_Free);
     if (bus_cfg == NULL)
     {
-        STORAGE_INFO("Bus Init Failed\r\n");
-        Storage_Monitor.ExternalFlash_Error_Code = Storage_BusInit_Error;
+        STORAGE_INFO("Bus Init", "Failed");
+        Storage_Monitor.Flash_Error_Code = Storage_BusInit_Error;
         return false;
     }
 
-    STORAGE_INFO("Bus init accomplished\r\n");
+    STORAGE_INFO("Bus init", "accomplished");
+    STORAGE_INFO("", "Data Slot size %d", sizeof(Storage_DataSlot_TypeDef));
     Storage_Monitor.ExtBusCfg_Ptr = bus_cfg;
 
     if (ExtDev->chip_type >= Storage_ChipType_All)
     {
-        STORAGE_INFO("Unknown chip type\r\n");
-        Storage_Monitor.ExternalFlash_Error_Code = Storage_ModuleType_Error;
+        STORAGE_INFO("init", "Unknown chip type");
+        Storage_Monitor.Flash_Error_Code = Storage_ModuleType_Error;
         return false;
     }
 
     if (!StorageDev.set(ExtDev))
     {
-        Storage_Monitor.ExternalFlash_Error_Code = Storage_ExtDevObj_Error;
+        STORAGE_INFO("init", "Device set error");
+        Storage_Monitor.Flash_Error_Code = Storage_ExtDevObj_Error;
         return false;
     }
 
     Storage_Monitor.ExtDev_ptr = ExtDev;
-    Storage_Monitor.ExternalFlash_ReInit_cnt = ExternalModule_ReInit_Cnt;
+    Storage_Monitor.Flash_ReInit_cnt = Module_ReInit_Cnt;
 
 reinit_external_flash_module:
-    Storage_Monitor.ExternalFlash_Error_Code = Storage_Error_None;
+    Storage_Monitor.Flash_Error_Code = Storage_Error_None;
     if (!StorageDev.init(ExtDev, &Storage_Monitor.module_prod_type, &Storage_Monitor.module_prod_code))
     {
-        Storage_Monitor.ExternalFlash_Error_Code = Storage_ModuleInit_Error;
-        STORAGE_INFO("chip init failed\r\n");
-        if (Storage_Monitor.ExternalFlash_ReInit_cnt)
+        Storage_Monitor.Flash_Error_Code = Storage_ModuleInit_Error;
+        STORAGE_INFO("init", "Failed");
+        if (Storage_Monitor.Flash_ReInit_cnt)
         {
-            STORAGE_INFO("init retry remain %d\r\n\r\n", Storage_Monitor.ExternalFlash_ReInit_cnt);
-            Storage_Monitor.ExternalFlash_ReInit_cnt --;
+            STORAGE_INFO("init", "Retry remain %d", Storage_Monitor.Flash_ReInit_cnt);
+            Storage_Monitor.Flash_ReInit_cnt --;
             goto reinit_external_flash_module;
         }
         return false;
     }
 
     /* set external flash device read write base address */
-    Storage_Monitor.info.base_addr = ExtFlash_Start_Addr;
-    Storage_Monitor.ExternalFlash_Format_cnt = Format_Retry_Cnt;
+    Storage_Monitor.info.base_addr = Flash_Start_Addr;
+    Storage_Monitor.Flash_Format_cnt = Format_Retry_Cnt;
+
+    /* check storage item size */
+    if (StorageItem_Size % StorageItem_Align_Unit)
+    {
+        STORAGE_INFO("init", "Item size error");
+        Storage_Assert(true);
+        return false;
+    }
+
 reupdate_external_flash_info:
     /* get storage info */
+    STORAGE_INFO("init", "Get info");
     if (!Storage_Get_StorageInfo())
     {
 reformat_external_flash_info:
-        if (Storage_Monitor.ExternalFlash_Format_cnt)
+        if (Storage_Monitor.Flash_Format_cnt)
         {
             /* format storage device */
             if (!Storage_Format())
             {
-                Storage_Monitor.ExternalFlash_Format_cnt --;
-                Storage_Monitor.info.base_addr = ExtFlash_Start_Addr;
-                if (Storage_Monitor.ExternalFlash_Format_cnt == 0)
+                Storage_Monitor.Flash_Format_cnt --;
+                Storage_Monitor.info.base_addr = Flash_Start_Addr;
+                if (Storage_Monitor.Flash_Format_cnt == 0)
+                {
+                    STORAGE_INFO("init", "Format failed");
                     return false;
-                    
+                }
+
                 goto reformat_external_flash_info;
             }
 
             /* external flash module format successed */
             /* build storage tab */
+            STORAGE_INFO("init", "Build info");
             if (Storage_Build_StorageInfo())
             {
-                Storage_Monitor.ExternalFlash_BuildTab_cnt ++;
+                Storage_Monitor.Flash_BuildTab_cnt ++;
                 Storage_Monitor.init_state = true;
 
                 /* after tab builded read storage info again */
@@ -168,12 +179,27 @@ reformat_external_flash_info:
     }
     else
     {
-        STORAGE_INFO("chip init done\r\n");
+        STORAGE_INFO("chip init", "done");
         Storage_Monitor.init_state = true;
     }
-#endif
 
     return Storage_Monitor.init_state;
+}
+
+static bool Storage_UpdateBaseInfo(void)
+{
+    uint16_t crc = 0;
+
+    /* update base info CRC */
+    memset(page_data_tmp, 0, Storage_InfoPageSize);
+    memcpy(page_data_tmp, &Storage_Monitor.info, sizeof(Storage_FlashInfo_TypeDef));
+    crc = Common_CRC16(page_data_tmp, Storage_InfoPageSize - sizeof(crc));
+    memcpy(&page_data_tmp[Storage_InfoPageSize - sizeof(crc)], &crc, sizeof(crc));
+
+    if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, page_data_tmp, Storage_TabSize))
+        return false;
+
+    return true;
 }
 
 static Storage_ErrorCode_List Storage_Get_DevInfo(StorageDevObj_TypeDef *info)
@@ -193,51 +219,59 @@ static Storage_ErrorCode_List Storage_Get_DevInfo(StorageDevObj_TypeDef *info)
 
 static bool Storage_Format(void)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
     uint32_t size = 0;
     uint8_t default_data = 0;
     uint32_t read_time = 0;
     uint32_t remain_size = 0;
-    uint32_t addr_offset = From_Start_Address;
+    uint32_t addr_tmp = Storage_Monitor.info.base_addr;
         
     size = Storage_TabSize;
-    default_data = ExtFlash_Storage_DefaultData;
-    remain_size = ExtFlash_Storage_TotalSize;
-    read_time = ExtFlash_Storage_TotalSize / Storage_TabSize;
-    if (ExtFlash_Storage_TotalSize % Storage_TabSize)
+    default_data = Flash_Storage_DefaultData;
+    remain_size = Flash_Storage_TotalSize;
+    read_time = Flash_Storage_TotalSize / Storage_TabSize;
+    if (Flash_Storage_TotalSize % Storage_TabSize)
         read_time ++;
 
+    STORAGE_INFO("format", "Start");
     for(uint32_t i = 0; i < read_time; i++)
     {
         if ((remain_size != 0) && (remain_size < size))
             size = remain_size;
 
-        if (!StorageDev.param_erase(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, addr_offset, size))
+        if (!StorageDev.param_erase(Storage_Monitor.ExtDev_ptr, addr_tmp, size) || \
+            !StorageDev.param_read(Storage_Monitor.ExtDev_ptr, addr_tmp, page_data_tmp, size))
+        {
+            STORAGE_INFO("format", "Failed at addr 0x%08x", addr_tmp);
+            Storage_Assert(true);
             return false;
-
-        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, addr_offset, page_data_tmp, size))
-            return false;
+        }
 
         for(uint32_t j = 0; j < size; j++)
         {
             if (page_data_tmp[i] != default_data)
+            {
+                STORAGE_INFO("format", "Default data error");
+                Storage_Assert(true);
                 return false;
+            }
         }
 
-        addr_offset += size;
+        addr_tmp += size;
         remain_size -= size;
 
         if (remain_size == 0)
+        {
+            STORAGE_INFO("format", "Done");
             return true;
+        }
     }
-#endif
+    
+    STORAGE_INFO("format", "Failed");
     return false;
 }
 
 static bool Storage_Check_Tab(Storage_BaseSecInfo_TypeDef *sec_info)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
-    uint32_t free_i = 0;
     uint32_t tab_addr = 0;
     uint32_t store_param_found = 0;
     uint32_t store_param_size = 0;
@@ -247,7 +281,7 @@ static bool Storage_Check_Tab(Storage_BaseSecInfo_TypeDef *sec_info)
     uint16_t crc16 = 0;
     uint8_t *crc_buf = NULL;
     uint16_t crc_len = 0;
-    Storage_FreeSlot_TypeDef *FreeSlot_Info = NULL;
+    Storage_FreeSlot_TypeDef FreeSlot_Info;
     Storage_Item_TypeDef *p_ItemList = NULL;
 
     if (sec_info == NULL)
@@ -258,35 +292,50 @@ static bool Storage_Check_Tab(Storage_BaseSecInfo_TypeDef *sec_info)
     sec_start_addr = sec_info->data_sec_addr;
     sec_end_addr = sec_start_addr + sec_info->data_sec_size;
 
-    for(free_i = 0; ;)
+    for(uint32_t free_i = 0; ;)
     {
-        /* check boot section free slot */
+        STORAGE_INFO("check tab", "freeslot %d addr 0x%08X", free_i, free_slot_addr);
+        /* check free slot */
         if ((free_slot_addr == 0) || \
             (free_slot_addr < sec_start_addr) || \
             (free_slot_addr > sec_end_addr) || \
-            !StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, free_slot_addr, page_data_tmp, Storage_TabSize))
-            return false;
+            !StorageDev.param_read(Storage_Monitor.ExtDev_ptr, free_slot_addr, (uint8_t *)&FreeSlot_Info, sizeof(Storage_FreeSlot_TypeDef)))
+        {
+            if ((free_slot_addr < sec_start_addr) || \
+                (free_slot_addr > sec_end_addr))
+            {
+                STORAGE_INFO("check tab", "free slot addr warnning");
+                STORAGE_INFO("check tab", "sec start addr %d", sec_start_addr);
+                STORAGE_INFO("check tab", "sec end   addr %d", sec_end_addr);
+                STORAGE_INFO("check tab", "free slot addr %d", free_slot_addr);
+            }
 
-        FreeSlot_Info = (Storage_FreeSlot_TypeDef *)page_data_tmp;
+            break;
+        }
 
-        if ((FreeSlot_Info->head_tag != STORAGE_SLOT_HEAD_TAG) || \
-            (FreeSlot_Info->end_tag != STORAGE_SLOT_END_TAG))
+        STORAGE_INFO("check tab", "freeslot %d addr 0x%08X", free_i, free_slot_addr);
+
+        if ((FreeSlot_Info.head_tag != STORAGE_SLOT_HEAD_TAG) || \
+            (FreeSlot_Info.end_tag != STORAGE_SLOT_END_TAG))
+        {
+            STORAGE_INFO("check tab", "free slot tag error");
             return false;
+        }
 
         free_i ++;
-        if (FreeSlot_Info->nxt_addr == 0)
+        if (FreeSlot_Info.nxt_addr == 0)
             break;
 
-        free_slot_addr = FreeSlot_Info->nxt_addr;
+        free_slot_addr = FreeSlot_Info.nxt_addr;
     }
     
     if (sec_info->para_num)
     {
         tab_addr = sec_info->tab_addr;
 
-        for (uint16_t tab_i = 0; tab_i < sec_info->page_num; tab_i ++)
+        for (uint16_t tab_i = 0; tab_i < sec_info->tab_num; tab_i ++)
         {
-            if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, tab_addr, page_data_tmp, sec_info->tab_size / sec_info->page_num))
+            if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, tab_addr, page_data_tmp, sec_info->tab_size / sec_info->tab_num))
                 return false;
         
             p_ItemList = (Storage_Item_TypeDef *)page_data_tmp;
@@ -295,58 +344,62 @@ static bool Storage_Check_Tab(Storage_BaseSecInfo_TypeDef *sec_info)
                 if ((p_ItemList[item_i].head_tag == STORAGE_ITEM_HEAD_TAG) && \
                     (p_ItemList[item_i].end_tag == STORAGE_ITEM_END_TAG))
                 {
-                    /* check item slot crc */
-                    /*
-                        *  typedef struct
-                        *  {
-                        *      uint8_t head_tag;
-                        *      uint8_t class;
-                        *      uint8_t name[STORAGE_NAME_LEN];
-                        *      uint32_t data_addr;
-                        *      uint16_t len;
-                        *      uint16_t crc16;
-                        *      uint8_t end_tag;
-                        *  } Storage_Item_TypeDef;
-                        *  
-                        * comput crc from class to len
-                        */
+                    /*  check item slot crc
+                     *  typedef struct
+                     *  {
+                     *      uint8_t head_tag;
+                     *      uint8_t class;
+                     *      uint8_t name[STORAGE_NAME_LEN];
+                     *      uint32_t data_addr;
+                     *      uint16_t len;
+                     *      uint16_t crc16;
+                     *      uint8_t end_tag;
+                     *  } Storage_Item_TypeDef;
+                     *  
+                     *  comput crc from class to len */
                     crc_buf = (uint8_t *)&p_ItemList[item_i] + sizeof(p_ItemList[item_i].head_tag);
                     crc_len = sizeof(Storage_Item_TypeDef);
                     crc_len -= sizeof(p_ItemList[item_i].head_tag);
                     crc_len -= sizeof(p_ItemList[item_i].end_tag);
                     crc_len -= sizeof(p_ItemList[item_i].crc16);
-                    store_param_size += p_ItemList[item_i].len;
                     
                     crc16 = Common_CRC16(crc_buf, crc_len);
                     if (crc16 != p_ItemList[item_i].crc16)
+                    {
+                        STORAGE_INFO("check tab", "item[%d] %s crc error", item_i, p_ItemList[item_i].name);
                         return false;
-
-                    store_param_found ++;
+                    }
+                    
+                    if (memcmp(p_ItemList[item_i].name, STORAGE_FREEITEM_NAME, strlen(STORAGE_FREEITEM_NAME)) != 0)
+                    {
+                        store_param_found ++;
+                        store_param_size += p_ItemList[item_i].len;
+                    }
                 }
             }
 
-            tab_addr += (sec_info->tab_size / sec_info->page_num);
+            tab_addr += (sec_info->tab_size / sec_info->tab_num);
         }
 
         if ((store_param_found != sec_info->para_num) || \
             (store_param_size != sec_info->para_size))
+        {
+            STORAGE_INFO("check tab", "para num or size error");
             return false;
+        }
     }
 
     return true;
-#else
-    return false;
-#endif
 }
 
 static bool Storage_Get_StorageInfo(void)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
+    bool tab_state = true;
     Storage_FlashInfo_TypeDef *p_Info = NULL;
     Storage_FlashInfo_TypeDef Info_r;
     uint16_t crc = 0;
     uint16_t crc_read = 0;
-    char flash_tag[INTERNAL_PAGE_TAG_SIZE + EXTERNAL_PAGE_TAG_SIZE];
+    char flash_tag[EXTERNAL_PAGE_TAG_SIZE];
 
     memset(flash_tag, '\0', sizeof(flash_tag));
     memset(&Info_r, 0, sizeof(Storage_FlashInfo_TypeDef));
@@ -354,8 +407,11 @@ static bool Storage_Get_StorageInfo(void)
     memcpy(flash_tag, EXTERNAL_STORAGE_PAGE_TAG, EXTERNAL_PAGE_TAG_SIZE);
     p_Info = &Storage_Monitor.info;
     
-    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, From_Start_Address, page_data_tmp, Storage_TabSize))
+    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, page_data_tmp, Storage_TabSize))
+    {
+        STORAGE_INFO("read", "addr 0x%08X %d size data failed", Storage_Monitor.info.base_addr, Storage_TabSize);
         return false;
+    }
 
     /* check internal storage tag */
     Info_r = *(Storage_FlashInfo_TypeDef *)page_data_tmp;
@@ -363,39 +419,56 @@ static bool Storage_Get_StorageInfo(void)
     /* check storage tag */
     /* check boot / sys / user  start addr */
     if ((strcmp((const char *)Info_r.tag, flash_tag) != 0) || \
-        (Info_r.boot_sec.tab_addr == 0) || \
         (Info_r.sys_sec.tab_addr == 0) || \
         (Info_r.user_sec.tab_addr == 0) || \
-        (Info_r.boot_sec.tab_addr == Info_r.sys_sec.tab_addr) || \
-        (Info_r.boot_sec.tab_addr == Info_r.user_sec.tab_addr) || \
         (Info_r.sys_sec.tab_addr == Info_r.user_sec.tab_addr))
         return false;
+    
+    STORAGE_INFO("info", "tag %s", Info_r.tag);
+    STORAGE_INFO("info", "sys  tab addr 0x%08X", Info_r.sys_sec.tab_addr);
+    STORAGE_INFO("info", "user tab addr 0x%08X", Info_r.user_sec.tab_addr);
 
     /* get crc from storage baseinfo section check crc value */
     memcpy(&crc_read, &page_data_tmp[Storage_InfoPageSize - sizeof(uint16_t)], sizeof(uint16_t));
     crc = Common_CRC16(page_data_tmp, Storage_InfoPageSize - sizeof(crc));
     if (crc != crc_read)
+    {
+        STORAGE_INFO("info sec", "CRC Error");
         return false;
+    }
 
     memset(page_data_tmp, 0, Storage_TabSize);
-    /* check  boot  section tab & free slot info & stored item */
     /* check system section tab & free slot info & stored item */
     /* check  user  section tab & free slot info & stored item */
-    if (Storage_Check_Tab(&Info_r.boot_sec) && \
-        Storage_Check_Tab(&Info_r.sys_sec) && \
-        Storage_Check_Tab(&Info_r.user_sec))
+    STORAGE_INFO("info", "check sys tab");
+    if (!Storage_Check_Tab(&Info_r.sys_sec))
     {
+        tab_state = false;
+        STORAGE_INFO("info", "sys tab error");
+    }
+    
+    STORAGE_INFO("info", "check user tab");
+    if (!Storage_Check_Tab(&Info_r.user_sec))
+    {
+        tab_state = false;
+        STORAGE_INFO("info", "user tab error");
+    }
+
+    if (tab_state)
+    {
+        STORAGE_INFO("info", "all tab checked");
         memcpy(p_Info, &Info_r, sizeof(Storage_FlashInfo_TypeDef));
         return true;
     }
-#endif
 
     return false;
 }
 
+/*
+ * Write 0 to table area 
+ */
 static bool Storage_Clear_Tab(uint32_t addr, uint32_t tab_num)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
     uint32_t addr_tmp = 0;
 
     if ((addr == 0) || \
@@ -407,16 +480,13 @@ static bool Storage_Clear_Tab(uint32_t addr, uint32_t tab_num)
     
     for(uint32_t i = 0; i < tab_num; i++)
     {
-        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, addr_tmp, page_data_tmp, Storage_TabSize))
+        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, addr_tmp, page_data_tmp, Storage_TabSize))
             return false;
 
         addr_tmp += Storage_TabSize;
     }
 
     return true;
-#else
-    return false;
-#endif
 }
 
 /* 
@@ -426,13 +496,12 @@ static bool Storage_Clear_Tab(uint32_t addr, uint32_t tab_num)
 static Storage_ItemSearchOut_TypeDef Storage_Search(Storage_ParaClassType_List _class, const char *name)
 {
     Storage_ItemSearchOut_TypeDef ItemSearch;
-#if (FLASH_CHIP_ENABLE_STATE == ON)
     Storage_BaseSecInfo_TypeDef *p_Sec = NULL;
     Storage_Item_TypeDef *item_list = NULL;
     Storage_Item_TypeDef *p_item = NULL;
     uint32_t tab_addr = 0;
 
-    memset(&ItemSearch, 0, sizeof(ItemSearch));
+    memset(&ItemSearch, 0, sizeof(Storage_ItemSearchOut_TypeDef));
 
     if (!Storage_Monitor.init_state || \
         (name == NULL) || \
@@ -449,74 +518,62 @@ static Storage_ItemSearchOut_TypeDef Storage_Search(Storage_ParaClassType_List _
 
     tab_addr = p_Sec->tab_addr;
     /* tab traverse */
-    for (uint8_t tab_i = 0; tab_i < p_Sec->page_num; tab_i ++)
+    for (uint8_t tab_i = 0; tab_i < p_Sec->tab_num; tab_i ++)
     {
-        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, tab_addr, page_data_tmp, (p_Sec->tab_size / p_Sec->page_num)))
+        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, tab_addr, page_data_tmp, (p_Sec->tab_size / p_Sec->tab_num)))
             return ItemSearch;
     
         /* tab item traverse */
         item_list = (Storage_Item_TypeDef *)page_data_tmp;
-        for (uint16_t item_i = 0; item_i < ((p_Sec->tab_size / p_Sec->page_num) / sizeof(Storage_Item_TypeDef)); item_i ++)
+        for (uint16_t item_i = 0; item_i < ((p_Sec->tab_size / p_Sec->tab_num) / sizeof(Storage_Item_TypeDef)); item_i ++)
         {
             p_item = &item_list[item_i];
 
             if ((p_item->head_tag == STORAGE_ITEM_HEAD_TAG) && \
                 (p_item->end_tag == STORAGE_ITEM_END_TAG) && \
-                (memcmp(p_item->name, name, strlen(name)) == 0))
+                (memcmp(p_item->name, name, strlen(name)) == 0) && \
+                (Storage_Compare_ItemSlot_CRC(*p_item)))
             {
-                if (Storage_Compare_ItemSlot_CRC(*p_item))
-                {
-                    ItemSearch.item_addr = tab_addr;
-                    ItemSearch.item_index = item_i;
-                    ItemSearch.item = *p_item;
-                    return ItemSearch;
-                }
+                ItemSearch.item_addr = tab_addr;
+                ItemSearch.item_index = item_i;
+                ItemSearch.item = *p_item;
+                return ItemSearch;
             }
         }
     
         /* update tab address */
-        tab_addr += (p_Sec->tab_size / p_Sec->page_num);
+        tab_addr += (p_Sec->tab_size / p_Sec->tab_num);
     }
-#else
-    memset(&ItemSearch, 0, sizeof(ItemSearch));
-#endif
 
     return ItemSearch;
 }
 
 static Storage_ErrorCode_List Storage_ItemSlot_Update(uint32_t tab_addr, uint8_t item_index, Storage_BaseSecInfo_TypeDef *p_Sec, Storage_Item_TypeDef item)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
     Storage_Item_TypeDef *ItemList = NULL;
 
     if ((tab_addr == 0) || \
         (p_Sec == NULL) || \
         (item.head_tag != STORAGE_ITEM_HEAD_TAG) || \
-        (item.end_tag != STORAGE_ITEM_END_TAG) || \
-        (item.data_addr == 0) || \
-        (item.data_addr > (p_Sec->data_sec_addr + p_Sec->data_sec_size)) || \
-        (item.data_addr < p_Sec->data_sec_addr))
+        (item.end_tag != STORAGE_ITEM_END_TAG))
         return Storage_Param_Error;
 
-    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, tab_addr, &page_data_tmp[Storage_TabSize], Storage_TabSize))
+    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, tab_addr, &page_data_tmp[Storage_TabSize], Storage_TabSize))
         return Storage_Read_Error;
 
     ItemList = (Storage_Item_TypeDef *)&page_data_tmp[Storage_TabSize];
     ItemList[item_index] = item;
 
-    if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, tab_addr, (uint8_t *)ItemList, Storage_TabSize))
+    if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, tab_addr, (uint8_t *)ItemList, Storage_TabSize))
         return Storage_Write_Error;
 
     return Storage_Error_None;
-#else
-    return Storage_Read_Error;
-#endif
 }
 
-static Storage_ErrorCode_List Storage_Get_Data(Storage_ParaClassType_List class, Storage_Item_TypeDef item, uint8_t *p_data, uint16_t size)
+static Storage_ErrorCode_List Storage_Get_Data(Storage_ParaClassType_List class, Storage_Item_TypeDef item, uint8_t *p_data, uint16_t *size)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
-    uint32_t data_len = 0;
+    int32_t data_len = 0;
+    uint16_t valid_size = 0;
     uint32_t data_addr = 0;
     uint8_t *p_read_out = NULL;
     uint8_t *crc_buf = NULL;
@@ -526,14 +583,14 @@ static Storage_ErrorCode_List Storage_Get_Data(Storage_ParaClassType_List class,
     uint8_t *p_data_start = NULL;
 
     memset(&DataSlot, 0, sizeof(Storage_DataSlot_TypeDef));
-    if (item.data_addr && p_data && size)
+    if (item.data_addr && p_data)
     {
         data_len = item.len;
         data_addr = item.data_addr;
 
         while(data_len)
         {
-            if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, data_addr, page_data_tmp, data_len + sizeof(Storage_DataSlot_TypeDef)))
+            if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, data_addr, page_data_tmp, data_len + sizeof(Storage_DataSlot_TypeDef)))
                 return Storage_GetData_Error;
 
             p_read_out = page_data_tmp;
@@ -541,9 +598,6 @@ static Storage_ErrorCode_List Storage_Get_Data(Storage_ParaClassType_List class,
             p_read_out += sizeof(DataSlot.head_tag);
             if (DataSlot.head_tag != STORAGE_SLOT_HEAD_TAG)
                 return Storage_GetData_Error;
-
-            memcpy(DataSlot.name, p_read_out, STORAGE_NAME_LEN);
-            p_read_out += STORAGE_NAME_LEN;
 
             memcpy(&DataSlot.total_data_size, p_read_out, sizeof(DataSlot.total_data_size));
             p_read_out += sizeof(DataSlot.total_data_size);
@@ -558,6 +612,9 @@ static Storage_ErrorCode_List Storage_Get_Data(Storage_ParaClassType_List class,
             memcpy(&DataSlot.nxt_addr, p_read_out, sizeof(DataSlot.nxt_addr));
             p_read_out += sizeof(DataSlot.nxt_addr);
 
+            memcpy(&DataSlot.frag_len, p_read_out, sizeof(DataSlot.frag_len));
+            p_read_out += sizeof(DataSlot.frag_len);
+
             memcpy(&DataSlot.align_size, p_read_out, sizeof(DataSlot.align_size));
             p_read_out += sizeof(DataSlot.align_size);
             p_data_start = p_read_out;
@@ -571,6 +628,9 @@ static Storage_ErrorCode_List Storage_Get_Data(Storage_ParaClassType_List class,
             p_read_out += sizeof(DataSlot.slot_crc);
             if (crc != DataSlot.slot_crc)
                 return Storage_GetData_Error;
+            
+            memcpy(&DataSlot.res, p_read_out, sizeof(DataSlot.res));
+            p_read_out += sizeof(DataSlot.res);
 
             memcpy(&DataSlot.end_tag, p_read_out, sizeof(DataSlot.end_tag));
             if (DataSlot.end_tag != STORAGE_SLOT_END_TAG)
@@ -578,6 +638,10 @@ static Storage_ErrorCode_List Storage_Get_Data(Storage_ParaClassType_List class,
 
             memcpy(p_data, p_data_start, DataSlot.cur_slot_size - DataSlot.align_size);
             data_len -= DataSlot.cur_slot_size;
+            valid_size += DataSlot.cur_slot_size - DataSlot.align_size;
+
+            if (data_len < 0)
+                return Storage_GetData_Error;
 
             if (DataSlot.nxt_addr)
             {
@@ -593,15 +657,17 @@ static Storage_ErrorCode_List Storage_Get_Data(Storage_ParaClassType_List class,
             }
         }
 
+        if (size)
+            *size = valid_size;
+
         return Storage_Error_None;
     }
-#endif
+    
     return Storage_GetData_Error;
 }
 
 static Storage_ErrorCode_List Storage_SlotData_Update(Storage_ParaClassType_List _class, storage_handle data_slot_hdl, uint8_t *p_data, uint16_t size)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
     Storage_BaseSecInfo_TypeDef *p_Sec = NULL;
     Storage_DataSlot_TypeDef *p_slotdata = NULL;
     uint8_t *p_read_tmp = page_data_tmp;
@@ -629,14 +695,10 @@ static Storage_ErrorCode_List Storage_SlotData_Update(Storage_ParaClassType_List
     read_addr = data_slot_hdl;
     memset(page_data_tmp, 0, sizeof(Storage_DataSlot_TypeDef));
     if (size % STORAGE_DATA_ALIGN)
-    {
         align_byte = STORAGE_DATA_ALIGN - size % STORAGE_DATA_ALIGN;
-    }
-    else
-        align_byte = 0;
 
     /* get data slot first */
-    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, read_addr, p_read_tmp, sizeof(Storage_DataSlot_TypeDef)))
+    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, read_addr, p_read_tmp, sizeof(Storage_DataSlot_TypeDef)))
         return Storage_Read_Error;
     
     /* get data size */
@@ -655,20 +717,16 @@ static Storage_ErrorCode_List Storage_SlotData_Update(Storage_ParaClassType_List
     p_slotdata = NULL;
     while(true)
     {
-        p_read_tmp = page_data_tmp;
         p_slotdata = (Storage_DataSlot_TypeDef *)p_read_tmp;
 
         /* get data from handle */
-        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, read_addr, p_read_tmp, read_size))
+        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, read_addr, p_read_tmp, read_size))
             return Storage_Read_Error;
-
-        p_slotdata->head_tag = *((uint32_t *)p_read_tmp);
+        
+            p_slotdata->head_tag = *((uint32_t *)p_read_tmp);
         p_read_tmp += sizeof(p_slotdata->head_tag);
         if (p_slotdata->head_tag != STORAGE_SLOT_HEAD_TAG)
             return Storage_DataInfo_Error;
-
-        memcpy(p_slotdata->name, p_read_tmp, STORAGE_NAME_LEN);
-        p_read_tmp += STORAGE_NAME_LEN;
 
         p_slotdata->total_data_size = *((uint32_t *)p_read_tmp);
         p_read_tmp += sizeof(p_slotdata->total_data_size);
@@ -683,12 +741,9 @@ static Storage_ErrorCode_List Storage_SlotData_Update(Storage_ParaClassType_List
 
         p_slotdata->nxt_addr = *((uint32_t *)p_read_tmp);
         p_read_tmp += sizeof(p_slotdata->nxt_addr);
-        if (p_slotdata->nxt_addr)
-        {
-            if ((p_slotdata->nxt_addr < p_Sec->data_sec_addr) || \
-                (p_slotdata->nxt_addr > p_Sec->data_sec_addr + p_Sec->data_sec_size))
-                return Storage_DataInfo_Error;
-        }
+
+        p_slotdata->frag_len = *((uint8_t *)p_read_tmp);
+        p_read_tmp += sizeof(p_slotdata->frag_len);
 
         p_slotdata->align_size = *((uint8_t *)p_read_tmp);
         p_read_tmp += sizeof(p_slotdata->align_size);
@@ -715,11 +770,19 @@ static Storage_ErrorCode_List Storage_SlotData_Update(Storage_ParaClassType_List
             if (size != valid_data_size)
                 return Storage_Update_DataSize_Error;
         }
+        else
+        {
+            if ((p_slotdata->nxt_addr < p_Sec->data_sec_addr) || \
+                (p_slotdata->nxt_addr > p_Sec->data_sec_addr + p_Sec->data_sec_size))
+                return Storage_DataInfo_Error; 
+        }
 
         memcpy(p_read_tmp, &crc, sizeof(crc));
         
         p_data += p_slotdata->cur_slot_size - p_slotdata->align_size;
         p_read_tmp += sizeof(p_slotdata->slot_crc);
+
+        p_read_tmp += sizeof(p_slotdata->res);
 
         if (*(uint32_t *)p_read_tmp != STORAGE_SLOT_END_TAG)
             return Storage_DataInfo_Error;
@@ -728,7 +791,7 @@ static Storage_ErrorCode_List Storage_SlotData_Update(Storage_ParaClassType_List
             (size == valid_data_size))
         {
             /* update data to flash */
-            if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, read_addr, page_data_tmp, p_slotdata->cur_slot_size + sizeof(Storage_DataSlot_TypeDef)))
+            if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, read_addr, page_data_tmp, p_slotdata->cur_slot_size + sizeof(Storage_DataSlot_TypeDef)))
                 return Storage_Write_Error;
 
             /* update accomplish */
@@ -739,27 +802,30 @@ static Storage_ErrorCode_List Storage_SlotData_Update(Storage_ParaClassType_List
     }
 
     return Storage_Error_None;
-#else
-    return Storage_Write_Error;
-#endif
 }
 
-static bool Storage_Link_FreeSlot(uint32_t front_free_addr, uint32_t behind_free_addr, uint32_t new_free_addr, Storage_FreeSlot_TypeDef *new_free_slot)
+/* BUG INSIDE */
+static Link_State_List Storage_Link_FreeSlot(uint32_t front_free_addr, uint32_t behind_free_addr, uint32_t new_free_addr, Storage_FreeSlot_TypeDef *new_free_slot, Storage_BaseSecInfo_TypeDef *p_Sec)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
     Storage_FreeSlot_TypeDef front_slot;
     Storage_FreeSlot_TypeDef behind_slot;
 
+    STORAGE_INFO("link free slot", "new    free slot addr 0x%08X", new_free_addr);
+    STORAGE_INFO("link free slot", "new    free slot size %d",     new_free_slot->size);
+    STORAGE_INFO("link free slot", "front  free slot addr 0x%08X", front_free_addr);
+    STORAGE_INFO("link free slot", "behind free slot addr 0x%08X", behind_free_addr);
+
     if ((new_free_addr == 0) || \
+        (new_free_slot == NULL) || \
         (front_free_addr == 0) || \
-        (behind_free_addr == 0) || \
-        (front_free_addr >= new_free_addr) || \
-        (behind_free_addr <= new_free_addr) || \
-        (new_free_slot == NULL))
-        return false;
+        (front_free_addr == new_free_addr) || \
+        (p_Sec == NULL))
+        return Link_Failed;
 
     memset(&front_slot, 0, sizeof(Storage_FreeSlot_TypeDef));
     memset(&behind_slot, 0, sizeof(Storage_FreeSlot_TypeDef));
+
+    STORAGE_INFO("link free slot", "Linking free slot");
 
 /* 
  *
@@ -771,135 +837,172 @@ static bool Storage_Link_FreeSlot(uint32_t front_free_addr, uint32_t behind_free
  *          |______________|             |______________|              |______________|
  * 
  */
+    /* get front free slot info */
+    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, front_free_addr, (uint8_t *)&front_slot, sizeof(Storage_FreeSlot_TypeDef)) || \
+        (front_slot.head_tag != STORAGE_SLOT_HEAD_TAG) || (front_slot.end_tag != STORAGE_SLOT_END_TAG))
+        return Link_Failed;
 
-    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, front_free_addr, (uint8_t *)&front_slot, sizeof(Storage_FreeSlot_TypeDef)))
-        return false;
+    if ((new_free_addr + new_free_slot->size) <= front_free_addr)
+    {
+        STORAGE_INFO("link", "In front of the old free slot");
+        
+        /* new free slot in front of the old free slot */
+        if ((new_free_addr + new_free_slot->size) < front_free_addr)
+        {
+            new_free_slot->nxt_addr = front_free_addr;
+        }
+        else
+        {
+            STORAGE_INFO("link", "Merge with the front");
+            new_free_slot->size += front_slot.size;
+            new_free_slot->nxt_addr = front_slot.nxt_addr;
+            memset(&front_slot, 0, sizeof(front_slot));
 
-    /* link free slot address */
-    front_slot.nxt_addr = new_free_addr;
-    new_free_slot->nxt_addr = behind_free_addr;
+            if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, front_free_addr, (uint8_t *)&front_slot, sizeof(Storage_FreeSlot_TypeDef)))
+                return Link_Failed;
+        }
 
-    if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, front_free_addr, (uint8_t *)&front_slot, sizeof(Storage_FreeSlot_TypeDef)))
-        return false;
+        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, new_free_addr, (uint8_t *)new_free_slot, sizeof(Storage_FreeSlot_TypeDef)))
+            return Link_Failed;
+        
+        p_Sec->free_slot_addr = new_free_addr;
+    }
 
-    if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, new_free_addr, (uint8_t *)new_free_slot, sizeof(Storage_FreeSlot_TypeDef)))
-        return false;
+    if (behind_free_addr != 0)
+    {
+        STORAGE_INFO("link", "Check behind free slot");
 
-    return true;
-#else
-    return false;
-#endif
+        /* get behind free slot info */
+        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, behind_free_addr, (uint8_t *)&behind_slot, sizeof(Storage_FreeSlot_TypeDef)) || \
+            (behind_slot.head_tag != STORAGE_SLOT_HEAD_TAG) || (behind_slot.end_tag != STORAGE_SLOT_END_TAG))
+            return Link_Failed;
+
+        if ((behind_free_addr == new_free_addr) || ((new_free_slot->size + new_free_addr) > behind_free_addr))
+            return Link_Failed;
+
+        if (behind_free_addr < new_free_addr)
+            return Link_Searching;
+        
+        new_free_slot->nxt_addr = behind_free_addr;
+        if ((new_free_addr + new_free_slot->size) == behind_free_addr)
+        {
+            STORAGE_INFO("link", "Merge with the behind");
+
+            new_free_slot->nxt_addr = behind_slot.nxt_addr;
+            new_free_slot->size += behind_slot.size;
+            
+            memset(&behind_slot, 0, sizeof(Storage_FreeSlot_TypeDef));
+            STORAGE_INFO("link", "Update behind slot addr 0x%08X", behind_free_addr);
+            if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, behind_free_addr, (uint8_t *)&behind_slot, sizeof(Storage_FreeSlot_TypeDef)))
+                return Link_Failed;
+            
+            if (behind_slot.nxt_addr == 0)
+                behind_free_addr = 0;
+        }
+
+        if ((front_slot.size + front_free_addr) != new_free_addr)
+        {
+            front_slot.nxt_addr = new_free_addr;
+            new_free_slot->nxt_addr = behind_free_addr;
+        }
+        else
+        {
+            STORAGE_INFO("link", "Merge with the front");
+            front_slot.nxt_addr = new_free_slot->nxt_addr;
+            front_slot.size += new_free_slot->size;
+            memset(new_free_slot, 0, sizeof(Storage_FreeSlot_TypeDef));
+        }
+
+        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, front_free_addr, (uint8_t *)&front_slot, sizeof(Storage_FreeSlot_TypeDef)))
+            return Link_Failed;
+    }
+    
+    if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, new_free_addr, (uint8_t *)new_free_slot, sizeof(Storage_FreeSlot_TypeDef)))
+        return Link_Failed;
+
+    return Link_Done;
 }
 
-/* developping & untested */
-static Storage_ErrorCode_List Storage_FreeSlot_CheckMerge(uint32_t slot_addr, Storage_FreeSlot_TypeDef *slot_info, Storage_BaseSecInfo_TypeDef *p_Sec)
+static Storage_ErrorCode_List Storage_FreeSlot_CheckMerge(uint32_t slot_addr, Storage_FreeSlot_TypeDef *new_freeslot, Storage_BaseSecInfo_TypeDef *p_Sec)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
     Storage_FreeSlot_TypeDef FreeSlot_Info;
-    uint32_t front_freeslot_addr = 0;
-    uint32_t behind_freeslot_addr = 0;
+    uint32_t freeslot_addr = 0;
+    uint32_t nxt_freeslot_addr = 0;
     uint32_t ori_freespace_size = 0;
+    Link_State_List slot_link_state = Link_Done;
 
     if ((p_Sec == NULL) || \
-        (slot_info == NULL) || \
+        (new_freeslot == NULL) || \
         (slot_addr < p_Sec->data_sec_addr) || \
         (slot_addr > (p_Sec->data_sec_addr + p_Sec->data_sec_size)))
         return Storage_Param_Error;
 
     memset(&FreeSlot_Info, 0, sizeof(FreeSlot_Info));
 
-    if ((slot_info->head_tag != STORAGE_SLOT_HEAD_TAG) || \
-        (slot_info->end_tag != STORAGE_SLOT_END_TAG) || \
-        (slot_info->cur_slot_size > p_Sec->free_space_size))
-        return Storage_FreeSlot_Info_Error;
+    if ((new_freeslot->head_tag != STORAGE_SLOT_HEAD_TAG) || \
+        (new_freeslot->end_tag != STORAGE_SLOT_END_TAG) || \
+        (new_freeslot->size > p_Sec->free_space_size))
+    {
+        STORAGE_INFO("delete", "check merge error");
+        if (new_freeslot->head_tag != STORAGE_SLOT_HEAD_TAG)
+            STORAGE_INFO("delete", "bad header");
 
+        if (new_freeslot->end_tag != STORAGE_SLOT_END_TAG)
+            STORAGE_INFO("delete", "bad ender");
+
+        return Storage_FreeSlot_Info_Error;
+    }
+
+    STORAGE_INFO("delete", "check merge");
     ori_freespace_size = p_Sec->free_space_size;
-    front_freeslot_addr = p_Sec->free_slot_addr;
+    freeslot_addr = p_Sec->free_slot_addr;
     while (true)
     {
         /* traverse all free slot */
-        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, front_freeslot_addr, (uint8_t *)&FreeSlot_Info, sizeof(FreeSlot_Info)))
+        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, freeslot_addr, (uint8_t *)&FreeSlot_Info, sizeof(FreeSlot_Info)))
             return Storage_Read_Error;
 
         if ((FreeSlot_Info.head_tag != STORAGE_SLOT_HEAD_TAG) || \
             (FreeSlot_Info.end_tag != STORAGE_SLOT_END_TAG))
+        {
+            STORAGE_INFO("slot merge", "Free slot header or ender error %s", __LINE__);
             return Storage_FreeSlot_Info_Error;
-
-        behind_freeslot_addr = FreeSlot_Info.nxt_addr;
-        p_Sec->free_space_size += slot_info->cur_slot_size;
-
-        /* circumstance 1: new free slot in front of the old free slot */
-        if (slot_addr + slot_info->cur_slot_size == front_freeslot_addr)
-        {
-            slot_info->nxt_addr = FreeSlot_Info.nxt_addr;
-            slot_info->cur_slot_size += FreeSlot_Info.cur_slot_size + sizeof(Storage_FreeSlot_TypeDef);
-
-            memset(&FreeSlot_Info, 0, sizeof(FreeSlot_Info));
-
-            /* write to front freeslot address */
-            if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, front_freeslot_addr, (uint8_t *)&FreeSlot_Info, sizeof(FreeSlot_Info)))
-            {
-                p_Sec->free_space_size = ori_freespace_size;
-                return Storage_Write_Error;
-            }
-
-            /* write to current freeslot section */
-            if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, slot_addr, (uint8_t *)slot_info, sizeof(Storage_FreeSlot_TypeDef)))
-            {
-                p_Sec->free_space_size = ori_freespace_size;
-                return Storage_Write_Error;
-            }
-
-            p_Sec->free_slot_addr = slot_addr;
-            p_Sec->free_space_size += sizeof(Storage_FreeSlot_TypeDef);
         }
-        /* circumstance 2: new free slot is behind of the old free slot */
-        else if (front_freeslot_addr + FreeSlot_Info.cur_slot_size == slot_addr)
+
+        nxt_freeslot_addr = FreeSlot_Info.nxt_addr;
+        STORAGE_INFO("new freeslot", "head  tag: 0x%08X",   new_freeslot->head_tag);
+        STORAGE_INFO("new freeslot", "end   tag: 0x%08X",   new_freeslot->end_tag);
+        STORAGE_INFO("new freeslot", "slot size: %d",       new_freeslot->size);
+        STORAGE_INFO("new freeslot", "next addr: 0x%08X",   new_freeslot->nxt_addr);
+
+        STORAGE_INFO("slot merge", "free slot addr linking");
+        slot_link_state = Storage_Link_FreeSlot(freeslot_addr, nxt_freeslot_addr, slot_addr, new_freeslot, p_Sec);
+
+        /* link free slot */
+        if (slot_link_state == Link_Failed)
         {
-            /* merge behind free slot */
-            FreeSlot_Info.cur_slot_size += slot_info->cur_slot_size + sizeof(Storage_FreeSlot_TypeDef);
-            Storage_Assert(slot_info->nxt_addr < FreeSlot_Info.nxt_addr);
-            FreeSlot_Info.nxt_addr = slot_info->nxt_addr;
-
-            memset(slot_info, 0, sizeof(Storage_FreeSlot_TypeDef));
-
-            /* write to new free slot */
-            if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, slot_addr, (uint8_t *)slot_info, sizeof(Storage_FreeSlot_TypeDef)))
-                return Storage_Write_Error;
-
-            /* write to behind free slot */
-            if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, front_freeslot_addr, (uint8_t *)&FreeSlot_Info, sizeof(Storage_FreeSlot_TypeDef)))
-                return Storage_Write_Error;
-        }
-        /* circumstance 3: none free slot near by */
-        else if (((front_freeslot_addr + FreeSlot_Info.cur_slot_size + sizeof(Storage_FreeSlot_TypeDef)) < slot_addr) && \
-                 (behind_freeslot_addr > (slot_addr + slot_info->cur_slot_size + sizeof(Storage_FreeSlot_TypeDef))))
-        {
-            /* link free slot */
-            if (Storage_Link_FreeSlot(front_freeslot_addr, behind_freeslot_addr, slot_addr, slot_info))
-                return Storage_Error_None;
-
+            STORAGE_INFO("slot merge", "free slot link failed");
             return Storage_FreeSlot_Link_Error;
         }
-
-        if (FreeSlot_Info.nxt_addr == 0)
+        else if (slot_link_state == Link_Done)
             return Storage_Error_None;
 
         /* update front free slot address */
-        front_freeslot_addr = behind_freeslot_addr;
+        freeslot_addr = nxt_freeslot_addr;
+        p_Sec->free_space_size += new_freeslot->size;
     }
-#endif
+
     return Storage_Delete_Error;
 }
 
-/* untested */
 static bool Storage_DeleteSingleDataSlot(uint32_t slot_addr, uint8_t *p_data, Storage_BaseSecInfo_TypeDef *p_Sec)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
-    uint32_t cur_slot_size = 0;
-    uint32_t inc_free_space = sizeof(Storage_DataSlot_TypeDef);
+    uint16_t cur_slot_size = 0;
+    uint16_t inc_free_space = sizeof(Storage_DataSlot_TypeDef);
     uint8_t *p_freeslot_start = NULL;
+    uint8_t *p_freeslot_data = NULL;
     uint8_t *data_w = NULL;
+    uint16_t frag_size = 0;
 
     if ((slot_addr == 0) || \
         (p_Sec == NULL) || \
@@ -916,29 +1019,29 @@ static bool Storage_DeleteSingleDataSlot(uint32_t slot_addr, uint8_t *p_data, St
     data_w = p_freeslot_start;
     p_data += sizeof(uint32_t);
 
-    /* clear current slot name */
-    memset(p_data, 0, STORAGE_NAME_LEN);
-    p_data += STORAGE_NAME_LEN;
-
     /* clear total data size */
-    *((uint32_t *)p_data) = 0;
-    p_data += sizeof(uint32_t);
+    *((uint16_t *)p_data) = 0;
+    p_data += sizeof(uint16_t);
 
     /* get current slot data size */
-    cur_slot_size = *((uint32_t *)p_data);
+    cur_slot_size = *((uint16_t *)p_data);
     inc_free_space += cur_slot_size;
     
     /* clear current slot data size */
-    *((uint32_t *)p_data) = 0;
-    p_data += sizeof(uint32_t);
+    *((uint16_t *)p_data) = 0;
+    p_data += sizeof(uint16_t);
 
     /* clear next data slot address */
     *((uint32_t *)p_data) = 0;
     p_data += sizeof(uint32_t);
 
+    /* clear frag len */
+    *((uint16_t *)p_data) = 0;
+    p_data += sizeof(uint16_t);
+
     /* clear align size */
-    *((uint8_t *)p_data) = 0;
-    p_data += sizeof(uint8_t);
+    *((uint16_t *)p_data) = 0;
+    p_data += sizeof(uint16_t);
 
     /* clear data */
     memset(p_data, 0, cur_slot_size);
@@ -948,50 +1051,58 @@ static bool Storage_DeleteSingleDataSlot(uint32_t slot_addr, uint8_t *p_data, St
     *((uint16_t *)p_data) = 0;
     p_data += sizeof(uint16_t);
 
+    /* clear res */
+    *((uint16_t *)p_data) = 0;
+    p_data += sizeof(uint16_t);
+
     /* clear end tag */
     *((uint32_t *)p_data) = 0;
 
     /* update freeslot data info */
-    if (*(uint32_t *)p_freeslot_start == STORAGE_SLOT_HEAD_TAG)
+    p_freeslot_data = p_freeslot_start;
+    if (*(uint32_t *)p_freeslot_data == STORAGE_SLOT_HEAD_TAG)
     {
-        p_freeslot_start += sizeof(uint32_t);
+        STORAGE_INFO("delete", "update free slot");
+
+        p_freeslot_data += sizeof(uint32_t);
 
         /* update current free slot size */
-        *(uint32_t *)p_freeslot_start = cur_slot_size;
-        p_freeslot_start += sizeof(uint32_t);
+        *(uint32_t *)p_freeslot_data = cur_slot_size + sizeof(Storage_DataSlot_TypeDef);
+        p_freeslot_data += sizeof(uint32_t);
 
         /* reset next freeslot addr
          * link free slot address
          *
          * should link free slot
          */
-        *(uint32_t *)p_freeslot_start = 0;
-        p_freeslot_start += sizeof(uint32_t);
+        *(uint32_t *)p_freeslot_data = 0;
+        p_freeslot_data += sizeof(uint32_t);
 
         /* set end tag */
-        *(uint32_t *)p_freeslot_start = STORAGE_SLOT_END_TAG;
+        *(uint32_t *)p_freeslot_data = STORAGE_SLOT_END_TAG;
     }
     else
         return false;
 
     /* update to data section */
-    if (StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, slot_addr, data_w, inc_free_space))
-    {
-        /* check free slot and merge */
-        if (Storage_FreeSlot_CheckMerge(slot_addr, (Storage_FreeSlot_TypeDef *)p_freeslot_start, p_Sec) == Storage_Error_None)
-            return true;
-    }
-#endif
+    if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, slot_addr, data_w, inc_free_space))
+        return false;
+
+    p_Sec->free_space_size += inc_free_space;
+
+    /* check free slot and merge */
+    if (Storage_FreeSlot_CheckMerge(slot_addr, (Storage_FreeSlot_TypeDef *)p_freeslot_start, p_Sec) == Storage_Error_None)
+        return true;
+    
     return false;
 }
 
-/* developping & untested */
 static bool Storage_DeleteAllDataSlot(uint32_t addr, char *name, uint32_t total_size, Storage_BaseSecInfo_TypeDef *p_Sec)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
     Storage_DataSlot_TypeDef data_slot;
     uint8_t *p_read = page_data_tmp;
     uint8_t name_len = 0;
+    uint32_t read_size = sizeof(Storage_DataSlot_TypeDef);
 
     if ((addr == 0) || \
         (name == NULL) || \
@@ -1003,38 +1114,74 @@ static bool Storage_DeleteAllDataSlot(uint32_t addr, char *name, uint32_t total_
     memset(&data_slot, 0, sizeof(data_slot));
     name_len = strlen(name);
 
-    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, addr, page_data_tmp, total_size))
+    memset(page_data_tmp, 0, Storage_TabSize);
+    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, addr, page_data_tmp, read_size))
         return false;
 
     data_slot.head_tag = *((uint32_t *)p_read);
     if (data_slot.head_tag != STORAGE_SLOT_HEAD_TAG)
+    {
+        STORAGE_INFO("delete", "addr 0x%08x header 0x%08x / 0x%08x error", data_slot.head_tag, STORAGE_SLOT_HEAD_TAG);
         return false;
+    }
 
     p_read += sizeof(data_slot.head_tag);
-    memcpy(data_slot.name, p_read, STORAGE_NAME_LEN);
-    if (memcmp(data_slot.name, name, name_len) != 0)
-        return false;
-
-    p_read += STORAGE_NAME_LEN;
-    data_slot.total_data_size = *((uint32_t *)p_read);
+    
+    data_slot.total_data_size = *((uint16_t *)p_read);
     if (data_slot.total_data_size != total_size)
+    {
+        STORAGE_INFO("delete", "addr 0x%08x total data size %d / %d error", addr, data_slot.total_data_size, total_size);
         return false;
+    }
 
     p_read += sizeof(data_slot.total_data_size);
-    data_slot.cur_slot_size = *((uint32_t *)p_read);
-    if (data_slot.cur_slot_size > data_slot.total_data_size)
+    data_slot.cur_slot_size = *((uint16_t *)p_read);
+    if (data_slot.total_data_size && \
+        (data_slot.cur_slot_size == 0) || \
+        (data_slot.cur_slot_size > data_slot.total_data_size))
+    {
+        STORAGE_INFO("delete", "addr 0x%08x current slot size %d error", addr, data_slot.cur_slot_size);
+        return false;
+    }
+
+    /* now have current slot size read data in slot again */
+    read_size += data_slot.cur_slot_size;
+    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, addr, page_data_tmp, read_size))
         return false;
 
     p_read += sizeof(data_slot.cur_slot_size);
     data_slot.nxt_addr = *((uint32_t *)p_read);
-    if ((data_slot.nxt_addr < p_Sec->data_sec_addr) || \
-        (data_slot.nxt_addr > (p_Sec->data_sec_addr + p_Sec->data_sec_size)))
+    if (data_slot.nxt_addr && \
+        ((data_slot.nxt_addr <= p_Sec->data_sec_addr) || \
+         (data_slot.nxt_addr >= (p_Sec->data_sec_addr + p_Sec->data_sec_size))))
+    {
+        STORAGE_INFO("delete", "Next addr 0x%08X error", data_slot.nxt_addr);
         return false;
-    
+    }
+
     p_read += sizeof(data_slot.nxt_addr);
+    p_read += sizeof(data_slot.frag_len);
+
     data_slot.align_size = *((uint8_t *)p_read);    
     if (data_slot.align_size >= STORAGE_DATA_ALIGN)
+    {
+        STORAGE_INFO("delete", "Align size %d error", data_slot.align_size);
         return false;
+    }
+
+    /* clear align size */
+    *(uint8_t *)p_read = 0;
+
+    /* delete next slot data */
+    if (data_slot.nxt_addr)
+    {
+        /* traverse slot address */
+        if (!Storage_DeleteAllDataSlot(data_slot.nxt_addr, name, total_size, p_Sec))
+            return false;
+    }
+
+    /* clear data section */
+    memset(p_read, 0, data_slot.cur_slot_size);
 
     /* set current slot data as 0 */
     p_read += sizeof(data_slot.align_size);
@@ -1045,16 +1192,14 @@ static bool Storage_DeleteAllDataSlot(uint32_t addr, char *name, uint32_t total_
     *((uint16_t *)p_read) = 0;
     p_read += sizeof(data_slot.slot_crc);
 
+    *((uint16_t *)p_read) = 0;
+    p_read += sizeof(data_slot.res);
+
     /* ender error */
     if (*((uint32_t *)p_read) != STORAGE_SLOT_END_TAG)
-        return false;
-
-    /* delete next slot data */
-    if (data_slot.nxt_addr)
     {
-        /* traverse slot address */
-        if (!Storage_DeleteAllDataSlot(data_slot.nxt_addr, name, total_size, p_Sec))
-            return false;
+        STORAGE_INFO("delete", "Data slot ender error");
+        return false;
     }
 
     /* reset data slot as free slot */
@@ -1062,15 +1207,11 @@ static bool Storage_DeleteAllDataSlot(uint32_t addr, char *name, uint32_t total_
         return false;
 
     return true;
-#else
-    return false;
-#endif
 }
 
-/* developping */
-static Storage_ErrorCode_List Storage_DeleteItem(Storage_ParaClassType_List _class, const char *name, uint32_t size)
+static Storage_ErrorCode_List Storage_DeleteItem(Storage_ParaClassType_List _class, const char *name)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
+    uint16_t info_crc = 0;
     Storage_FlashInfo_TypeDef *p_Flash = NULL;
     Storage_BaseSecInfo_TypeDef *p_Sec = NULL;
     Storage_ItemSearchOut_TypeDef ItemSearch;
@@ -1080,8 +1221,7 @@ static Storage_ErrorCode_List Storage_DeleteItem(Storage_ParaClassType_List _cla
     if ( !Storage_Monitor.init_state || \
         (name == NULL) || \
         (strlen(name) == 0) || \
-        (strlen(name) >= STORAGE_NAME_LEN) || \
-        (size == 0))
+        (strlen(name) >= STORAGE_NAME_LEN))
         return Storage_Param_Error;
 
     p_Flash = &Storage_Monitor.info;
@@ -1098,26 +1238,38 @@ static Storage_ErrorCode_List Storage_DeleteItem(Storage_ParaClassType_List _cla
         (ItemSearch.item.head_tag != STORAGE_ITEM_HEAD_TAG) || \
         (ItemSearch.item.end_tag != STORAGE_ITEM_END_TAG) || \
         !Storage_DeleteAllDataSlot(ItemSearch.item.data_addr, (char *)name, ItemSearch.item.len, p_Sec))
+    {
+        STORAGE_INFO("delete slot", "filed");
+        return Storage_Delete_Error;
+    }
+
+    /* update base info */
+    memset(page_data_tmp, 0, Storage_TabSize);
+    
+    p_Sec->para_num -= 1;
+    p_Sec->para_size -= ItemSearch.item.len;
+
+    if (!Storage_UpdateBaseInfo())
         return Storage_Delete_Error;
 
     /* update item slot tab */
     memset(ItemSearch.item.name, '\0', STORAGE_NAME_LEN);
     memcpy(ItemSearch.item.name, STORAGE_FREEITEM_NAME, strlen(STORAGE_FREEITEM_NAME));
+    ItemSearch.item.len = 0;
+    ItemSearch.item.data_addr = 0;
 
-    if (!Storage_Comput_ItemSlot_CRC(&ItemSearch.item))
+    Storage_Comput_ItemSlot_CRC(&ItemSearch.item);
+    if (Storage_ItemSlot_Update(ItemSearch.item_addr, ItemSearch.item_index, p_Sec, ItemSearch.item) != Storage_Error_None)
+    {
+        STORAGE_INFO("delete item", "failed");
         return Storage_ItemUpdate_Error;
+    }
 
-    if (!Storage_ItemSlot_Update(ItemSearch.item_addr, ItemSearch.item_index, p_Sec, ItemSearch.item))
-        return Storage_ItemUpdate_Error;
-
-    /* update base info */
-#endif
-    return Storage_Delete_Error;
+    return Storage_Error_None;
 }
 
 static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _class, const char *name, uint8_t *p_data, uint16_t size)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
     uint8_t *crc_buf = NULL;
     uint8_t *slot_update_ptr = NULL;
     uint16_t base_info_crc = 0;
@@ -1135,13 +1287,19 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
     Storage_Item_TypeDef crt_item_slot;
     Storage_FreeSlot_TypeDef FreeSlot;
     Storage_DataSlot_TypeDef DataSlot;
+    Storage_ItemSearchOut_TypeDef search;
     uint8_t align_byte = 0;
+    bool update_freeslot = true;
 
+    memset(&search, 0, sizeof(Storage_ItemSearchOut_TypeDef));
     memset(&crt_item_slot, 0, sizeof(crt_item_slot));
     memset(&DataSlot, 0, sizeof(Storage_DataSlot_TypeDef));
     memset(&FreeSlot, 0, sizeof(Storage_FreeSlot_TypeDef));
 
-    if ((name == NULL) || (p_data == NULL) || (size == 0))
+    STORAGE_INFO("create", "name %s data size %d", name, size);
+
+    /* can not name data as <Item_Avaliable> */
+    if ((name == NULL) || (p_data == NULL) || (size == 0) || (memcmp(name, STORAGE_FREEITEM_NAME, strlen(STORAGE_FREEITEM_NAME)) == 0))
         return Storage_Param_Error;
 
     p_Flash = &Storage_Monitor.info;
@@ -1152,7 +1310,18 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
     if (p_Sec->free_slot_addr == 0)
         return Storage_FreeSlot_Addr_Error;
 
-    if (StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, p_Sec->free_slot_addr, (uint8_t *)&FreeSlot, sizeof(Storage_FreeSlot_TypeDef)) && \
+    /* search tab if matched item with the same name then abrot creating 
+     * or give the free or empty storage item solt to create
+     */
+    if (p_Sec->para_num)
+    {
+        search = Storage_Search(_class, name);
+        /* item name already exist */
+        if (search.item_addr)
+            return Storage_TabItem_Exist;
+    }
+
+    if (StorageDev.param_read(Storage_Monitor.ExtDev_ptr, p_Sec->free_slot_addr, (uint8_t *)&FreeSlot, sizeof(Storage_FreeSlot_TypeDef)) && \
         (FreeSlot.head_tag == STORAGE_SLOT_HEAD_TAG) && \
         (FreeSlot.end_tag == STORAGE_SLOT_END_TAG) && \
         (strlen(name) <= STORAGE_NAME_LEN))
@@ -1170,18 +1339,19 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
         p_Sec->para_size += (size + align_byte);
         
         storage_tab_addr = p_Sec->tab_addr;
-        for(uint16_t tab_i = 0; tab_i < p_Sec->page_num; tab_i ++)
+        for(uint16_t tab_i = 0; tab_i < p_Sec->tab_num; tab_i ++)
         {
             store_addr = 0;
             item_index = 0;
 
-            /* step 1: search tab */
-            if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, storage_tab_addr, page_data_tmp, (p_Sec->tab_size / p_Sec->page_num)))
+            /* step 1: update item slot */
+            if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, storage_tab_addr, page_data_tmp, (p_Sec->tab_size / p_Sec->tab_num)))
                 return Storage_Read_Error;
 
             tab_item = (Storage_Item_TypeDef *)page_data_tmp;
             for (uint16_t item_i = 0; item_i < Item_Capacity_Per_Tab; item_i ++)
             {
+                /* current item slot is empty or is available (been free) */
                 if (((tab_item[item_i].head_tag == STORAGE_ITEM_HEAD_TAG) && \
                      (tab_item[item_i].end_tag == STORAGE_ITEM_END_TAG) && \
                      (memcmp(tab_item[item_i].name, STORAGE_FREEITEM_NAME, strlen(STORAGE_FREEITEM_NAME)) == 0)) || \
@@ -1214,7 +1384,7 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
             if (store_addr)
                 break;
 
-            storage_tab_addr += (p_Sec->tab_size / p_Sec->page_num);
+            storage_tab_addr += p_Sec->tab_size;
         }
 
         if (store_addr == 0)
@@ -1229,21 +1399,22 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
         DataSlot.total_data_size = storage_data_size;
         unstored_size = DataSlot.total_data_size;
 
-        if (p_Sec->free_space_size >= storage_data_size)
+        if (p_Sec->free_space_size >= (storage_data_size + sizeof(Storage_DataSlot_TypeDef)))
         {
             while(true)
             {
                 /* step 2: comput storage data size and set data slot */
                 DataSlot.head_tag = STORAGE_SLOT_HEAD_TAG;
                 DataSlot.end_tag = STORAGE_SLOT_END_TAG;
-                memset(DataSlot.name, '\0', STORAGE_NAME_LEN);
-                memcpy(DataSlot.name, name, strlen(name));
                 
-                if (FreeSlot.cur_slot_size <= sizeof(Storage_DataSlot_TypeDef))
+                STORAGE_INFO("create", "current free slot size %d", FreeSlot.size);
+
+                if (FreeSlot.size <= sizeof(Storage_DataSlot_TypeDef))
                     return Storage_No_Enough_Space;
 
                 p_data += stored_size;
-                slot_useful_size = FreeSlot.cur_slot_size - sizeof(Storage_DataSlot_TypeDef);
+                slot_useful_size = FreeSlot.size - sizeof(Storage_DataSlot_TypeDef);
+                STORAGE_INFO("create", "free slot useful size %d store size %d", slot_useful_size, storage_data_size);
                 /* current have space for new data need to be storage */
                 if (slot_useful_size < storage_data_size)
                 {
@@ -1254,15 +1425,15 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
                     DataSlot.cur_slot_size = slot_useful_size;
                     stored_size += DataSlot.cur_slot_size;
                     unstored_size -= stored_size;
-                    DataSlot.align_size = 0;
+                    DataSlot.align_size = align_byte;
                     
                     /* current free slot full fill can not split any space for next free slot`s start */
                     DataSlot.nxt_addr = FreeSlot.nxt_addr;
 
                     /* in light of current free slot not enough for storage data, 
-                        * then find next free slot used for storage data remaining */
+                     * then find next free slot used for storage data remaining */
                     cur_freeslot_addr = FreeSlot.nxt_addr;
-                    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, cur_freeslot_addr, (uint8_t *)&FreeSlot, sizeof(Storage_FreeSlot_TypeDef)))
+                    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, cur_freeslot_addr, (uint8_t *)&FreeSlot, sizeof(Storage_FreeSlot_TypeDef)))
                         return Storage_FreeSlot_Get_Error;   
                 }
                 else
@@ -1275,7 +1446,16 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
 
                     /* update current free slot adderess */
                     cur_freeslot_addr += DataSlot.cur_slot_size + sizeof(Storage_DataSlot_TypeDef);
-                    FreeSlot.cur_slot_size -= DataSlot.cur_slot_size + sizeof(Storage_DataSlot_TypeDef);
+                    FreeSlot.size -= DataSlot.cur_slot_size + sizeof(Storage_DataSlot_TypeDef);
+                    
+                    if (FreeSlot.size <= sizeof(Storage_DataSlot_TypeDef))
+                    {
+                        DataSlot.frag_len = FreeSlot.size;
+                        FreeSlot.size = 0;
+
+                        cur_freeslot_addr = FreeSlot.nxt_addr;
+                        update_freeslot = false;
+                    }
                 }
 
                 p_Sec->free_space_size -= DataSlot.cur_slot_size;
@@ -1285,14 +1465,14 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
                 slot_update_ptr = page_data_tmp;
                 memcpy(slot_update_ptr, &DataSlot.head_tag, sizeof(DataSlot.head_tag));
                 slot_update_ptr += sizeof(DataSlot.head_tag);
-                memcpy(slot_update_ptr, DataSlot.name, STORAGE_NAME_LEN);
-                slot_update_ptr += STORAGE_NAME_LEN;
                 memcpy(slot_update_ptr, &DataSlot.total_data_size, sizeof(DataSlot.total_data_size));
                 slot_update_ptr += sizeof(DataSlot.total_data_size);
                 memcpy(slot_update_ptr, &DataSlot.cur_slot_size, sizeof(DataSlot.cur_slot_size));
                 slot_update_ptr += sizeof(DataSlot.cur_slot_size);
                 memcpy(slot_update_ptr, &DataSlot.nxt_addr, sizeof(DataSlot.nxt_addr));
                 slot_update_ptr += sizeof(DataSlot.nxt_addr);
+                memcpy(slot_update_ptr, &DataSlot.frag_len, sizeof(DataSlot.frag_len));
+                slot_update_ptr += sizeof(DataSlot.frag_len);
                 memcpy(slot_update_ptr, &DataSlot.align_size, sizeof(DataSlot.align_size));
                 slot_update_ptr += sizeof(DataSlot.align_size);
                 crc_buf = slot_update_ptr;
@@ -1308,11 +1488,13 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
                 DataSlot.slot_crc = Common_CRC16(crc_buf, DataSlot.cur_slot_size);
                 memcpy(slot_update_ptr, &DataSlot.slot_crc, sizeof(DataSlot.slot_crc));
                 slot_update_ptr += sizeof(DataSlot.slot_crc);
+                memcpy(slot_update_ptr, &DataSlot.res, sizeof(DataSlot.res));
+                slot_update_ptr += sizeof(DataSlot.res);
                 memcpy(slot_update_ptr, &DataSlot.end_tag, sizeof(DataSlot.end_tag));
                 slot_update_ptr += sizeof(DataSlot.end_tag);
 
                 /* step 3: store data to data section */
-                if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, store_addr, page_data_tmp, (DataSlot.cur_slot_size + sizeof(DataSlot))))
+                if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, store_addr, page_data_tmp, (DataSlot.cur_slot_size + sizeof(DataSlot))))
                     return Storage_Write_Error;
 
                 if (DataSlot.nxt_addr == 0)
@@ -1320,7 +1502,7 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
                     if (DataSlot.total_data_size == stored_size)
                     {
                         /* step 4: update free slot */
-                        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, cur_freeslot_addr, (uint8_t *)&FreeSlot, sizeof(FreeSlot)))
+                        if (update_freeslot && !StorageDev.param_write(Storage_Monitor.ExtDev_ptr, cur_freeslot_addr, (uint8_t *)&FreeSlot, sizeof(FreeSlot)))
                             return Storage_Write_Error;
 
                         break;
@@ -1331,7 +1513,7 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
                 else
                 {
                     /* after target data segment stored, shift target data pointer to unstored pos
-                        * and update next segment data store address */
+                     * and update next segment data store address */
                     stored_size += slot_useful_size;
                     store_addr = DataSlot.nxt_addr;
                 }
@@ -1339,39 +1521,39 @@ static Storage_ErrorCode_List Storage_CreateItem(Storage_ParaClassType_List _cla
         }
 
         /* get tab */
-        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, storage_tab_addr, page_data_tmp, (p_Sec->tab_size / p_Sec->page_num)))
+        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, storage_tab_addr, page_data_tmp, (p_Sec->tab_size / p_Sec->tab_num)))
             return Storage_Read_Error;
 
         tab_item = (Storage_Item_TypeDef *)page_data_tmp;
         tab_item[item_index] = crt_item_slot;
 
         /* write back item slot list to tab */
-        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, storage_tab_addr, page_data_tmp, (p_Sec->tab_size / p_Sec->page_num)))
+        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, storage_tab_addr, page_data_tmp, (p_Sec->tab_size / p_Sec->tab_num)))
             return Storage_Write_Error;
 
         /* update free slot address in base info */
         p_Sec->free_slot_addr = cur_freeslot_addr;
 
         /* update base info crc */
-        memcpy(page_data_tmp, p_Flash, sizeof(Storage_FlashInfo_TypeDef));
-        base_info_crc = Common_CRC16(page_data_tmp, Storage_InfoPageSize - sizeof(base_info_crc));
-        memcpy(&page_data_tmp[Storage_InfoPageSize - sizeof(base_info_crc)], &base_info_crc, sizeof(base_info_crc));
+        uint8_t *tmp_buf = &page_data_tmp[Storage_InfoPageSize];
+        memset(tmp_buf, 0, Storage_InfoPageSize);
+        memcpy(tmp_buf, p_Flash, sizeof(Storage_FlashInfo_TypeDef));
+        base_info_crc = Common_CRC16(tmp_buf, Storage_InfoPageSize - sizeof(base_info_crc));
+        memcpy(&tmp_buf[Storage_InfoPageSize - sizeof(base_info_crc)], &base_info_crc, sizeof(base_info_crc));
         
         /* update base info from section start*/
-        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, From_Start_Address, page_data_tmp, Storage_InfoPageSize))
+        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, tmp_buf, Storage_InfoPageSize))
             return Storage_Write_Error;
+        
+        memset(tmp_buf, 0, Storage_InfoPageSize);
     }
 
     return Storage_Error_None;
-#else
-    return Storage_No_Enough_Space;
-#endif
 }
 
 static bool Storage_Establish_Tab(Storage_ParaClassType_List class)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
-    Storage_FlashInfo_TypeDef *p_Flash = NULL;
+    Storage_FlashInfo_TypeDef *p_Flash = &Storage_Monitor.info;
     Storage_BaseSecInfo_TypeDef *p_SecInfo = NULL;
     uint16_t clear_cnt = 0;
     uint32_t clear_byte = 0;
@@ -1380,12 +1562,22 @@ static bool Storage_Establish_Tab(Storage_ParaClassType_List class)
     Storage_FreeSlot_TypeDef free_slot;
     uint16_t crc = 0;
 
-    p_Flash = &Storage_Monitor.info;
-    p_SecInfo = Storage_Get_SecInfo(p_Flash, class);
-    if (p_SecInfo == NULL)
-        return false;
+    switch ((uint8_t)class)
+    {
+        case Para_Sys:
+            STORAGE_INFO("establish tab", "Building %s Tab", "Sys");
+            p_SecInfo = &(p_Flash->sys_sec);
+            break;
+        
+        case Para_User:
+            STORAGE_INFO("establish tab", "Building %s Tab", "User");
+            p_SecInfo = &(p_Flash->user_sec);
+            break;
 
-    if (p_SecInfo->tab_addr && Storage_Clear_Tab(p_SecInfo->tab_addr, p_SecInfo->page_num))
+        default: STORAGE_INFO("establish tab", "Unknow type"); return false;
+    }
+
+    if (p_SecInfo->tab_addr && Storage_Clear_Tab(p_SecInfo->tab_addr, p_SecInfo->tab_num))
     {
         /* clear boot data section */
         if (p_SecInfo->data_sec_addr == 0)
@@ -1402,7 +1594,7 @@ static bool Storage_Establish_Tab(Storage_ParaClassType_List class)
  
         for(uint16_t i = 0; i < clear_cnt; i++)
         {
-            if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, addr_tmp, page_data_tmp, clear_byte))
+            if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, addr_tmp, page_data_tmp, clear_byte))
                 return false;
 
             addr_tmp += Storage_TabSize;
@@ -1414,7 +1606,7 @@ static bool Storage_Establish_Tab(Storage_ParaClassType_List class)
         /* write free slot info */
         memset(&free_slot, 0, sizeof(free_slot));
         free_slot.head_tag = STORAGE_SLOT_HEAD_TAG;
-        free_slot.cur_slot_size = p_SecInfo->data_sec_size - sizeof(free_slot);
+        free_slot.size = p_SecInfo->data_sec_size - sizeof(free_slot);
         free_slot.nxt_addr = 0;
         /* if current free slot get enought space for data then set next address (nxt_addr) as 0 */
         /* or else setnext address (nxt_addr) as next slot address such as 0x80exxxx. */
@@ -1423,7 +1615,7 @@ static bool Storage_Establish_Tab(Storage_ParaClassType_List class)
         free_slot.end_tag = STORAGE_SLOT_END_TAG;
         
         memcpy(page_data_tmp, &free_slot, sizeof(free_slot));
-        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, p_SecInfo->data_sec_addr, page_data_tmp, Storage_TabSize))
+        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, p_SecInfo->data_sec_addr, page_data_tmp, Storage_TabSize))
             return false;
 
         /* update info section */
@@ -1433,142 +1625,133 @@ static bool Storage_Establish_Tab(Storage_ParaClassType_List class)
         p_SecInfo->para_size = 0;
 
         /* read out whole section info data from storage info section */
-        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, From_Start_Address, page_data_tmp, Storage_TabSize))
+        if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, page_data_tmp, Storage_TabSize))
             return false;
 
-        memset(page_data_tmp, 0, Storage_InfoPageSize);
-        memcpy(page_data_tmp, p_Flash, sizeof(Storage_FlashInfo_TypeDef));
-
-        /* comput crc */
-        crc = Common_CRC16(page_data_tmp, Storage_InfoPageSize - sizeof(crc));
-        memcpy(&page_data_tmp[Storage_InfoPageSize - sizeof(crc)], &crc, sizeof(crc));
-
-        /* erase sector first then write into the target sector */
-        if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, From_Start_Address, page_data_tmp, Storage_TabSize))
+        if (!Storage_UpdateBaseInfo())
             return false;
 
         return true;
     }
-#endif
+    
     return false;
 }
 
 static bool Storage_Build_StorageInfo(void)
 {
-#if (FLASH_CHIP_ENABLE_STATE == ON)
-    uint32_t page_num = 0;
-    Storage_FlashInfo_TypeDef Info;
     Storage_FlashInfo_TypeDef Info_Rx;
-    uint32_t addr_offset = 0;
-    uint32_t BaseInfo_start_addr = 0;
     uint32_t tab_addr_offset = 0;
     uint16_t crc = 0;
     uint32_t remain_data_sec_size = 0;
     uint32_t data_sec_size = 0;
+    uint32_t base_addr = Storage_Monitor.info.base_addr;
+    uint32_t reserve_sec_addr = 0;
 
-    memset(&Info, 0, sizeof(Storage_FlashInfo_TypeDef));
     memset(&Info_Rx, 0, sizeof(Storage_FlashInfo_TypeDef));
-    memcpy(Info.tag, EXTERNAL_STORAGE_PAGE_TAG, EXTERNAL_PAGE_TAG_SIZE);
+    memset(&Storage_Monitor.info.sys_sec, 0, sizeof(Storage_BaseSecInfo_TypeDef));
+    memset(&Storage_Monitor.info.user_sec, 0, sizeof(Storage_BaseSecInfo_TypeDef));
+    memcpy(Storage_Monitor.info.tag, EXTERNAL_STORAGE_PAGE_TAG, EXTERNAL_PAGE_TAG_SIZE);
+    memcpy(Storage_Monitor.info.version, version, STORAGE_VERSION_LEN);
+    Storage_Monitor.info.total_size = Flash_Storage_TotalSize;
 
-    Info.total_size = ExtFlash_Storage_TotalSize;
-    Info.base_addr = Storage_Monitor.info.base_addr;
+    /* fill reserve section */
+    if (!Storage_Fill_ReserveSec(Storage_Monitor.info.base_addr + Storage_InfoPageSize))
+        return false;
+
+    /* set system data table section info
+     * table address 
+     * table size
+     * table num
+     * data section size
+     * default parameter size
+     * default parameter num
+     */
+    Storage_Monitor.info.sys_sec.tab_addr = base_addr + Storage_InfoPageSize + Storage_ReserveBlock_Size;
+    Storage_Monitor.info.sys_sec.tab_num = TabNum;
+    Storage_Monitor.info.sys_sec.tab_size = TabSize;
+    Storage_Monitor.info.sys_sec.data_sec_size = Flash_SysDataSec_Size;
+    Storage_Monitor.info.sys_sec.para_size = 0;
+    Storage_Monitor.info.sys_sec.para_num = 0;
+    tab_addr_offset = Storage_Monitor.info.sys_sec.tab_addr + TabSize + Storage_ReserveBlock_Size;
     
-    BaseInfo_start_addr = Info.base_addr;
-    page_num = Storage_ExtFlash_Max_Capacity / (ExtFlash_Storage_TabSize / StorageItem_Size);
-    if (page_num == 0)
+    /* fill 0x55 to reserve area */
+    if (!Storage_Fill_ReserveSec(tab_addr_offset - Storage_ReserveBlock_Size))
+        return false;
+
+    /* set user data table section info
+     * table address 
+     * table size
+     * table num
+     * data section size
+     * default parameter size
+     * default parameter num
+     */
+    Storage_Monitor.info.user_sec.tab_addr = tab_addr_offset;
+    Storage_Monitor.info.user_sec.tab_num = TabNum;
+    Storage_Monitor.info.user_sec.tab_size = TabSize;
+    Storage_Monitor.info.user_sec.data_sec_size = Flash_UserDataSec_Size;
+    Storage_Monitor.info.user_sec.para_size = 0;
+    Storage_Monitor.info.user_sec.para_num = 0;
+    tab_addr_offset = Storage_Monitor.info.user_sec.tab_addr + TabSize + Storage_ReserveBlock_Size;
+
+    /* fill 0x55 to reserve area */
+    if (!Storage_Fill_ReserveSec(tab_addr_offset - Storage_ReserveBlock_Size))
         return false;
     
-    Info.boot_sec.tab_addr = Storage_InfoPageSize;
-    Info.boot_sec.tab_size = BootSection_Block_Size * BootTab_Num;
-    Info.boot_sec.page_num = BootTab_Num;
-    Info.boot_sec.data_sec_size = ExternalFlash_BootDataSec_Size;
-    Info.boot_sec.para_size = 0;
-    Info.boot_sec.para_num = 0;
-    tab_addr_offset = (Info.boot_sec.tab_addr + Info.boot_sec.tab_size) + Storage_ReserveBlock_Size;
-
-    Info.sys_sec.tab_addr = tab_addr_offset;
-    Info.sys_sec.tab_size = page_num * ExtFlash_Storage_TabSize;
-    Info.sys_sec.data_sec_size = ExternalFlash_SysDataSec_Size;
-    Info.sys_sec.page_num = page_num;
-    Info.sys_sec.para_size = 0;
-    Info.sys_sec.para_num = 0;
-    tab_addr_offset += Info.sys_sec.tab_size + Storage_ReserveBlock_Size;
-        
-    Info.user_sec.tab_addr = tab_addr_offset;
-    Info.user_sec.tab_size = page_num * ExtFlash_Storage_TabSize;
-    Info.user_sec.data_sec_size = ExternalFlash_UserDataSec_Size;
-    Info.user_sec.page_num = page_num;
-    Info.user_sec.para_size = 0;
-    Info.user_sec.para_num = 0;
-    tab_addr_offset += Info.user_sec.tab_size + Storage_ReserveBlock_Size;
-    
+    STORAGE_INFO("build info", "total size 0x%08x", Storage_Monitor.info.total_size);
+    STORAGE_INFO("build info", "tab addr offset 0x%08x", tab_addr_offset);
     /* get the remaining size of rom space has left */
-    if (Info.total_size < tab_addr_offset)
+    if (Storage_Monitor.info.total_size < tab_addr_offset)
+    {
+        STORAGE_INFO("build info", "table over range");
+        Storage_Assert(true);
         return false;
-    
-    remain_data_sec_size = Info.total_size - tab_addr_offset;
-    data_sec_size += Info.boot_sec.data_sec_size + Storage_ReserveBlock_Size;
-    data_sec_size += Info.sys_sec.data_sec_size + Storage_ReserveBlock_Size;
-    data_sec_size += Info.user_sec.data_sec_size + Storage_ReserveBlock_Size;
+    }
 
+    /* remain_size = total size - (info_page_size - reserve_size) - (sys_table_size - reserve_size) - (user_table_size - reserve_size) */
+    remain_data_sec_size = Storage_Monitor.info.total_size - (tab_addr_offset - base_addr);
+    data_sec_size += Storage_Monitor.info.sys_sec.data_sec_size + Storage_ReserveBlock_Size;
+    data_sec_size += Storage_Monitor.info.user_sec.data_sec_size + Storage_ReserveBlock_Size;
+
+    STORAGE_INFO("build info", "Avilable size 0x%08x", remain_data_sec_size);
+    STORAGE_INFO("build info", "Assigned size 0x%08x", data_sec_size);
     if (remain_data_sec_size < data_sec_size)
+    {
+        STORAGE_INFO("build info", "data section over range");
+        Storage_Assert(true);
         return false;
-        
-    Info.remain_size = remain_data_sec_size - data_sec_size;
-    Info.data_sec_size = Info.boot_sec.data_sec_size + Info.sys_sec.data_sec_size + Info.user_sec.data_sec_size;
+    }
+
+    Storage_Monitor.info.remain_size = remain_data_sec_size - data_sec_size;
+    Storage_Monitor.info.data_sec_size = Storage_Monitor.info.sys_sec.data_sec_size + Storage_Monitor.info.user_sec.data_sec_size;
 
     /* get data sec addr */
-    Info.boot_sec.data_sec_addr = tab_addr_offset;
-    tab_addr_offset += ExternalFlash_BootDataSec_Size;
-    tab_addr_offset += Storage_ReserveBlock_Size;
+    Storage_Monitor.info.sys_sec.data_sec_addr = tab_addr_offset;
+    tab_addr_offset += Flash_SysDataSec_Size + Storage_ReserveBlock_Size;
+    STORAGE_INFO("build info", "system data addr 0x%08x", Storage_Monitor.info.sys_sec.data_sec_addr);
 
-    Info.sys_sec.data_sec_addr = tab_addr_offset;
-    tab_addr_offset += ExternalFlash_SysDataSec_Size;
-    tab_addr_offset += Storage_ReserveBlock_Size;
-
-    Info.user_sec.data_sec_addr = tab_addr_offset;
-    tab_addr_offset += ExternalFlash_UserDataSec_Size;
-    tab_addr_offset += Storage_ReserveBlock_Size;
-
-    Storage_Monitor.info = Info;
-    addr_offset = BaseInfo_start_addr - Storage_Monitor.info.base_addr;
+    Storage_Monitor.info.user_sec.data_sec_addr = tab_addr_offset;
+    tab_addr_offset += Flash_UserDataSec_Size + Storage_ReserveBlock_Size;
+    STORAGE_INFO("build info", "user data addr 0x%08x", Storage_Monitor.info.user_sec.data_sec_addr);
 
     /* write 0 to info section */
-    memset(page_data_tmp, 0, Storage_InfoPageSize);
-
-    /* read out and erase sector */
-    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, addr_offset, page_data_tmp, sizeof(Info)))
-        return false;
-
-    /* write base info to info section */
-    memcpy(page_data_tmp, &Info, sizeof(Info));
-    crc = Common_CRC16(page_data_tmp, Storage_InfoPageSize - sizeof(crc));
-    memcpy(&page_data_tmp[Storage_InfoPageSize - sizeof(crc)], &crc, sizeof(crc));
-
-    /* write into flash chip */
-    if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, addr_offset, page_data_tmp, Storage_InfoPageSize))
+    if (!Storage_UpdateBaseInfo())
         return false;
 
     /* read out again */
-    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, addr_offset, page_data_tmp, sizeof(Info)))
+    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, Storage_Monitor.info.base_addr, page_data_tmp, sizeof(Storage_FlashInfo_TypeDef)))
         return false;
 
     /* compare with target */
     memcpy(&Info_Rx, page_data_tmp, sizeof(Info_Rx));
-    if (memcmp(&Info_Rx, &Info, sizeof(Storage_FlashInfo_TypeDef)) != 0)
+    if (memcmp(&Info_Rx, &Storage_Monitor.info, sizeof(Storage_FlashInfo_TypeDef)) != 0)
         return false;
 
-    if (!Storage_Establish_Tab(Para_Boot) || \
-        !Storage_Establish_Tab(Para_Sys)  || \
+    if (!Storage_Establish_Tab(Para_Sys) || \
         !Storage_Establish_Tab(Para_User))
         return false;
 
-    volatile uint8_t test;
-    test ++;
     return true;
-#else
-    return false;
-#endif
 }
 
 static bool Storage_Compare_ItemSlot_CRC(const Storage_Item_TypeDef item)
@@ -1613,90 +1796,42 @@ static Storage_BaseSecInfo_TypeDef* Storage_Get_SecInfo(Storage_FlashInfo_TypeDe
 
     switch(class)
     {
-        case Para_Boot: return &(info->boot_sec);
         case Para_Sys:  return &(info->sys_sec);
         case Para_User: return &(info->user_sec);
         default:        return NULL;
     }
 }
 
-/********************************************** BlackBox Storage API Section *****************************************************/
-static bool Storage_Write_Section(uint32_t addr, uint8_t *p_data, uint16_t len)
+static bool Storage_Fill_ReserveSec(uint32_t addr)
 {
-    void *p_dev = Storage_Monitor.ExtDev_ptr;
-
-    if (p_dev == NULL)
-        return false;
-
-    return StorageDev.write_phy_sec(To_StorageDevObj_Ptr(p_dev), addr, p_data, len);
-}
-
-static bool Storage_Read_Section(uint32_t addr, uint8_t *p_data, uint16_t len)
-{
-    void *p_dev = Storage_Monitor.ExtDev_ptr;
-
-    if (p_dev == NULL)
-        return false;
-
-    return StorageDev.read_phy_sec(To_StorageDevObj_Ptr(p_dev), addr, p_data, len);
-}
-
-static bool Storage_Erase_Section(uint32_t addr, uint16_t len)
-{
-    void *p_dev = Storage_Monitor.ExtDev_ptr;
-
-    if (p_dev == NULL)
-        return false;
-
-    return StorageDev.erase_phy_sec(To_StorageDevObj_Ptr(p_dev), addr, len);
-}
-
-/********************************************** External Firmware Storage API Section ********************************************/
-static bool Storage_Firmware_Format(void)
-{
-    StorageDevObj_TypeDef *dev = To_StorageDevObj_Ptr(Storage_Monitor.ExtDev_ptr);
-    
-    if ((dev == NULL) || !Storage_Monitor.init_state)
-        return false;
-
-    return StorageDev.firmware_format(dev, App_Firmware_Addr, App_Firmware_Size);
-}
-
-static bool Storage_Frimware_Read(uint32_t addr_offset, uint8_t *p_data, uint16_t size)
-{
-    StorageDevObj_TypeDef *dev = To_StorageDevObj_Ptr(Storage_Monitor.ExtDev_ptr);
-
-    if ((dev == NULL) || \
-        !Storage_Monitor.init_state || \
-        (p_data == NULL) || \
-        (size == 0))
-        return false;
-        
-    return StorageDev.firmware_read(dev, App_Firmware_Addr, addr_offset, p_data, size);
-}
-
-static bool Storage_Firmware_Write(Storage_MediumType_List medium, uint32_t addr_offset, uint8_t *p_data, uint16_t size)
-{
-    uint32_t write_addr = 0;
-    StorageDevObj_TypeDef *dev = NULL;
-
-    if ((p_data == NULL) || (size == 0))
-        return false;
-
-    if (medium == Internal_Flash)
+    if (addr == 0)
     {
-        write_addr = App_Address_Base + addr_offset;
-        return BspFlash.write(write_addr, p_data, size);
+        STORAGE_INFO("set res area", "Invalid address");
+        return false;
     }
-    
-    if (medium == External_Flash)
+
+    memset(page_data_tmp, Flash_Storage_ResData, Storage_ReserveBlock_Size);
+    if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, addr, page_data_tmp, Storage_ReserveBlock_Size))
     {
-        dev = To_StorageDevObj_Ptr(Storage_Monitor.ExtDev_ptr);
-        if (dev == NULL)
+        STORAGE_INFO("set res area", "write at 0x08%X failed", addr);
+        return false;
+    }
+
+    memset(page_data_tmp, 0, Storage_ReserveBlock_Size);
+    if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, addr, page_data_tmp, Storage_ReserveBlock_Size))
+    {
+        STORAGE_INFO("set res area", "read at 0x08%X failed", addr);
+        return false;
+    }
+
+    for (uint16_t i = 0; i < Storage_ReserveBlock_Size; i ++)
+    {
+        if (page_data_tmp[i] != Flash_Storage_ResData)
+        {
+            STORAGE_INFO("set res area", "data at 0x08%X index at %d error data 0x02%X", addr, i, page_data_tmp[i]);
             return false;
-
-        return StorageDev.firmware_write(dev, App_Firmware_Addr, addr_offset, p_data, size);
+        }
     }
 
-    return false;
+    return true;
 }
