@@ -78,7 +78,7 @@ static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev)
         if (ext_dev->obj == NULL)
             return false;
 
-        To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->trans_cmd = StoragePort_Api.trans_cmd;
+        To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->trans_cmd = StoragePort_Api.bus_trans_cmd;
 #endif
     }
     

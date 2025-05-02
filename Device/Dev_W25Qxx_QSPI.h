@@ -34,40 +34,10 @@ extern "C" {
 #define DevQSPIW25Qxx_FLASH_ID                  0XEF4017    /* W25Q64 JEDEC ID */
 #define DevQSPIW25Qxx_Mem_Addr                  0x90000000  /* memory map mode address */
 
-typedef enum
-{
-    AddrLine_None = 0,
-    AddrLine_1,
-    AddrLine_4,
-} DevQSPIW25Qxx_AddrLine_TypeDef;
-
-typedef enum
-{
-    DataLine_None = 0,
-    DataLine_1,
-    DataLine_4,
-} DevQSPIW25Qxx_DataLine_TypeDef;
-
-typedef struct
-{
-    DevQSPIW25Qxx_AddrLine_TypeDef addr_line;
-    DevQSPIW25Qxx_DataLine_TypeDef data_line;
-    uint32_t dummy_cycle;
-    uint32_t trans_size;
-    uint32_t cmd_code;
-    uint32_t addr;
-} DevQSPIW25Qxx_BusCMD_TypeDef;
-
-typedef struct
-{
-    uint32_t match;
-    uint32_t mask;
-} DevQSPIW25Qxx_BusCFG_TypeDef;
-
-typedef bool (*bus_cmd)(DevQSPIW25Qxx_BusCMD_TypeDef *cmd);
-typedef bool (*bus_polling)(DevQSPIW25Qxx_BusCMD_TypeDef *cmd, DevQSPIW25Qxx_BusCFG_TypeDef *cfg);
+typedef bool (*bus_cmd)(uint8_t data_line, uint8_t addr_line, uint32_t addr, uint8_t dummy_c, uint16_t size, uint32_t cmd);
+typedef bool (*bus_polling)(uint8_t data_line, uint8_t addr_line, uint32_t addr, uint8_t dummy_c, uint16_t size, uint32_t cmd, uint32_t match, uint32_t mask);
 typedef bool (*bus_mem_map)(uint32_t reg);
-typedef uint16_t (*bus_read)(uint8_t *p_rx);
+typedef bool (*bus_read)(uint8_t *p_rx);
 typedef bool (*bus_write)(uint8_t *p_tx);
 
 typedef struct

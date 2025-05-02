@@ -2,13 +2,27 @@
 #include "Bsp_GPIO.h"
 #include "stm32h7xx_hal.h"
 
+#define DATALINE_0  ((uint8_t) 0)
+#define DATALINE_1  ((uint8_t) 1)
+#define DATALINE_2  ((uint8_t) 2)
+#define DATALINE_4  ((uint8_t) 4)
+
+typedef struct
+{
+    bool valid;
+    QSPI_CommandTypeDef command;
+} BspQPI_CMDInfo_TypeDef;
+
+/* internal function */
+static BspQPI_CMDInfo_TypeDef BspQSPI_Check_CMD(uint8_t data_line, uint8_t addr_line, uint32_t addr, uint32_t dummy_cyc, uint16_t size, uint32_t code);
+
 /* external function */
 static bool BspQSPI_Init(BspQSPI_Config_TypeDef *obj, void *qspi_hdl);
-static bool BspQSPI_Command(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t dummy_cyc, uint32_t nb_data, uint32_t cmd);
-static bool BspQSPI_Polling(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cmd, uint32_t cyc, uint32_t nb_data, uint32_t match, uint32_t mask);
+static bool BspQSPI_Command(BspQSPI_Config_TypeDef *obj, uint32_t data_line, uint32_t addr_line, uint32_t addr, uint32_t dummy_cyc, uint32_t size, uint32_t code);
+static bool BspQSPI_Polling(BspQSPI_Config_TypeDef *obj, uint32_t data_line, uint32_t addr_line, uint32_t addr, uint32_t dummy_cyc, uint32_t size, uint32_t code, uint32_t match, uint32_t mask);
 static bool BspQSPI_MemMap(BspQSPI_Config_TypeDef *obj, uint32_t cmd);
-static bool BspQSPI_Recv(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len);
-static bool BspQSPI_Trans(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len);
+static bool BspQSPI_Recv(BspQSPI_Config_TypeDef *obj, uint8_t *p_data);
+static bool BspQSPI_Trans(BspQSPI_Config_TypeDef *obj, uint8_t *p_data);
 
 BspQSpi_TypeDef BspQspi = {
     .init    = BspQSPI_Init,
@@ -60,108 +74,56 @@ static bool BspQSPI_Init(BspQSPI_Config_TypeDef *obj, void *qspi_hdl)
     return true;
 }
 
-static bool BspQSPI_Trans(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len)
+static bool BspQSPI_Trans(BspQSPI_Config_TypeDef *obj, uint8_t *p_data)
 {
-	QSPI_CommandTypeDef s_command;
-
     if ((obj == NULL) || (obj->p_qspi == NULL) || !obj->init_state)
         return false;
-
-    s_command.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
-    s_command.AddressSize       = QSPI_ADDRESS_24_BITS;
-    s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
-    s_command.DdrMode           = QSPI_DDR_MODE_DISABLE;
-    s_command.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
-    s_command.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
-    s_command.AddressMode       = QSPI_ADDRESS_1_LINE;
-    s_command.DataMode          = QSPI_DATA_4_LINES;
-    s_command.DummyCycles       = 0;
-    s_command.NbData            = len;
-    s_command.Address           = addr;
-    s_command.Instruction       = cmd;
     
     /* send command */
-    if ((HAL_QSPI_Command(obj->p_qspi, &s_command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) && \
-        (HAL_QSPI_Transmit(obj->p_qspi, p_data, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK))
+    if (HAL_QSPI_Transmit(obj->p_qspi, p_data, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK)
         return true;
 
     return false;
 }
 
-static bool BspQSPI_Recv(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len)
+static bool BspQSPI_Recv(BspQSPI_Config_TypeDef *obj, uint8_t *p_data)
 {
-	QSPI_CommandTypeDef s_command;
-
     if ((obj == NULL) || (obj->p_qspi == NULL) || !obj->init_state)
         return false;
 
-    s_command.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
-    s_command.AddressSize       = QSPI_ADDRESS_24_BITS;
-    s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
-    s_command.DdrMode           = QSPI_DDR_MODE_DISABLE;
-    s_command.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
-    s_command.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
-    s_command.AddressMode 		= QSPI_ADDRESS_4_LINES;
-    s_command.DataMode    		= QSPI_DATA_4_LINES;
-    s_command.DummyCycles 		= 6;
-    s_command.NbData      		= len;
-    s_command.Address     		= addr;
-    s_command.Instruction 		= cmd;
-
-    if ((HAL_QSPI_Command(obj->p_qspi, &s_command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) && \
-        (HAL_QSPI_Receive(obj->p_qspi, p_data, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK))
+    if (HAL_QSPI_Receive(obj->p_qspi, p_data, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK)
         return true;
 
     return false;
 }
 
-static bool BspQSPI_Command(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cyc, uint32_t nb_data, uint32_t cmd)
+static bool BspQSPI_Command(BspQSPI_Config_TypeDef *obj, uint32_t data_line, uint32_t addr_line, uint32_t addr, uint32_t dummy_cyc, uint32_t size, uint32_t code)
 {
-    QSPI_CommandTypeDef s_command;
+    BspQPI_CMDInfo_TypeDef cmd;
+    cmd = BspQSPI_Check_CMD(data_line, addr_line, addr, dummy_cyc, size, code);
 
-    memset(&s_command, 0, sizeof(QSPI_CommandTypeDef));
-
-	s_command.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
-	s_command.AddressMode       = QSPI_ADDRESS_NONE;
-	s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
-	s_command.DdrMode           = QSPI_DDR_MODE_DISABLE;
-	s_command.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
-	s_command.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
-	s_command.DataMode          = mode;
-    s_command.NbData            = nb_data;
-	s_command.DummyCycles       = cyc;
-	s_command.Instruction       = cmd;
-
-    if ((obj == NULL) || (obj->p_qspi == NULL) || !obj->init_state)
+    if ((obj == NULL) || (obj->p_qspi == NULL) || !obj->init_state || !cmd.valid)
         return false;
 
-    if (HAL_QSPI_Command(obj->p_qspi, &s_command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+    if (HAL_QSPI_Command(obj->p_qspi, &cmd.command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
         return false;
 
     return true;
 }
-
-static bool BspQSPI_Polling(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cmd, uint32_t cyc, uint32_t nb_data, uint32_t match, uint32_t mask)
+static bool BspQSPI_Polling(BspQSPI_Config_TypeDef *obj, uint32_t data_line, uint32_t addr_line, uint32_t addr, uint32_t dummy_cyc, uint32_t size, uint32_t code, uint32_t match, uint32_t mask)
 {
-	QSPI_CommandTypeDef s_command;
 	QSPI_AutoPollingTypeDef s_config;
+    BspQPI_CMDInfo_TypeDef cmd;
 
-    memset(&s_command, 0, sizeof(QSPI_CommandTypeDef));
+    memset(&cmd, 0, sizeof(BspQPI_CMDInfo_TypeDef));
     memset(&s_config, 0, sizeof(QSPI_AutoPollingTypeDef));
 
     if ((obj == NULL) || (obj->p_qspi == NULL) || !obj->init_state)
         return false;
 
-    s_command.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
-    s_command.AddressMode       = QSPI_ADDRESS_NONE;
-    s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
-    s_command.DdrMode           = QSPI_DDR_MODE_DISABLE;
-    s_command.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
-    s_command.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
-    s_command.DataMode          = mode;
-    s_command.DummyCycles       = cyc;
-    s_command.Instruction       = cmd;
-    s_command.NbData            = nb_data;
+    cmd = BspQSPI_Check_CMD(data_line, addr_line, addr, dummy_cyc, size, code);
+    if (!cmd.valid)
+        return false;
 
     s_config.Match              = match;
     s_config.Mask               = mask;
@@ -170,7 +132,7 @@ static bool BspQSPI_Polling(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t
     s_config.Interval           = 0x10;
     s_config.AutomaticStop      = QSPI_AUTOMATIC_STOP_ENABLE;
 
-    if (HAL_QSPI_AutoPolling(obj->p_qspi, &s_command, &s_config, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+    if (HAL_QSPI_AutoPolling(obj->p_qspi, &cmd.command, &s_config, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
         return false;
 
     return true;
@@ -205,4 +167,42 @@ static bool BspQSPI_MemMap(BspQSPI_Config_TypeDef *obj, uint32_t cmd)
         return false;
 
     return true;
+}
+
+static BspQPI_CMDInfo_TypeDef BspQSPI_Check_CMD(uint8_t data_line, uint8_t addr_line, uint32_t addr, uint32_t dummy_cyc, uint16_t size, uint32_t code)
+{
+    BspQPI_CMDInfo_TypeDef cmd;
+    cmd.valid = false;
+
+    cmd.command.AddressSize       = QSPI_ADDRESS_24_BITS;
+    cmd.command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+    cmd.command.DdrMode           = QSPI_DDR_MODE_DISABLE;
+    cmd.command.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+    cmd.command.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+
+    switch (data_line)
+    {
+        case DATALINE_0: cmd.command.DataMode = QSPI_DATA_NONE; break;
+        case DATALINE_1: cmd.command.DataMode = QSPI_DATA_1_LINE; break;
+        case DATALINE_2: cmd.command.DataMode = QSPI_DATA_2_LINES; break;
+        case DATALINE_4: cmd.command.DataMode = QSPI_DATA_4_LINES; break;
+        default: return cmd;
+    }
+
+    switch (addr_line)
+    {
+        case DATALINE_0: cmd.command.AddressMode = QSPI_ADDRESS_NONE; break;
+        case DATALINE_1: cmd.command.AddressMode = QSPI_ADDRESS_1_LINE; break;
+        case DATALINE_2: cmd.command.AddressMode = QSPI_ADDRESS_2_LINES; break;
+        case DATALINE_4: cmd.command.AddressMode = QSPI_ADDRESS_4_LINES; break;
+        default: return cmd;
+    }
+
+    cmd.command.Address     = addr;
+    cmd.command.NbData      = size;
+    cmd.command.DummyCycles = dummy_cyc;
+    cmd.command.Instruction = code;
+
+    cmd.valid = true;
+    return cmd;
 }

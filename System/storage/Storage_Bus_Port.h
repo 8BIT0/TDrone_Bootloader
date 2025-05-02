@@ -22,10 +22,10 @@ typedef struct
     uint16_t (*bus_rx)(uint8_t *p_data, uint16_t len, uint32_t time_out);
     uint16_t (*bus_trans)(uint8_t *tx, uint8_t *rx, uint16_t len, uint32_t time_out);
 #elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
-    bool (*bus_trans_cmd)();
-    bool (*bus_status_polling)();
-    bool (*bus_mem_map)();
-    uint16_t (*bus_read)(uint8_t *p_rx);
+    bool (*bus_trans_cmd)(uint8_t data_line, uint8_t addr_line, uint32_t addr, uint8_t dummy_c, uint16_t size, uint32_t cmd);
+    bool (*bus_status_polling)(uint8_t data_line, uint8_t addr_line, uint32_t addr, uint8_t dummy_c, uint16_t size, uint32_t cmd, uint32_t match, uint32_t mask);
+    bool (*bus_mem_map)(uint32_t reg);
+    bool (*bus_read)(uint8_t *p_rx);
     bool (*bus_write)(uint8_t *p_tx);
 #endif
 } StorageBusApi_TypeDef;

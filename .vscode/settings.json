@@ -33,6 +33,7 @@
         "bsp_qspi_port_def.h": "c",
         "bsp_gpio.h": "c",
         "storage_bus_port.h": "c",
-        "bsp_qspi.h": "c"
+        "bsp_qspi.h": "c",
+        "dev_w25qxx_qspi.h": "c"
     }
 }

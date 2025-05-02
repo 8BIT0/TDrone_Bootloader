@@ -18,10 +18,10 @@ typedef struct
 typedef struct
 {
     bool (*init)(BspQSPI_Config_TypeDef *obj, void *qspi_hdl);
-    bool (*tx)(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len);
-    bool (*rx)(BspQSPI_Config_TypeDef *obj, uint32_t addr, uint32_t cmd, uint8_t *p_data, uint32_t len);
-    bool (*cmd)(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cyc, uint32_t nb_data, uint32_t cmd);
-    bool (*polling)(BspQSPI_Config_TypeDef *obj, uint32_t mode, uint32_t cmd, uint32_t cyc, uint32_t nb_data, uint32_t match, uint32_t mask);
+    bool (*tx)(BspQSPI_Config_TypeDef *obj, uint8_t *p_data);
+    bool (*rx)(BspQSPI_Config_TypeDef *obj, uint8_t *p_data);
+    bool (*cmd)(BspQSPI_Config_TypeDef *obj, uint32_t data_line, uint32_t addr_line, uint32_t addr, uint32_t dummy_cyc, uint32_t size, uint32_t code);
+    bool (*polling)(BspQSPI_Config_TypeDef *obj, uint32_t data_line, uint32_t addr_line, uint32_t addr, uint32_t dummy_cyc, uint32_t size, uint32_t code, uint32_t match, uint32_t mask);
     bool (*memmap)(BspQSPI_Config_TypeDef *obj, uint32_t cmd);    /* for fast read */
 } BspQSpi_TypeDef;
 

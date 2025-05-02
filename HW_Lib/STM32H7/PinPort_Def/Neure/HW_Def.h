@@ -114,7 +114,7 @@ extern const uint8_t HWVer[3];
     #elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
         #define ExtFlash_Bus_Api BspQspi
         #define ExtFlash_Bus_Instance (void *)QUADSPI
-        extern QSPI_HandleTypeDef ExtFlash_Bus_InstObj;
+        extern BspQSPI_Config_TypeDef ExtFlash_Bus_InstObj;
     #endif
 
 #define App_Firmware_Addr W25QXX_BASE_ADDRESS
