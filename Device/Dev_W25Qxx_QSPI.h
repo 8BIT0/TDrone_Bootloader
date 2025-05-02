@@ -10,6 +10,7 @@ extern "C" {
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include "Dev_NorFlash_Def.h"
 
 #define To_DevQSPIW25Qxx_API(x)                 ((DevQSPIW25Qxx_TypeDef *)x)
 #define To_DevQSPIW25Qxx_OBJ(x)                 ((DevQSPIW25QxxObj_TypeDef *)x)

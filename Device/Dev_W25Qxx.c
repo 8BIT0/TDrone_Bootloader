@@ -10,7 +10,7 @@ static DevW25Qxx_Error_List DevW25Qxx_WriteSector(DevW25QxxObj_TypeDef *dev, uin
 static DevW25Qxx_Error_List DevW25Qxx_ReadSector(DevW25QxxObj_TypeDef *dev, uint32_t ReadAddr, uint8_t *pData, uint32_t Size);
 static DevW25Qxx_Error_List DevW25Qxx_EraseSector(DevW25QxxObj_TypeDef *dev, uint32_t Address);
 static DevW25Qxx_Error_List DevW25Qxx_EraseChip(DevW25QxxObj_TypeDef *dev);
-static DevW25Qxx_DeviceInfo_TypeDef DevW25Qxx_Get_Info(DevW25QxxObj_TypeDef *dev);
+static DevNorFlash_Info_TypeDef DevW25Qxx_Get_Info(DevW25QxxObj_TypeDef *dev);
 static uint32_t DevW25Qxx_Get_Section_StartAddr(DevW25QxxObj_TypeDef *dev, uint32_t addr);
 
 DevW25Qxx_TypeDef DevW25Qxx = {
@@ -356,16 +356,15 @@ static DevW25Qxx_Error_List DevW25Qxx_EraseSector(DevW25QxxObj_TypeDef *dev, uin
     return DevW25Qxx_Ok;
 }
 
-static DevW25Qxx_DeviceInfo_TypeDef DevW25Qxx_Get_Info(DevW25QxxObj_TypeDef *dev)
+static DevNorFlash_Info_TypeDef DevW25Qxx_Get_Info(DevW25QxxObj_TypeDef *dev)
 {
-    DevW25Qxx_DeviceInfo_TypeDef info;
+    DevNorFlash_Info_TypeDef info;
     
-    memset(&info, 0, sizeof(DevW25Qxx_DeviceInfo_TypeDef));
+    memset(&info, 0, sizeof(DevNorFlash_Info_TypeDef));
 
     if (dev && (dev->prod_type != DevW25Q_None))
     {
         info.start_addr = W25QXX_BASE_ADDRESS;
-        info.prod_type = dev->prod_type;
         info.prod_code = dev->prod_code;
 
         /* currently we only have such type of flash chip on the evk or fc-board */

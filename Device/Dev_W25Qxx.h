@@ -8,6 +8,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include "Dev_NorFlash_Def.h"
 
 #define To_DevW25Qxx_API(x)                     ((DevW25Qxx_TypeDef *)x)
 #define To_DevW25Qxx_OBJ(x)                     ((DevW25QxxObj_TypeDef *)x)
@@ -125,23 +126,6 @@ typedef struct
     DevW25Qxx_ProdType_List prod_type;
     uint16_t prod_code;
 
-    uint32_t start_addr;
-    uint32_t flash_size;
-
-    uint32_t block_size;
-    uint32_t sector_size;
-    uint16_t page_size;
-
-    uint16_t block_num;
-    uint16_t sector_num;
-    uint16_t page_num;
-} DevW25Qxx_DeviceInfo_TypeDef;
-
-typedef struct
-{
-    DevW25Qxx_ProdType_List prod_type;
-    uint16_t prod_code;
-
     uint16_t (*bus_tx)(uint8_t *p_data, uint16_t len, uint32_t time_out);
     uint16_t (*bus_rx)(uint8_t *p_data, uint16_t len, uint32_t time_out);
     bool (*cs_ctl)(bool state);
@@ -158,7 +142,7 @@ typedef struct
     DevW25Qxx_Error_List (*read_sector)(DevW25QxxObj_TypeDef *dev, uint32_t addr, uint8_t *rx, uint32_t size);
     DevW25Qxx_Error_List (*erase_sector)(DevW25QxxObj_TypeDef *dev, uint32_t addr);
     DevW25Qxx_Error_List (*erase_chip)(DevW25QxxObj_TypeDef *dev);
-    DevW25Qxx_DeviceInfo_TypeDef (*info)(DevW25QxxObj_TypeDef *dev);
+    DevNorFlash_Info_TypeDef (*info)(DevW25QxxObj_TypeDef *dev);
     uint32_t (*get_section_start_addr)(DevW25QxxObj_TypeDef *dev, uint32_t addr);
 } DevW25Qxx_TypeDef;
 

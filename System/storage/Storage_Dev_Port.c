@@ -22,7 +22,7 @@ static uint8_t write_tmp[Storage_TabSize * 2] __attribute__((aligned(4))) __attr
 
 /* external function */
 static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev);
-static bool Storage_Dev_Init(StorageDevObj_TypeDef *ext_dev, uint16_t *p_type, uint16_t *p_code);
+static bool Storage_Dev_Init(StorageDevObj_TypeDef *ext_dev, uint16_t *p_code);
 
 static bool Storage_Dev_Write_Section(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint8_t *p_data, uint16_t len);
 static bool Storage_Dev_Read_Section(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint8_t *p_data, uint16_t len);
@@ -90,7 +90,7 @@ static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev)
     return false;
 }
 
-static bool Storage_Dev_Init(StorageDevObj_TypeDef *ext_dev, uint16_t *p_type, uint16_t *p_code)
+static bool Storage_Dev_Init(StorageDevObj_TypeDef *ext_dev, uint16_t *p_code)
 {
     uint8_t init_state = 0;
 
@@ -105,7 +105,6 @@ static bool Storage_Dev_Init(StorageDevObj_TypeDef *ext_dev, uint16_t *p_type, u
 
         STORAGE_DEV_INFO(" W25Qxx initializing\r\n");
         init_state = To_DevW25Qxx_API(ext_dev->api)->init(To_DevW25Qxx_OBJ(ext_dev->obj));
-        *p_type = To_DevW25Qxx_API(ext_dev->api)->info(To_DevW25Qxx_OBJ(ext_dev->obj)).prod_type;
         *p_code = To_DevW25Qxx_API(ext_dev->api)->info(To_DevW25Qxx_OBJ(ext_dev->obj)).prod_code;
     
         ext_dev->start_addr  = W25QXX_BASE_ADDRESS;
