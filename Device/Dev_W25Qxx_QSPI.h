@@ -44,6 +44,11 @@ typedef bool (*bus_mem_map)(uint32_t reg);
 typedef bool (*bus_read)(uint8_t *p_rx);
 typedef bool (*bus_write)(uint8_t *p_tx);
 
+typedef enum
+{
+    QSPIW25Qxx_Ok = 0,
+} DevQSPIW25Qxx_ErrorCode_TypeDef;
+
 typedef struct
 {
     bool init;

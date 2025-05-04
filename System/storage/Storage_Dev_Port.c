@@ -161,6 +161,8 @@ static bool Storage_Dev_Write_Section(StorageDevObj_TypeDef *p_dev, uint32_t add
 
     if ((p_dev == NULL) || \
         (p_dev->obj == NULL) || \
+        (Dev.write == NULL) || \
+        (Dev.erase == NULL) || \
         (p_data == NULL) || \
         (len == 0) || \
         ((addr % p_dev->sector_size) || \
@@ -172,19 +174,10 @@ static bool Storage_Dev_Write_Section(StorageDevObj_TypeDef *p_dev, uint32_t add
 
     for (uint8_t i = 0; i < write_cnt; i ++)
     {
-        switch((uint8_t)p_dev->chip_type)
-        {
-            case Storage_ChipType_W25Qxx:
-                /* erase sector and update sector */
-                if ((To_DevW25Qxx_API(p_dev->api)->erase_sector(To_DevW25Qxx_OBJ(p_dev->obj), addr_tmp) != DevW25Qxx_Ok))
-                    return false;
-                
-                if (To_DevW25Qxx_API(p_dev->api)->write_sector(To_DevW25Qxx_OBJ(p_dev->obj), addr_tmp, p_data, p_dev->sector_size) != DevW25Qxx_Ok)
-                    return false;
-                break;
-
-            default: return false;
-        }
+        /* erase sector and update sector */
+        if (Dev.erase(p_dev->obj, addr_tmp) | \
+            Dev.write(p_dev->obj, addr_tmp, p_data, p_dev->sector_size))
+            return false;
 
         addr_tmp += p_dev->sector_size;
     }
@@ -198,8 +191,8 @@ static bool Storage_Dev_Read_Section(StorageDevObj_TypeDef *p_dev, uint32_t addr
     uint32_t addr_tmp = 0;
     
     if ((p_dev == NULL) || \
-        (p_dev->api == NULL) || \
         (p_dev->obj == NULL) || \
+        (Dev.read == NULL) || \
         (p_data == NULL) || \
         (len == 0) || \
         ((addr % p_dev->sector_size) || \
@@ -211,18 +204,11 @@ static bool Storage_Dev_Read_Section(StorageDevObj_TypeDef *p_dev, uint32_t addr
 
     for (uint8_t i = 0; i < read_cnt; i++)
     {
-        switch((uint8_t)p_dev->chip_type)
+        /* read sector */
+        if (Dev.read(p_dev->obj, addr_tmp, p_data, len))
         {
-            case Storage_ChipType_W25Qxx:
-                /* read sector */
-                if (To_DevW25Qxx_API(p_dev->api)->read_sector(To_DevW25Qxx_OBJ(p_dev->obj), addr_tmp, p_data, len) != DevW25Qxx_Ok)
-                {
-                    memset(p_data, 0, len);
-                    return false;
-                }
-                break;
-
-            default: return false;
+            memset(p_data, 0, len);
+            return false;
         }
 
         addr_tmp += p_dev->sector_size;
@@ -237,7 +223,7 @@ static bool Storage_Dev_Erase_Section(StorageDevObj_TypeDef *p_dev, uint32_t add
     uint32_t addr_tmp = 0;
 
     if ((p_dev == NULL) || \
-        (p_dev->api == NULL) || \
+        (Dev.erase == NULL) || \
         (p_dev->obj == NULL) || \
         (len == 0) || \
         ((addr % p_dev->sector_size) || \
@@ -249,16 +235,9 @@ static bool Storage_Dev_Erase_Section(StorageDevObj_TypeDef *p_dev, uint32_t add
 
     for (uint8_t i = 0; i < erase_cnt; i ++)
     {
-        switch((uint8_t)p_dev->chip_type)
-        {
-            case Storage_ChipType_W25Qxx:
-                /* erase sector */
-                if (To_DevW25Qxx_API(p_dev->api)->erase_sector(To_DevW25Qxx_OBJ(p_dev->obj), addr_tmp) != DevW25Qxx_Ok)
-                    return false;
-                break;
-
-            default: return false;
-        }
+        /* erase sector */
+        if (Dev.erase(p_dev->obj, addr_tmp))
+            return false;
 
         addr_tmp += p_dev->sector_size;
     }
