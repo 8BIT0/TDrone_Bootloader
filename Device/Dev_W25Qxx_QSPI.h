@@ -30,7 +30,10 @@ extern "C" {
 #define DevQSPIW25Qxx_Status_REG1_BUSY          0x01        /* read status register 1 bit0 (read only), Busy flag, bit set when erasing / write data / write command */
 #define DevQSPIW25Qxx_Status_REG1_WEL           0x02        /* read status register 1 bit0 (read only), 'WEL' write enable flag, bit set indicate device writeable */
 
+#define DevQSPIW25Qxx_PageNum                   32768
 #define DevQSPIW25Qxx_PageSize                  256         /* page size        256Byte */
+#define DevQSPIW25Qxx_SectorNum                 2048
+#define DevQSPIW25QXX_SectorSize                0x1000      /* sector size      4KByte */
 #define DevQSPIW25Qxx_FlashSize                 0x800000    /* W25Q64 ROM size  8MByte */
 #define DevQSPIW25Qxx_FLASH_ID                  0XEF4017    /* W25Q64 JEDEC ID */
 #define DevQSPIW25Qxx_Mem_Addr                  0x90000000  /* memory map mode address */
@@ -62,6 +65,8 @@ typedef struct
     bool (*Erase_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr);
     bool (*Read_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_rx, uint16_t len);
     bool (*Write_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_tx, uint16_t len);
+    DevNorFlash_Info_TypeDef (*info)(DevQSPIW25QxxObj_TypeDef *dev);
+    uint32_t (*get_section_start_addr)(DevQSPIW25QxxObj_TypeDef *dev, uint32_t addr);
 } DevQSPIW25Qxx_TypeDef;
 
 extern DevQSPIW25Qxx_TypeDef DevQSPIW25Qxx;

@@ -16,7 +16,35 @@
 #define STORAGE_DEV_TAG                     "[ STORAGE DEV INFO ] "
 #define STORAGE_DEV_INFO(fmt, ...)          Debug_Print(&DebugPort, STORAGE_DEV_TAG, fmt, ##__VA_ARGS__)
 
+typedef DevNorFlash_Info_TypeDef (*dev_info)(void *obj);
+typedef int8_t (*dev_init)(void *obj);
+typedef int8_t (*dev_write)(void *obj, uint32_t addr, uint8_t *p_tx, uint16_t len);
+typedef int8_t (*dev_read)(void *obj, uint32_t addr, uint8_t *p_rx, uint16_t len);
+typedef int8_t (*dev_erase)(void *obj, uint32_t addr);
+typedef int8_t (*dev_erase_chip)(void *obj);
+typedef uint32_t (*dev_get_start_addr)(void *obj, uint32_t addr);
+
+typedef struct
+{
+    dev_info info;
+    dev_init init;
+    dev_write write;
+    dev_read read;
+    dev_erase erase;
+    dev_erase_chip erase_chip;
+    dev_get_start_addr get_start_addr;
+} StorageDev_TypeDef;
+
 /* internal vriable */
+static StorageDev_TypeDef Dev = {
+    .info           = NULL,
+    .init           = NULL,
+    .erase          = NULL,
+    .erase_chip     = NULL,
+    .get_start_addr = NULL,
+    .read           = NULL,
+    .write          = NULL,
+};
 static uint8_t read_tmp[Storage_TabSize * 2] __attribute__((aligned(4))) __attribute__((section(".Perph_Section"))) = {0};
 static uint8_t write_tmp[Storage_TabSize * 2] __attribute__((aligned(4))) __attribute__((section(".Perph_Section"))) = {0};
 
@@ -60,6 +88,7 @@ static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev)
 
     if (ext_dev->chip_type == Storage_ChipType_W25Qxx)
     {
+        STORAGE_DEV_INFO(" W25Qxx selected\r\n");
 #if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
         ext_dev->obj = Storage_Dev_Malloc(sizeof(DevW25QxxObj_TypeDef));
         if (ext_dev->obj == NULL)
@@ -71,8 +100,6 @@ static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev)
         To_DevW25Qxx_OBJ(ext_dev->obj)->bus_rx    = StoragePort_Api.bus_rx;
         To_DevW25Qxx_OBJ(ext_dev->obj)->delay_ms  = SrvOsCommon.delay_ms;
 
-        STORAGE_DEV_INFO(" W25Qxx selected\r\n");
-        return true;
 #elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
         ext_dev->obj = Storage_Dev_Malloc(sizeof(DevQSPIW25QxxObj_TypeDef));
         if (ext_dev->obj == NULL)
@@ -84,40 +111,47 @@ static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev)
         To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->polling   = StoragePort_Api.bus_status_polling;
         To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->read      = StoragePort_Api.bus_read;
         To_DevQSPIW25Qxx_OBJ(ext_dev->obj)->write     = StoragePort_Api.bus_write;
-#endif                      
+
+        Dev.info            = (dev_info)To_DevQSPIW25Qxx_API(ext_dev->api)->info;
+        Dev.init            = (dev_init)To_DevQSPIW25Qxx_API(ext_dev->api)->Init;
+        Dev.erase           = (dev_erase)To_DevQSPIW25Qxx_API(ext_dev->api)->Erase_Sector;
+        Dev.erase_chip      = (dev_erase_chip)To_DevQSPIW25Qxx_API(ext_dev->api)->Erase_Chip;
+        Dev.read            = (dev_read)To_DevQSPIW25Qxx_API(ext_dev->api)->Read_Sector;
+        Dev.write           = (dev_write)To_DevQSPIW25Qxx_API(ext_dev->api)->Write_Sector;
+        Dev.get_start_addr  = (dev_get_start_addr)To_DevQSPIW25Qxx_API(ext_dev->api)->get_section_start_addr;
+#endif
     }
     
-    return false;
+    if ((Dev.info == NULL) || (Dev.init == NULL)  || (Dev.erase == NULL) || \
+        (Dev.read == NULL) || (Dev.write == NULL) || (Dev.get_start_addr == NULL))
+        return false;
+
+    return true;
 }
 
 static bool Storage_Dev_Init(StorageDevObj_TypeDef *ext_dev, uint16_t *p_code)
 {
     uint8_t init_state = 0;
+    DevNorFlash_Info_TypeDef FlashInfo;
 
-    if (ext_dev == NULL)
+    if ((ext_dev == NULL) || (Dev.init == NULL) || (Dev.info == NULL))
         return false;
 
-    if (ext_dev->chip_type == Storage_ChipType_W25Qxx)
-    {
-        if ((To_DevW25Qxx_API(ext_dev->api)->init == NULL) || \
-            (To_DevW25Qxx_API(ext_dev->api)->info == NULL))
-            return false;
+    memset(&FlashInfo, 0, sizeof(DevNorFlash_Info_TypeDef));
+    STORAGE_DEV_INFO(" Module initializing\r\n");
 
-        STORAGE_DEV_INFO(" W25Qxx initializing\r\n");
-        init_state = To_DevW25Qxx_API(ext_dev->api)->init(To_DevW25Qxx_OBJ(ext_dev->obj));
-        *p_code = To_DevW25Qxx_API(ext_dev->api)->info(To_DevW25Qxx_OBJ(ext_dev->obj)).prod_code;
-    
-        ext_dev->start_addr  = W25QXX_BASE_ADDRESS;
-        ext_dev->sector_num  = To_DevW25Qxx_API(ext_dev->api)->info(To_DevW25Qxx_OBJ(ext_dev->obj)).sector_num;
-        ext_dev->sector_size = To_DevW25Qxx_API(ext_dev->api)->info(To_DevW25Qxx_OBJ(ext_dev->obj)).sector_size;
-        ext_dev->total_size  = To_DevW25Qxx_API(ext_dev->api)->info(To_DevW25Qxx_OBJ(ext_dev->obj)).flash_size;
-        ext_dev->page_num    = To_DevW25Qxx_API(ext_dev->api)->info(To_DevW25Qxx_OBJ(ext_dev->obj)).page_num;
-        ext_dev->page_size   = To_DevW25Qxx_API(ext_dev->api)->info(To_DevW25Qxx_OBJ(ext_dev->obj)).page_size;
+    init_state = Dev.init(ext_dev->obj);
+    FlashInfo  = Dev.info(ext_dev->obj);
 
-        return ((DevW25Qxx_Error_List)init_state == DevW25Qxx_Ok) ? true : false;
-    }
+    *p_code              = FlashInfo.prod_code;
+    ext_dev->start_addr  = FlashInfo.start_addr;
+    ext_dev->sector_num  = FlashInfo.sector_num;
+    ext_dev->sector_size = FlashInfo.sector_size;
+    ext_dev->total_size  = FlashInfo.flash_size;
+    ext_dev->page_num    = FlashInfo.page_num;
+    ext_dev->page_size   = FlashInfo.page_size;
 
-    return false;
+    return (init_state == 0) ? true : false;
 }
 
 static bool Storage_Dev_Write_Section(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint8_t *p_data, uint16_t len)
@@ -126,7 +160,6 @@ static bool Storage_Dev_Write_Section(StorageDevObj_TypeDef *p_dev, uint32_t add
     uint32_t addr_tmp = 0;
 
     if ((p_dev == NULL) || \
-        (p_dev->api == NULL) || \
         (p_dev->obj == NULL) || \
         (p_data == NULL) || \
         (len == 0) || \
