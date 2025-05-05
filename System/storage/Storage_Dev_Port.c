@@ -331,83 +331,84 @@ static bool Storage_Dev_Param_Write(StorageDevObj_TypeDef *p_dev, uint32_t base_
     uint32_t section_size = 0;
     uint32_t write_offset = 0;
     uint32_t write_len = len;
+    DevNorFlash_Info_TypeDef FlashInfo;
 
     if ((p_dev == NULL) || \
-        (p_dev->api == NULL) || \
+        (Dev.info == NULL) || \
+        (Dev.get_start_addr == NULL) || \
+        (Dev.read == NULL) || \
+        (Dev.write == NULL) || \
+        (Dev.erase == NULL) || \
         (p_dev->obj == NULL) || \
         (p_data == NULL) || \
         (len == 0))
         return false;
 
-    switch((uint8_t)p_dev->chip_type)
+    memset(&FlashInfo, 0, sizeof(DevNorFlash_Info_TypeDef));
+    FlashInfo = Dev.info(p_dev->obj);
+
+    section_size = FlashInfo.sector_size;
+    /* get w25qxx device info */
+    /* address check */
+    flash_end_addr = FlashInfo.start_addr;
+    if (flash_end_addr > write_start_addr)
+        return false;
+
+    /* range check */
+    flash_end_addr += FlashInfo.flash_size;
+    if ((len + write_start_addr) > flash_end_addr)
+        return false;
+    
+    if (section_size == 0)
+        return false;
+        
+    section_start_addr = Dev.get_start_addr(p_dev->obj, write_start_addr);
+    write_offset = write_start_addr - section_start_addr;
+    if (section_size > sizeof(write_tmp))
+        return false;
+
+    while(true)
     {
-        case Storage_ChipType_W25Qxx:
-            section_size = To_DevW25Qxx_API(p_dev->api)->info(To_DevW25Qxx_OBJ(p_dev->obj)).sector_size;
-            /* get w25qxx device info */
-            /* address check */
-            flash_end_addr = To_DevW25Qxx_API(p_dev->api)->info(To_DevW25Qxx_OBJ(p_dev->obj)).start_addr;
-            if (flash_end_addr > write_start_addr)
-                return false;
-
-            /* range check */
-            flash_end_addr += To_DevW25Qxx_API(p_dev->api)->info(To_DevW25Qxx_OBJ(p_dev->obj)).flash_size;
-            if ((len + write_start_addr) > flash_end_addr)
-                return false;
-            
-            if (section_size == 0)
-                return false;
-                
-            section_start_addr = To_DevW25Qxx_API(p_dev->api)->get_section_start_addr(To_DevW25Qxx_OBJ(p_dev->obj), write_start_addr);
-            write_offset = write_start_addr - section_start_addr;
-            if (section_size > sizeof(write_tmp))
-                return false;
-
-            while(true)
-            {
-                /* circumstances 1: store data size less than flash sector size and only none multiple sector write is needed */
-                /* circumstances 2: store data size less than flash sector length but need to write from the end of the sector N to the start of the sector N + 1 */
-                /* circumstances 3: store data size large than flash sector length */
-                /* read whole section */
-                if (To_DevW25Qxx_API(p_dev->api)->read_sector(To_DevW25Qxx_OBJ(p_dev->obj), section_start_addr, write_tmp, section_size) != DevW25Qxx_Ok)
-                    return false;
-
-                /* erase whole section */
-                if (To_DevW25Qxx_API(p_dev->api)->erase_sector(To_DevW25Qxx_OBJ(p_dev->obj), section_start_addr) != DevW25Qxx_Ok)
-                    return false;
-
-                /* update whole section */
-                if (write_offset + write_len > section_size)
-                    write_len = section_size - write_offset;
-                
-                /* copy data to section data read out */
-                memcpy(write_tmp + write_offset, p_data, write_len);
-
-                DevW25Qxx_Error_List state = To_DevW25Qxx_API(p_dev->api)->write_sector(To_DevW25Qxx_OBJ(p_dev->obj), section_start_addr, write_tmp, section_size);
-
-                /* clear cache buff */
-                memset(write_tmp, 0, section_size);
-                
-                len -= write_len;
-                if (state == DevW25Qxx_Ok)
-                {
-                    if (len == 0)
-                        return true;
-                }
-                else
-                    return false;
-
-                write_offset = 0;
-                next_write_addr = To_DevW25Qxx_API(p_dev->api)->get_section_start_addr(To_DevW25Qxx_OBJ(p_dev->obj), section_start_addr + write_len);
-                if (next_write_addr == section_start_addr)
-                    write_offset = write_len;
-
-                p_data += write_len;
-                write_len = len;
-                section_start_addr = next_write_addr; 
-            }
+        /* circumstances 1: store data size less than flash sector size and only none multiple sector write is needed */
+        /* circumstances 2: store data size less than flash sector length but need to write from the end of the sector N to the start of the sector N + 1 */
+        /* circumstances 3: store data size large than flash sector length */
+        /* read whole section */
+        if (Dev.read(p_dev->obj, section_start_addr, write_tmp, section_size))
             return false;
 
-        default: return false;
+        /* erase whole section */
+        if (Dev.erase(p_dev->obj, section_start_addr))
+            return false;
+
+        /* update whole section */
+        if (write_offset + write_len > section_size)
+            write_len = section_size - write_offset;
+        
+        /* copy data to section data read out */
+        memcpy(write_tmp + write_offset, p_data, write_len);
+
+        uint8_t state = Dev.write(p_dev->obj, section_start_addr, write_tmp, section_size);
+
+        /* clear cache buff */
+        memset(write_tmp, 0, section_size);
+        
+        len -= write_len;
+        if (state)
+        {
+            if (len == 0)
+                return true;
+        }
+        else
+            return false;
+
+        write_offset = 0;
+        next_write_addr = Dev.get_start_addr(p_dev->obj, section_start_addr + write_len);
+        if (next_write_addr == section_start_addr)
+            write_offset = write_len;
+
+        p_data += write_len;
+        write_len = len;
+        section_start_addr = next_write_addr; 
     }
 
     return false;
@@ -418,27 +419,21 @@ static bool Storage_Dev_Param_Erase(StorageDevObj_TypeDef *p_dev, uint32_t base_
     uint32_t erase_start_addr = base_addr + addr_offset;
 
     if ((p_dev == NULL) || \
-        (p_dev->api == NULL) || \
+        (Dev.info == NULL) || \
+        (Dev.erase == NULL) || \
         (p_dev->obj == NULL) || \
         (len == 0))
         return false;
 
     /* erase external flash sector */
-    switch((uint8_t)p_dev->chip_type)
-    {
-        case Storage_ChipType_W25Qxx:
-                /* get w25qxx device info */
-                /* address check */
-                if (erase_start_addr < To_DevW25Qxx_API(p_dev->api)->info(To_DevW25Qxx_OBJ(p_dev->obj)).start_addr)
-                    return false;
+    /* get w25qxx device info */
+    /* address check */
+    if (erase_start_addr < Dev.info(p_dev->obj).start_addr)
+        return false;
 
-                /* W25Qxx device read */
-                if (To_DevW25Qxx_API(p_dev->api)->erase_sector(To_DevW25Qxx_OBJ(p_dev->obj), erase_start_addr) == DevW25Qxx_Ok)
-                    return true;
-            break;
-
-        default: return false;
-    }
+    /* W25Qxx device read */
+    if (Dev.erase(p_dev->obj, erase_start_addr))
+        return false;
     
-    return false;
+    return true;
 }
