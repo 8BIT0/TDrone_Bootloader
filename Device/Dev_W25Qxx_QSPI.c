@@ -15,6 +15,7 @@ static bool DevQSPI_W25Qxx_MemMap(DevQSPIW25QxxObj_TypeDef *obj);
 static bool DevQSPI_W25Qxx_EraseAddr(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr);
 static bool DevQSPI_W25Qxx_ReadPage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_data, uint16_t len);
 static bool DevQSPI_W25Qxx_WritePage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_data, uint16_t len);
+static DevNorFlash_Info_TypeDef DevQSPI_W25Qxx_GetInfo(DevQSPIW25QxxObj_TypeDef *obj);
 
 DevQSPIW25Qxx_TypeDef DevQSPIW25Qxx = {
     .Init = DevQSPI_W25Qxx_Init,
@@ -24,6 +25,7 @@ DevQSPIW25Qxx_TypeDef DevQSPIW25Qxx = {
     .Erase_Sector = DevQSPI_W25Qxx_EraseAddr,
     .Read_Sector = DevQSPI_W25Qxx_ReadPage,
     .Write_Sector = DevQSPI_W25Qxx_WritePage,
+    .info = DevQSPI_W25Qxx_GetInfo,
 };
 
 static bool DevQSPI_W25Qxx_Init(DevQSPIW25QxxObj_TypeDef *obj)
@@ -210,4 +212,33 @@ static bool DevQSPI_W25Qxx_ReadPage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr
         return false;
 
     return true;
+}
+
+static DevNorFlash_Info_TypeDef DevQSPI_W25Qxx_GetInfo(DevQSPIW25QxxObj_TypeDef *obj)
+{
+    DevNorFlash_Info_TypeDef info;
+
+    memset(&info, 0, sizeof(DevNorFlash_Info_TypeDef));
+
+    if ((obj != NULL) && obj->init)
+    {
+        info.start_addr = DevQSPIW25Qxx_Base_Address;
+        info.page_size = DevQSPIW25Qxx_PageSize;
+        info.block_size = DevQSPIW25Qxx_BlockSize;
+        info.sector_size = DevQSPIW25QXX_SectorSize;
+
+        switch (info.prod_code)
+        {
+            case (uint32_t)DevQSPIW25Qxx_FLASH_ID:
+                info.flash_size = DevQSPIW25Qxx_FlashSize;
+                info.page_num = DevQSPIW25Qxx_PageNum;
+                info.block_num = DevQSPIW25Qxx_BlockNum;
+                info.sector_num = DevQSPIW25Qxx_SectorNum;
+                break;
+
+            default: break;
+        }
+    }
+
+    return info;
 }

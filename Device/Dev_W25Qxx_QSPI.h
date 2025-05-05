@@ -35,8 +35,12 @@ extern "C" {
 #define DevQSPIW25Qxx_SectorNum                 2048
 #define DevQSPIW25QXX_SectorSize                0x1000      /* sector size      4KByte */
 #define DevQSPIW25Qxx_FlashSize                 0x800000    /* W25Q64 ROM size  8MByte */
+#define DevQSPIW25Qxx_BlockNum                  128
+#define DevQSPIW25Qxx_BlockSize                 0x10000
 #define DevQSPIW25Qxx_FLASH_ID                  0XEF4017    /* W25Q64 JEDEC ID */
 #define DevQSPIW25Qxx_Mem_Addr                  0x90000000  /* memory map mode address */
+
+#define DevQSPIW25Qxx_Base_Address              0x000000
 
 typedef bool (*bus_cmd)(uint8_t data_line, uint8_t addr_line, uint32_t addr, uint8_t dummy_c, uint16_t size, uint32_t cmd);
 typedef bool (*bus_polling)(uint8_t data_line, uint8_t addr_line, uint32_t addr, uint8_t dummy_c, uint16_t size, uint32_t cmd, uint32_t match, uint32_t mask);

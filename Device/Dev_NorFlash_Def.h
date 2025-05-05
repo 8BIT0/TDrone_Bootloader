@@ -12,7 +12,7 @@ extern "C" {
 
 typedef struct
 {
-    uint16_t prod_code;
+    uint32_t prod_code;
 
     uint32_t start_addr;
     uint32_t flash_size;
