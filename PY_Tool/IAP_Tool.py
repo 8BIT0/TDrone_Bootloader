@@ -52,12 +52,17 @@ def main():
 
     # search firmware path
     firmware_path = os.getcwd() + os.sep + 'build' + os.sep
+    file_list = []
     print("Firmware path {}".format(firmware_path))
     for root, dirs, files in os.walk(firmware_path):
         for file in files:
             if file.endswith('.bin'):
-                file_path = os.path.join(root, file)
-                print(file_path)
+                file = os.path.join(root, file)
+                file_list.append(file)
+
+    print('found {} files in the firmware path'.format(file_list.__len__()))
+    for i in range(file_list.__len__()):
+        print('index {}  \t<---->\t  {}'.format(i, file_list[i]))
 
     # while True:
     #     ser.write('Force_Mode')
