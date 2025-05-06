@@ -8,14 +8,6 @@
 #include "../FCHW_Config.h"
 #include "HW_Def.h"
 
-#if (Flash_Chip_Type == Storage_ChipType_W25Qxx)
-    #if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
-        #include "Dev_W25Qxx.h"
-    #elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
-        #include "Dev_W25Qxx_QSPI.h"
-    #endif
-#endif
-
 #define UPGRADE_QUEUE_SIZE  (2 Kb)
 
 #define PARA_TYPE           Para_Sys
