@@ -58,16 +58,31 @@ static void* Storage_External_Chip_Bus_Init(StorageBus_Malloc_Callback p_malloc,
         BspGPIO.out_init(ExtFlash_CS_Pin))
         return obj;
 #elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
-    obj = p_malloc(sizeof(BspQSPI_Config_TypeDef));
-    if (obj == NULL)
-        return NULL;
+    void *p_qspi = NULL;
     
-    To_QSPI_Handle_Ptr(ExtFlash_Bus_InstObj.p_qspi)->Instance = ExtFlash_Bus_Instance;
-    if (!ExtFlash_Bus_Api.init(obj, &ExtFlash_Bus_InstObj))
+    p_qspi = p_malloc(To_QSPI_Handle_Size);
+    obj = p_malloc(sizeof(BspQSPI_Config_TypeDef));
+
+    if ((obj == NULL) || (p_qspi == NULL))
     {
-        p_free(&obj);
+        if (obj)
+            p_free(&obj);
+
+        if (p_qspi)
+            p_free(&p_qspi);
+
         return NULL;
     }
+
+    To_QSPI_Handle_Ptr(p_qspi)->Instance = ExtFlash_Bus_Instance;
+    if (!ExtFlash_Bus_Api.init(obj, p_qspi))
+    {
+        p_free(&obj);
+        p_free(&p_qspi);
+        return NULL;
+    }
+
+    ExtFlash_Bus_InstObj = (BspQSPI_Config_TypeDef *)obj;
 #endif
     
     return obj;
@@ -115,17 +130,17 @@ static uint16_t Storage_External_Chip_BusTrans(uint8_t *tx, uint8_t *rx, uint16_
 #elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
 static bool Storage_External_Chip_Bus_TransCMD(uint8_t data_line, uint8_t addr_line, uint32_t addr, uint8_t dummy_cyc, uint16_t size, uint32_t cmd)
 {
-    return ExtFlash_Bus_Api.cmd(&ExtFlash_Bus_InstObj, data_line, addr_line, addr, dummy_cyc, size, cmd);
+    return ExtFlash_Bus_Api.cmd(ExtFlash_Bus_InstObj, data_line, addr_line, addr, dummy_cyc, size, cmd);
 }
 
 static bool Storage_External_Chip_Bus_Polling(uint8_t data_line, uint8_t addr_line, uint32_t addr, uint8_t dummy_cyc, uint16_t size, uint32_t cmd, uint32_t match, uint32_t mask)
 {
-    return ExtFlash_Bus_Api.polling(&ExtFlash_Bus_InstObj, data_line, addr_line, addr, dummy_cyc, size, cmd, match, mask);
+    return ExtFlash_Bus_Api.polling(ExtFlash_Bus_InstObj, data_line, addr_line, addr, dummy_cyc, size, cmd, match, mask);
 }
 
 static bool Storage_External_Chip_Bus_MemMap(uint32_t reg)
 {
-    return ExtFlash_Bus_Api.memmap(&ExtFlash_Bus_InstObj, reg);
+    return ExtFlash_Bus_Api.memmap(ExtFlash_Bus_InstObj, reg);
 }
 
 static bool Storage_External_Chip_Bus_Read(uint8_t *p_rx)
@@ -133,7 +148,7 @@ static bool Storage_External_Chip_Bus_Read(uint8_t *p_rx)
     if (p_rx == NULL)
         return 0;
 
-    return ExtFlash_Bus_Api.rx(&ExtFlash_Bus_InstObj, p_rx);
+    return ExtFlash_Bus_Api.rx(ExtFlash_Bus_InstObj, p_rx);
 }
 
 static bool Storage_External_Chip_Bus_Write(uint8_t *p_tx)
@@ -141,7 +156,7 @@ static bool Storage_External_Chip_Bus_Write(uint8_t *p_tx)
     if (p_tx == NULL)
         return false;
 
-    return ExtFlash_Bus_Api.tx(&ExtFlash_Bus_InstObj, p_tx);
+    return ExtFlash_Bus_Api.tx(ExtFlash_Bus_InstObj, p_tx);
 }
 
 #endif

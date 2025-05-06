@@ -28,7 +28,13 @@ static void Bootloader_Check(uint32_t sys_time);
 void Task_Manager_Init(void)
 {
     memset(&StorageDevObj, 0, sizeof(StorageDevObj_TypeDef));
-
+#if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
+    StorageDevObj.api = (void *)&DevW25Qxx;
+#elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
+    StorageDevObj.api = (void *)&DevQSPIW25Qxx;
+#endif
+    StorageDevObj.chip_type = Flash_Chip_Type;
+    
     DevLED.init(Led1);
 
     /* heap memory init */

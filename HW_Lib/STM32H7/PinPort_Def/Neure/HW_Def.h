@@ -101,9 +101,9 @@ extern const uint8_t HWVer[3];
 #define RECEIVER_CRSF_TX_DMA_STREAM Bsp_DMA_Stream_None // Bsp_DMA_Stream_5
 
 #if (FLASH_CHIP_STATE != Storage_ChipBus_None)
+    #define Flash_Chip_Type Storage_ChipType_W25Qxx
     #if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
         #define ExtFlash_Bus_Clock_Div SPI_MCLK_DIV_4
-        #define ExtFlash_Chip_Type Storage_ChipType_W25Qxx
         #define ExtFlash_Bus_Api BspSPI
         #define ExtFLash_Bus_Instance (void *)SPI2
         #define ExtFlash_Bus_CLKPhase SPI_CLOCK_PHASE_2EDGE
@@ -117,7 +117,7 @@ extern const uint8_t HWVer[3];
     #elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
         #define ExtFlash_Bus_Api BspQspi
         #define ExtFlash_Bus_Instance (void *)QUADSPI
-        extern BspQSPI_Config_TypeDef ExtFlash_Bus_InstObj;
+        extern BspQSPI_Config_TypeDef *ExtFlash_Bus_InstObj;
     #endif
 #endif
 

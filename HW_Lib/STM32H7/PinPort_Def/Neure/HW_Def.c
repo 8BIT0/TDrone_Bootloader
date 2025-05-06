@@ -5,7 +5,7 @@ const uint8_t HWVer[3] = {0, 0, 5};
 #if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
 SPI_HandleTypeDef ExtFlash_Bus_InstObj;
 #elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
-BspQSPI_Config_TypeDef ExtFlash_Bus_InstObj;
+BspQSPI_Config_TypeDef *ExtFlash_Bus_InstObj = NULL;
 #endif
 
 DebugPinObj_TypeDef Debug_PC0 = {
@@ -103,11 +103,8 @@ void BspQSPI_Pin_Init(void)
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
     __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_GPIOD_CLK_ENABLE();
     __HAL_RCC_GPIOD_CLK_ENABLE();
     __HAL_RCC_GPIOE_CLK_ENABLE();
-    __HAL_RCC_GPIOD_CLK_ENABLE();
 
     /****************************************************** 
 		PB2     ------> QUADSPI_CLK	
