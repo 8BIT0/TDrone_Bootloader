@@ -51,6 +51,15 @@ typedef bool (*bus_write)(uint8_t *p_tx);
 typedef enum
 {
     QSPIW25Qxx_Ok = 0,
+    QSPIW25Qxx_Obj_Error,
+    QSPIW25Qxx_ReadID_Failed,
+    QSPIW25Qxx_Resst_Failed,
+    QSPIW25Qxx_SendCMD_Error,
+    QSPIW25Qxx_StatusPolling_Failed,
+    QSPIW25Qxx_MemMap_Failed,
+    QSPIW25Qxx_WriteEnable_Failed,
+    QSPIW25Qxx_Write_Failed,
+    QSPIW25Qxx_Read_Failed,
 } DevQSPIW25Qxx_ErrorCode_TypeDef;
 
 typedef struct
@@ -67,13 +76,13 @@ typedef struct
 
 typedef struct
 {
-    bool (*Init)(DevQSPIW25QxxObj_TypeDef *obj);
-    bool (*Reset)(DevQSPIW25QxxObj_TypeDef *obj);
-    bool (*MemoryMap)(DevQSPIW25QxxObj_TypeDef *obj);
-    bool (*Erase_Chip)(DevQSPIW25QxxObj_TypeDef *obj);
-    bool (*Erase_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr);
-    bool (*Read_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_rx, uint16_t len);
-    bool (*Write_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_tx, uint16_t len);
+    uint8_t (*Init)(DevQSPIW25QxxObj_TypeDef *obj);
+    uint8_t (*Reset)(DevQSPIW25QxxObj_TypeDef *obj);
+    uint8_t (*MemoryMap)(DevQSPIW25QxxObj_TypeDef *obj);
+    uint8_t (*Erase_Chip)(DevQSPIW25QxxObj_TypeDef *obj);
+    uint8_t (*Erase_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr);
+    uint8_t (*Read_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_rx, uint16_t len);
+    uint8_t (*Write_Sector)(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_tx, uint16_t len);
     DevNorFlash_Info_TypeDef (*info)(DevQSPIW25QxxObj_TypeDef *dev);
     uint32_t (*get_section_start_addr)(DevQSPIW25QxxObj_TypeDef *dev, uint32_t addr);
 } DevQSPIW25Qxx_TypeDef;
