@@ -132,6 +132,7 @@ typedef struct
     void (*delay_ms)(uint32_t ms);
     uint32_t (*systick)(void);
 
+    bool busy;
     DevW25Qxx_Error_List init_state;
 } DevW25QxxObj_TypeDef;
 

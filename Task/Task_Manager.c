@@ -58,10 +58,9 @@ void Task_Main_Logic(void const *arg)
     SYS_INFO("Hardware Version %d.%d.%d", HWVer[0], HWVer[1], HWVer[2]);
     SYS_INFO("Bootloader", "Start");
     
-    /* storage hardware module init */
-    Storage.init(&StorageDevObj);
-
+    /* make sure the service function init sequence down below */
     SrvCom.init(&SrvComObj);
+    Storage.init(&StorageDevObj);
     SrvUpgrade.init((SrvUpgrade_Send_Callback)SrvCom.write);
     
     Tmp_Frimware_Buf = SrvOsCommon.malloc(2048);

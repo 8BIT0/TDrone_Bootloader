@@ -51,6 +51,7 @@ typedef bool (*bus_write)(uint8_t *p_tx);
 typedef enum
 {
     QSPIW25Qxx_Ok = 0,
+    QSPIW25Qxx_Busy,
     QSPIW25Qxx_Obj_Error,
     QSPIW25Qxx_ReadID_Failed,
     QSPIW25Qxx_Reset_Failed,
@@ -66,6 +67,8 @@ typedef struct
 {
     bool init;
     uint32_t dev_id;
+
+    bool busy;
 
     bus_cmd trans_cmd;
     bus_read read;
