@@ -1,7 +1,7 @@
 #include "Srv_Upgrade.h"
 #include "Srv_OsCommon.h"
 #include "Bsp_Flash.h"
-// #include "Storage.h"
+#include "../System/storage/Storage.h"
 #include "YModem.h"
 #include "../common/util.h"
 #include "CusQueue.h"
@@ -60,7 +60,11 @@ SrvUpgrade_TypeDef SrvUpgrade = {
 
 static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
 {
+    Storage_ItemSearchOut_TypeDef SearchOut;
+
+    memset(&SearchOut, 0, sizeof(Storage_ItemSearchOut_TypeDef));
     memset(&SrvUpgradeObj, 0, sizeof(SrvUpgradeObj_TypeDef));
+    
     SrvUpgradeObj.init_state = false;
     SrvUpgradeObj.upgrade_on_bootup = false;
     SrvUpgradeObj.mode = Upgrade_Normal_Mode;
@@ -74,12 +78,21 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
     
 #if (CODE_TYPE == ON_BOOT)
     /* check storage system data section */
-    /* check upgrade on boot up */
-    SrvUpgrade_Load_Firmware();
+    SearchOut = Storage.search(PARA_TYPE, PARA_NAME);
+    if (SearchOut.item_addr == 0)
+    {
+        /* first time create section */
+    }
+    else
+    {
+        /* search data */
+        /* check upgrade on boot up */
+        SrvUpgrade_Load_Firmware();
+    }
 
     /* init on chip flash */
     if (!BspFlash.init())
-        return false;    
+        return false;
 #endif
 
     SrvUpgradeObj.init_state = true;
