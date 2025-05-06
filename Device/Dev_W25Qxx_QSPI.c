@@ -14,7 +14,7 @@ static uint8_t DevQSPI_W25Qxx_Reset(DevQSPIW25QxxObj_TypeDef *obj);
 static uint8_t DevQSPI_W25Qxx_MemMap(DevQSPIW25QxxObj_TypeDef *obj);
 static uint8_t DevQSPI_W25Qxx_EraseChip(DevQSPIW25QxxObj_TypeDef *obj);
 static uint8_t DevQSPI_W25Qxx_EraseAddr(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr);
-static uint8_t DevQSPI_W25Qxx_ReadPage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_data, uint16_t len);
+static uint8_t DevQSPI_W25Qxx_Read(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_data, uint16_t len);
 static uint8_t DevQSPI_W25Qxx_WritePage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_data, uint16_t len);
 static DevNorFlash_Info_TypeDef DevQSPI_W25Qxx_GetInfo(DevQSPIW25QxxObj_TypeDef *obj);
 static uint32_t DevW25Qxx_Get_Section_StartAddr(DevQSPIW25QxxObj_TypeDef *dev, uint32_t addr);
@@ -25,7 +25,7 @@ DevQSPIW25Qxx_TypeDef DevQSPIW25Qxx = {
     .MemoryMap = DevQSPI_W25Qxx_MemMap,
     .Erase_Chip = DevQSPI_W25Qxx_EraseChip,
     .Erase_Sector = DevQSPI_W25Qxx_EraseAddr,
-    .Read_Sector = DevQSPI_W25Qxx_ReadPage,
+    .Read_Sector = DevQSPI_W25Qxx_Read,
     .Write_Sector = DevQSPI_W25Qxx_WritePage,
     .info = DevQSPI_W25Qxx_GetInfo,
     .get_section_start_addr = DevW25Qxx_Get_Section_StartAddr,
@@ -174,32 +174,41 @@ static uint8_t DevQSPI_W25Qxx_EraseChip(DevQSPIW25QxxObj_TypeDef *obj)
     return ErrToUint8(QSPIW25Qxx_Ok);
 }
 
+/* read a sector */
 static uint8_t DevQSPI_W25Qxx_WritePage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_data, uint16_t len)
 {
+    uint32_t offset = 0;
+
     if ((obj == NULL) || (obj->trans_cmd == NULL) || \
-        (obj->write == NULL) || (p_data == NULL) || (len == 0))
+        (obj->write == NULL) || (p_data == NULL) || (len == 0) || (addr % DevQSPIW25QXX_SectorSize != 0))
         return ErrToUint8(QSPIW25Qxx_Obj_Error);
 
-    /* set write enable */
-    if (!DevQSPI_W25Qxx_WriteEnable(obj))
-        return ErrToUint8(QSPIW25Qxx_WriteEnable_Failed);
+    for (uint8_t i = 0; i < (DevQSPIW25QXX_SectorSize / DevQSPIW25Qxx_PageSize); i++)
+    {
+        /* set write enable */
+        if (!DevQSPI_W25Qxx_WriteEnable(obj))
+            return ErrToUint8(QSPIW25Qxx_WriteEnable_Failed);
 
-    /* set write command */
-    if (!obj->trans_cmd(4, 1, addr, 0, len, DevQSPIW25Qxx_CMD_QuadInputPageProgram))
-        return ErrToUint8(QSPIW25Qxx_SendCMD_Error);
+        /* set write command */
+        if (!obj->trans_cmd(4, 1, addr, 0, DevQSPIW25Qxx_PageSize, DevQSPIW25Qxx_CMD_QuadInputPageProgram))
+            return ErrToUint8(QSPIW25Qxx_SendCMD_Error);
 
-    /* transmit data */
-    if (!obj->write(p_data))
-        return ErrToUint8(QSPIW25Qxx_Write_Failed);
+        /* transmit data */
+        if (!obj->write(p_data + offset))
+            return ErrToUint8(QSPIW25Qxx_Write_Failed);
 
-    /* polling status */
-    if (!DevQSPI_W25Qxx_AutoPollingMem(obj))
-        return ErrToUint8(QSPIW25Qxx_StatusPolling_Failed);
+        /* polling status */
+        if (!DevQSPI_W25Qxx_AutoPollingMem(obj))
+            return ErrToUint8(QSPIW25Qxx_StatusPolling_Failed);
+
+        addr += DevQSPIW25Qxx_PageSize;
+        offset += DevQSPIW25Qxx_PageSize;
+    }
 
     return ErrToUint8(QSPIW25Qxx_Ok);
 }
 
-static uint8_t DevQSPI_W25Qxx_ReadPage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_data, uint16_t len)
+static uint8_t DevQSPI_W25Qxx_Read(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_data, uint16_t len)
 {
     if ((obj == NULL) || (obj->trans_cmd == NULL) || (obj->read == NULL) || (p_data == NULL) || (len == 0))
         return ErrToUint8(QSPIW25Qxx_Obj_Error);

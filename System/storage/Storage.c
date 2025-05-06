@@ -158,7 +158,7 @@ reformat_external_flash_info:
             if (!Storage_Format())
             {
                 Storage_Monitor.Flash_Format_cnt --;
-                Storage_Monitor.info.base_addr = Flash_Start_Addr;
+                Storage_Monitor.info.base_addr = Flash_Start_Addr + ExtDev->start_addr;
                 if (Storage_Monitor.Flash_Format_cnt == 0)
                 {
                     STORAGE_INFO("init", "Format failed");

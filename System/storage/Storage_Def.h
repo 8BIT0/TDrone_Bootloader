@@ -29,7 +29,7 @@ extern "C" {
 #define Storage_Item_Capacity           (1 Kb)
 
 #define EXTERNAL_STORAGE_PAGE_TAG       "[ExternalFlash Storage]"
-#define EXTERNAL_PAGE_TAG_SIZE          strlen(EXTERNAL_STORAGE_PAGE_TAG)
+#define EXTERNAL_PAGE_TAG_SIZE          (strlen(EXTERNAL_STORAGE_PAGE_TAG) + 1)
 
 #define STORAGE_NAME_LEN                41
 #define STORAGE_ITEM_HEAD_TAG           0xAA
