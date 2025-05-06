@@ -254,69 +254,67 @@ static bool Storage_Dev_Param_Read(StorageDevObj_TypeDef *p_dev, uint32_t base_a
     uint32_t section_size = 0;
     uint32_t read_offset = 0;
     uint32_t read_len = len;
+    DevNorFlash_Info_TypeDef FlashInfo;
 
     if ((p_dev == NULL) || \
-        (p_dev->api == NULL) || \
+        (Dev.read == NULL) || \
+        (Dev.info == NULL) || \
+        (Dev.get_start_addr == NULL) || \
         (p_dev->obj == NULL) || \
         (sizeof(read_tmp) < len) || \
         (p_data == 0) || \
         (len == 0))
         return false;
+    
+    FlashInfo = Dev.info(To_DevW25Qxx_OBJ(p_dev->obj));
+
+    section_size = FlashInfo.sector_size;
+    /* get w25qxx device info */
+    /* address check */
+    flash_end_addr = FlashInfo.start_addr;
+    if (flash_end_addr > read_start_addr)
+        return false;
+
+    /* range check */
+    flash_end_addr += FlashInfo.flash_size;
+    if ((len + read_start_addr) > flash_end_addr)
+        return false;
+
+    if (section_size == 0)
+        return false;
         
-    switch((uint8_t)p_dev->chip_type)
+    section_start_addr = Dev.get_start_addr(p_dev->obj, read_start_addr);
+    read_offset = read_start_addr - section_start_addr;
+    if (section_size > sizeof(read_tmp))
+        return false;
+
+    while(true)
     {
-        case Storage_ChipType_W25Qxx:
-            section_size = To_DevW25Qxx_API(p_dev->api)->info(To_DevW25Qxx_OBJ(p_dev->obj)).sector_size;
-            /* get w25qxx device info */
-            /* address check */
-            flash_end_addr = To_DevW25Qxx_API(p_dev->api)->info(To_DevW25Qxx_OBJ(p_dev->obj)).start_addr;
-            if (flash_end_addr > read_start_addr)
-                return false;
+        /* circumstances 1: store data size less than flash sector size and only none multiple sector read is needed */
+        /* circumstances 2: store data size less than flash sector length but need to read from the end of the sector N to the start of the sector N + 1 */
+        /* circumstances 3: store data size large than flash sector length */
+        if (read_offset + read_len > section_size)
+            read_len = section_size - read_offset;
 
-            /* range check */
-            flash_end_addr += To_DevW25Qxx_API(p_dev->api)->info(To_DevW25Qxx_OBJ(p_dev->obj)).flash_size;
-            if ((len + read_start_addr) > flash_end_addr)
-                return false;
+        /* read whole section */
+        if (Dev.read(p_dev->obj, section_start_addr, read_tmp, section_size))
+            return false;
+    
+        memcpy(p_data, read_tmp + read_offset, read_len);
+        memset(read_tmp, 0, section_size);
 
-            if (section_size == 0)
-                return false;
-                
-            section_start_addr = To_DevW25Qxx_API(p_dev->api)->get_section_start_addr(To_DevW25Qxx_OBJ(p_dev->obj), read_start_addr);
-            read_offset = read_start_addr - section_start_addr;
-            if (section_size > sizeof(read_tmp))
-                return false;
-
-            while(true)
-            {
-                /* circumstances 1: store data size less than flash sector size and only none multiple sector read is needed */
-                /* circumstances 2: store data size less than flash sector length but need to read from the end of the sector N to the start of the sector N + 1 */
-                /* circumstances 3: store data size large than flash sector length */
-                if (read_offset + read_len > section_size)
-                    read_len = section_size - read_offset;
-
-                /* read whole section */
-                if (To_DevW25Qxx_API(p_dev->api)->read_sector(To_DevW25Qxx_OBJ(p_dev->obj), section_start_addr, read_tmp, section_size) != DevW25Qxx_Ok)
-                    return false;
-            
-                memcpy(p_data, read_tmp + read_offset, read_len);
-                memset(read_tmp, 0, section_size);
-
-                len -= read_len;
-                if (len == 0)
-                    return true;
-            
-                read_offset = 0;
-                next_read_addr = To_DevW25Qxx_API(p_dev->api)->get_section_start_addr(To_DevW25Qxx_OBJ(p_dev->obj), section_start_addr + read_len);
-                if (next_read_addr == section_start_addr)
-                    read_offset = read_len;
-                
-                p_data += read_len;
-                read_len = len;
-                section_start_addr = next_read_addr;
-            }
-            break;
-
-        default: return false;
+        len -= read_len;
+        if (len == 0)
+            return true;
+    
+        read_offset = 0;
+        next_read_addr = Dev.get_start_addr(p_dev->obj, section_start_addr + read_len);
+        if (next_read_addr == section_start_addr)
+            read_offset = read_len;
+        
+        p_data += read_len;
+        read_len = len;
+        section_start_addr = next_read_addr;
     }
 
     return false;
@@ -393,7 +391,7 @@ static bool Storage_Dev_Param_Write(StorageDevObj_TypeDef *p_dev, uint32_t base_
         memset(write_tmp, 0, section_size);
         
         len -= write_len;
-        if (state)
+        if (state == 0)
         {
             if (len == 0)
                 return true;

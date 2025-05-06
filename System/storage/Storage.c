@@ -1808,6 +1808,7 @@ static bool Storage_Fill_ReserveSec(uint32_t addr)
     if (!StorageDev.param_write(Storage_Monitor.ExtDev_ptr, addr, page_data_tmp, Storage_ReserveBlock_Size))
     {
         STORAGE_INFO("set res area", "write at 0x08%X failed", addr);
+        Storage_Assert(true);
         return false;
     }
 
@@ -1815,6 +1816,7 @@ static bool Storage_Fill_ReserveSec(uint32_t addr)
     if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, addr, page_data_tmp, Storage_ReserveBlock_Size))
     {
         STORAGE_INFO("set res area", "read at 0x08%X failed", addr);
+        Storage_Assert(true);
         return false;
     }
 
@@ -1823,6 +1825,7 @@ static bool Storage_Fill_ReserveSec(uint32_t addr)
         if (page_data_tmp[i] != Flash_Storage_ResData)
         {
             STORAGE_INFO("set res area", "data at 0x08%X index at %d error data 0x02%X", addr, i, page_data_tmp[i]);
+            Storage_Assert(true);
             return false;
         }
     }
