@@ -16,8 +16,14 @@ typedef void (*SrvUpgrade_Send_Callback)(void *port_obj, uint8_t *p_data, uint16
 typedef struct
 {
     bool update;
+    bool compelet;
+
     uint8_t sw_ver[3];
+    uint8_t hw_ver[3];
+    
     uint32_t firmware_size;
+
+    uint8_t res[128];
 } SrvUpgrade_BaseInfo_TypeDef;
 #pragma pack()
 

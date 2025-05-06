@@ -23,7 +23,6 @@ typedef struct
 {
     SrvUpgrade_Send_Callback send;
     bool upgrade_on_bootup;
-    uint8_t sw_ver[3];
     uint8_t *firmware_name;
     uint32_t firmware_size;
     uint32_t firmware_rec_size;
@@ -36,6 +35,7 @@ typedef struct
 
     bool queue_inuse;
     QueueObj_TypeDef p_queue;
+    SrvUpgrade_BaseInfo_TypeDef FirmwareInfo;
 
     YModem_Handle YM_hdl;
 } SrvUpgradeObj_TypeDef;
@@ -45,7 +45,7 @@ static SrvUpgradeObj_TypeDef SrvUpgradeObj;
 
 /* internanl function */
 #if (CODE_TYPE == ON_BOOT)
-static bool SrvUpgrade_Load_Firmware(void);
+static bool SrvUpgrade_Upgrade_Firmware(void);
 static void SrvUpgrade_Check_ForceMode_Enable(void *arg);
 #endif
 
@@ -63,6 +63,7 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
 {
     Storage_ItemSearchOut_TypeDef SearchOut;
 
+    memset(&SrvUpgradeObj.FirmwareInfo, 0, sizeof(SrvUpgrade_BaseInfo_TypeDef));
     memset(&SearchOut, 0, sizeof(Storage_ItemSearchOut_TypeDef));
     memset(&SrvUpgradeObj, 0, sizeof(SrvUpgradeObj_TypeDef));
     
@@ -83,12 +84,26 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
     if (SearchOut.item_addr == 0)
     {
         /* first time create section */
+        Storage.create(PARA_TYPE, PARA_NAME, &SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
     }
     else
     {
         /* search data */
+        if (Storage.get(PARA_TYPE, SearchOut.item, &SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef)) != Storage_Error_None)
+        {
+            SrvUpgradeObj.FirmwareInfo.compelet = false;
+            SrvUpgradeObj.FirmwareInfo.update = false;
+        }
+
         /* check upgrade on boot up */
-        SrvUpgrade_Load_Firmware();
+        if (SrvUpgradeObj.FirmwareInfo.compelet & SrvUpgradeObj.FirmwareInfo.update)
+        {
+            SrvUpgrade_Upgrade_Firmware();
+
+            /* after upgrade the app clear the flag */
+            SrvUpgradeObj.FirmwareInfo.update = false;
+            Storage.update(PARA_TYPE, SearchOut.item.data_addr, &SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
+        }
     }
 
     /* init on chip flash */
@@ -104,7 +119,7 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
 
 /* copy firmware from back up area to on chip flash */
 #if (CODE_TYPE == ON_BOOT)
-static bool SrvUpgrade_Load_Firmware(void)
+static bool SrvUpgrade_Upgrade_Firmware(void)
 {
     if (!SrvUpgradeObj.init_state)
         return false;
