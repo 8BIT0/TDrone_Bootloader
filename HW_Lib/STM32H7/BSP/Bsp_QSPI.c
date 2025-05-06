@@ -172,8 +172,10 @@ static bool BspQSPI_MemMap(BspQSPI_Config_TypeDef *obj, uint32_t cmd)
 static BspQPI_CMDInfo_TypeDef BspQSPI_Check_CMD(uint8_t data_line, uint8_t addr_line, uint32_t addr, uint32_t dummy_cyc, uint16_t size, uint32_t code)
 {
     BspQPI_CMDInfo_TypeDef cmd;
+
     cmd.valid = false;
 
+    cmd.command.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
     cmd.command.AddressSize       = QSPI_ADDRESS_24_BITS;
     cmd.command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
     cmd.command.DdrMode           = QSPI_DDR_MODE_DISABLE;
