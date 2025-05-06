@@ -42,10 +42,10 @@ static uint8_t DevQSPI_W25Qxx_Init(DevQSPIW25QxxObj_TypeDef *obj)
     /* read device ID */
     /* module reset */
     if (!DevQSPI_W25Qxx_ReadDevID(obj))
-        return   ErrToUint8(QSPIW25Qxx_ReadID_Failed);
+        return ErrToUint8(QSPIW25Qxx_ReadID_Failed);
 
-    if (!DevQSPI_W25Qxx_Reset(obj))
-        return ErrToUint8(QSPIW25Qxx_Resst_Failed);
+    if (DevQSPI_W25Qxx_Reset(obj) != ErrToUint8(QSPIW25Qxx_Ok))
+        return ErrToUint8(QSPIW25Qxx_Reset_Failed);
 
     obj->init = true;
     return ErrToUint8(QSPIW25Qxx_Ok);
@@ -111,7 +111,7 @@ static uint8_t DevQSPI_W25Qxx_MemMap(DevQSPIW25QxxObj_TypeDef *obj)
 
     /* reset */
     if (!DevQSPI_W25Qxx_Reset(obj))
-        return ErrToUint8(QSPIW25Qxx_Resst_Failed);
+        return ErrToUint8(QSPIW25Qxx_Reset_Failed);
 
     /* set memory mapped */
     if (!obj->mem_map(DevQSPIW25Qxx_CMD_FastReadQuad_IO))
@@ -231,8 +231,9 @@ static DevNorFlash_Info_TypeDef DevQSPI_W25Qxx_GetInfo(DevQSPIW25QxxObj_TypeDef 
         info.page_size = DevQSPIW25Qxx_PageSize;
         info.block_size = DevQSPIW25Qxx_BlockSize;
         info.sector_size = DevQSPIW25QXX_SectorSize;
+        info.prod_code = obj->dev_id;
 
-        switch (info.prod_code)
+        switch (obj->dev_id)
         {
             case (uint32_t)DevQSPIW25Qxx_FLASH_ID:
                 info.flash_size = DevQSPIW25Qxx_FlashSize;

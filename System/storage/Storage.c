@@ -135,7 +135,7 @@ reinit_external_flash_module:
     }
 
     /* set external flash device read write base address */
-    Storage_Monitor.info.base_addr = Flash_Start_Addr;
+    Storage_Monitor.info.base_addr = Flash_Start_Addr + ExtDev->start_addr;
     Storage_Monitor.Flash_Format_cnt = Format_Retry_Cnt;
 
     /* check storage item size */

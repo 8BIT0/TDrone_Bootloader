@@ -53,7 +53,7 @@ typedef enum
     QSPIW25Qxx_Ok = 0,
     QSPIW25Qxx_Obj_Error,
     QSPIW25Qxx_ReadID_Failed,
-    QSPIW25Qxx_Resst_Failed,
+    QSPIW25Qxx_Reset_Failed,
     QSPIW25Qxx_SendCMD_Error,
     QSPIW25Qxx_StatusPolling_Failed,
     QSPIW25Qxx_MemMap_Failed,
