@@ -50,15 +50,15 @@ static uint8_t write_tmp[Storage_TabSize * 2] __attribute__((aligned(4))) __attr
 
 /* external function */
 static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev);
-static bool Storage_Dev_Init(StorageDevObj_TypeDef *ext_dev, uint16_t *p_code);
+static bool Storage_Dev_Init(StorageDevObj_TypeDef *ext_dev, uint32_t *p_code);
 
 static bool Storage_Dev_Write_Section(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint8_t *p_data, uint16_t len);
 static bool Storage_Dev_Read_Section(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint8_t *p_data, uint16_t len);
 static bool Storage_Dev_Erase_Section(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint16_t len);
 
-static bool Storage_Dev_Param_Read(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint32_t addr_offset, uint8_t *p_data, uint32_t len);
-static bool Storage_Dev_Param_Write(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint32_t addr_offset, uint8_t *p_data, uint32_t len);
-static bool Storage_Dev_Param_Erase(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint32_t addr_offset, uint32_t len);
+static bool Storage_Dev_Param_Read(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint8_t *p_data, uint32_t len);
+static bool Storage_Dev_Param_Write(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint8_t *p_data, uint32_t len);
+static bool Storage_Dev_Param_Erase(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint32_t len);
 
 StorageDevApi_TypeDef StorageDev = {
     .set            = Storage_Dev_Set,
@@ -129,7 +129,7 @@ static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev)
     return true;
 }
 
-static bool Storage_Dev_Init(StorageDevObj_TypeDef *ext_dev, uint16_t *p_code)
+static bool Storage_Dev_Init(StorageDevObj_TypeDef *ext_dev, uint32_t *p_code)
 {
     uint8_t init_state = 0;
     DevNorFlash_Info_TypeDef FlashInfo;
@@ -245,9 +245,9 @@ static bool Storage_Dev_Erase_Section(StorageDevObj_TypeDef *p_dev, uint32_t add
     return true;
 }
 
-static bool Storage_Dev_Param_Read(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint32_t addr_offset, uint8_t *p_data, uint32_t len)
+static bool Storage_Dev_Param_Read(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint8_t *p_data, uint32_t len)
 {
-    uint32_t read_start_addr = base_addr + addr_offset;
+    uint32_t read_start_addr = base_addr;
     uint32_t flash_end_addr = 0;
     uint32_t section_start_addr = 0;
     uint32_t next_read_addr = 0;
@@ -322,9 +322,9 @@ static bool Storage_Dev_Param_Read(StorageDevObj_TypeDef *p_dev, uint32_t base_a
     return false;
 }
 
-static bool Storage_Dev_Param_Write(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint32_t addr_offset, uint8_t *p_data, uint32_t len)
+static bool Storage_Dev_Param_Write(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint8_t *p_data, uint32_t len)
 {
-    uint32_t write_start_addr = base_addr + addr_offset;
+    uint32_t write_start_addr = base_addr;
     uint32_t flash_end_addr = 0;
     uint32_t section_start_addr = 0;
     uint32_t next_write_addr = 0;
@@ -414,9 +414,9 @@ static bool Storage_Dev_Param_Write(StorageDevObj_TypeDef *p_dev, uint32_t base_
     return false;
 }
 
-static bool Storage_Dev_Param_Erase(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint32_t addr_offset, uint32_t len)
+static bool Storage_Dev_Param_Erase(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint32_t len)
 {
-    uint32_t erase_start_addr = base_addr + addr_offset;
+    uint32_t erase_start_addr = base_addr;
 
     if ((p_dev == NULL) || \
         (Dev.info == NULL) || \

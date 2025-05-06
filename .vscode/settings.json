@@ -34,6 +34,9 @@
         "bsp_gpio.h": "c",
         "storage_bus_port.h": "c",
         "bsp_qspi.h": "c",
-        "dev_w25qxx_qspi.h": "c"
+        "dev_w25qxx_qspi.h": "c",
+        "storage_dev_port.h": "c",
+        "storage_def.h": "c",
+        "objbase.h": "c"
     }
 }

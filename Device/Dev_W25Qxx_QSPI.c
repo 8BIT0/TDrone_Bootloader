@@ -16,6 +16,7 @@ static bool DevQSPI_W25Qxx_EraseAddr(DevQSPIW25QxxObj_TypeDef *obj, uint32_t add
 static bool DevQSPI_W25Qxx_ReadPage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_data, uint16_t len);
 static bool DevQSPI_W25Qxx_WritePage(DevQSPIW25QxxObj_TypeDef *obj, uint32_t addr, uint8_t *p_data, uint16_t len);
 static DevNorFlash_Info_TypeDef DevQSPI_W25Qxx_GetInfo(DevQSPIW25QxxObj_TypeDef *obj);
+static uint32_t DevW25Qxx_Get_Section_StartAddr(DevQSPIW25QxxObj_TypeDef *dev, uint32_t addr);
 
 DevQSPIW25Qxx_TypeDef DevQSPIW25Qxx = {
     .Init = DevQSPI_W25Qxx_Init,
@@ -26,6 +27,7 @@ DevQSPIW25Qxx_TypeDef DevQSPIW25Qxx = {
     .Read_Sector = DevQSPI_W25Qxx_ReadPage,
     .Write_Sector = DevQSPI_W25Qxx_WritePage,
     .info = DevQSPI_W25Qxx_GetInfo,
+    .get_section_start_addr = DevW25Qxx_Get_Section_StartAddr,
 };
 
 static bool DevQSPI_W25Qxx_Init(DevQSPIW25QxxObj_TypeDef *obj)
@@ -242,3 +244,12 @@ static DevNorFlash_Info_TypeDef DevQSPI_W25Qxx_GetInfo(DevQSPIW25QxxObj_TypeDef 
 
     return info;
 }
+
+static uint32_t DevW25Qxx_Get_Section_StartAddr(DevQSPIW25QxxObj_TypeDef *dev, uint32_t addr)
+{
+    if (dev && dev->init)
+        return (addr / DevQSPIW25QXX_SectorSize) * DevQSPIW25QXX_SectorSize;
+
+    return 0;
+}
+

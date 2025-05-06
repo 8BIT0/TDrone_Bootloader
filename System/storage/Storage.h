@@ -8,7 +8,7 @@ extern "C" {
 #include <string.h>
 #include "Storage_Def.h"
 #include "Storage_Dev_Port.h"
-#include "../Dep/util.h"
+#include "util.h"
 
 typedef uint32_t storage_handle;
 
@@ -166,8 +166,7 @@ typedef struct
     bool init_state;
     uint8_t inuse;
 
-    uint16_t module_prod_type;
-    uint16_t module_prod_code;
+    uint32_t module_prod_code;
 
     Storage_FlashInfo_TypeDef info;
 } Storage_Monitor_TypeDef;

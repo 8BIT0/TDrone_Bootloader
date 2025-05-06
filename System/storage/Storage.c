@@ -8,28 +8,32 @@
  * NOTICED: STORAGE MODULE ONLY SUPPORT NOR-FLASH
  */
 #include <stdlib.h>
+#include "Srv_OsCommon.h"
 #include "Storage.h"
-#include "../Dep/util.h"
+#include "util.h"
 #include "Storage_Bus_Port.h"
 #include "Storage_Dev_Port.h"
 
 #define STORAGE_VERSION_LEN             3
 #define STORAGE_TAG                     "Storage module"
-#define STORAGE_INFO(stage, fmt, ...)   Debug_Print(STORAGE_TAG, stage, fmt, ##__VA_ARGS__)
-
-#define STORAGE_DEBUG                   1
+// #define STORAGE_INFO(stage, fmt, ...)   Debug_Print((const char *)STORAGE_TAG, stage, fmt, ##__VA_ARGS__)
+#define STORAGE_INFO(stage, fmt, ...)
 
 #define Item_Capacity_Per_Tab           (Storage_TabSize / sizeof(Storage_Item_TypeDef))
 #define TabNum                          (Storage_Item_Capacity / (Flash_Storage_TabSize / StorageItem_Size))
 #define TabSize                         (TabNum * Flash_Storage_TabSize)
 
-__attribute__((weak)) void* Storage_Malloc(uint32_t size) {return malloc(size);}
+__attribute__((weak)) void* Storage_Malloc(uint32_t size)
+{
+    return SrvOsCommon.malloc(size);
+}
+
 __attribute__((weak)) void Storage_Free(void **ptr)
 {
     if ((ptr == NULL) || (*ptr == NULL))
         return;
 
-    free(*ptr);
+    SrvOsCommon.free(*ptr);
     *ptr = NULL;
 }
 
@@ -117,7 +121,7 @@ static bool Storage_Init(StorageDevObj_TypeDef *ExtDev)
 
 reinit_external_flash_module:
     Storage_Monitor.Flash_Error_Code = Storage_Error_None;
-    if (!StorageDev.init(ExtDev, &Storage_Monitor.module_prod_type, &Storage_Monitor.module_prod_code))
+    if (!StorageDev.init(ExtDev, &Storage_Monitor.module_prod_code))
     {
         Storage_Monitor.Flash_Error_Code = Storage_ModuleInit_Error;
         STORAGE_INFO("init", "Failed");
@@ -723,7 +727,7 @@ static Storage_ErrorCode_List Storage_SlotData_Update(Storage_ParaClassType_List
         if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, read_addr, p_read_tmp, read_size))
             return Storage_Read_Error;
         
-            p_slotdata->head_tag = *((uint32_t *)p_read_tmp);
+        p_slotdata->head_tag = *((uint32_t *)p_read_tmp);
         p_read_tmp += sizeof(p_slotdata->head_tag);
         if (p_slotdata->head_tag != STORAGE_SLOT_HEAD_TAG)
             return Storage_DataInfo_Error;
@@ -928,7 +932,6 @@ static Storage_ErrorCode_List Storage_FreeSlot_CheckMerge(uint32_t slot_addr, St
     Storage_FreeSlot_TypeDef FreeSlot_Info;
     uint32_t freeslot_addr = 0;
     uint32_t nxt_freeslot_addr = 0;
-    uint32_t ori_freespace_size = 0;
     Link_State_List slot_link_state = Link_Done;
 
     if ((p_Sec == NULL) || \
@@ -954,7 +957,6 @@ static Storage_ErrorCode_List Storage_FreeSlot_CheckMerge(uint32_t slot_addr, St
     }
 
     STORAGE_INFO("delete", "check merge");
-    ori_freespace_size = p_Sec->free_space_size;
     freeslot_addr = p_Sec->free_slot_addr;
     while (true)
     {
@@ -1002,7 +1004,6 @@ static bool Storage_DeleteSingleDataSlot(uint32_t slot_addr, uint8_t *p_data, St
     uint8_t *p_freeslot_start = NULL;
     uint8_t *p_freeslot_data = NULL;
     uint8_t *data_w = NULL;
-    uint16_t frag_size = 0;
 
     if ((slot_addr == 0) || \
         (p_Sec == NULL) || \
@@ -1101,7 +1102,6 @@ static bool Storage_DeleteAllDataSlot(uint32_t addr, char *name, uint32_t total_
 {
     Storage_DataSlot_TypeDef data_slot;
     uint8_t *p_read = page_data_tmp;
-    uint8_t name_len = 0;
     uint32_t read_size = sizeof(Storage_DataSlot_TypeDef);
 
     if ((addr == 0) || \
@@ -1112,8 +1112,6 @@ static bool Storage_DeleteAllDataSlot(uint32_t addr, char *name, uint32_t total_
         return false;
 
     memset(&data_slot, 0, sizeof(data_slot));
-    name_len = strlen(name);
-
     memset(page_data_tmp, 0, Storage_TabSize);
     if (!StorageDev.param_read(Storage_Monitor.ExtDev_ptr, addr, page_data_tmp, read_size))
         return false;
@@ -1137,8 +1135,8 @@ static bool Storage_DeleteAllDataSlot(uint32_t addr, char *name, uint32_t total_
     p_read += sizeof(data_slot.total_data_size);
     data_slot.cur_slot_size = *((uint16_t *)p_read);
     if (data_slot.total_data_size && \
-        (data_slot.cur_slot_size == 0) || \
-        (data_slot.cur_slot_size > data_slot.total_data_size))
+        ((data_slot.cur_slot_size == 0) || \
+         (data_slot.cur_slot_size > data_slot.total_data_size)))
     {
         STORAGE_INFO("delete", "addr 0x%08x current slot size %d error", addr, data_slot.cur_slot_size);
         return false;
@@ -1211,7 +1209,6 @@ static bool Storage_DeleteAllDataSlot(uint32_t addr, char *name, uint32_t total_
 
 static Storage_ErrorCode_List Storage_DeleteItem(Storage_ParaClassType_List _class, const char *name)
 {
-    uint16_t info_crc = 0;
     Storage_FlashInfo_TypeDef *p_Flash = NULL;
     Storage_BaseSecInfo_TypeDef *p_Sec = NULL;
     Storage_ItemSearchOut_TypeDef ItemSearch;
@@ -1560,7 +1557,6 @@ static bool Storage_Establish_Tab(Storage_ParaClassType_List class)
     uint32_t clear_remain = 0;
     uint32_t addr_tmp = 0;
     Storage_FreeSlot_TypeDef free_slot;
-    uint16_t crc = 0;
 
     switch ((uint8_t)class)
     {
@@ -1641,11 +1637,9 @@ static bool Storage_Build_StorageInfo(void)
 {
     Storage_FlashInfo_TypeDef Info_Rx;
     uint32_t tab_addr_offset = 0;
-    uint16_t crc = 0;
     uint32_t remain_data_sec_size = 0;
     uint32_t data_sec_size = 0;
     uint32_t base_addr = Storage_Monitor.info.base_addr;
-    uint32_t reserve_sec_addr = 0;
 
     memset(&Info_Rx, 0, sizeof(Storage_FlashInfo_TypeDef));
     memset(&Storage_Monitor.info.sys_sec, 0, sizeof(Storage_BaseSecInfo_TypeDef));

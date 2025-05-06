@@ -110,55 +110,15 @@ extern const uint8_t HWVer[3];
         #define ExtFlash_Bus_CLKPolarity SPI_CLOCK_POLARITY_HIGH
         #define ExtFlash_CS_Pin ExtFlash_CSPin
         #define ExtFlash_Bus_Pin ExtFlash_SPIPin
+        
+        extern BspGPIO_Obj_TypeDef ExtFlash_CSPin;
+        extern BspSPI_PinConfig_TypeDef ExtFlash_SPIPin;
         extern SPI_HandleTypeDef ExtFlash_Bus_InstObj;
     #elif (FLASH_CHIP_STATE == Storage_ChipBus_QSpi)
         #define ExtFlash_Bus_Api BspQspi
         #define ExtFlash_Bus_Instance (void *)QUADSPI
         extern BspQSPI_Config_TypeDef ExtFlash_Bus_InstObj;
     #endif
-
-#define App_Firmware_Addr W25QXX_BASE_ADDRESS
-#define App_Firmware_Size (1 Mb)
-
-#define ExtFlash_Start_Addr (App_Firmware_Addr + App_Firmware_Size)
-
-#define ExtFlash_Storage_DefaultData FLASH_DEFAULT_DATA
-#define ExtFlash_Storage_TotalSize (512 Kb)
-#define ExtFlash_Storage_TabSize Flash_Storage_TabSize
-#define ExtFlash_Storage_InfoPageSize Flash_Storage_InfoPageSize
-#define ExtFlash_Storage_Reserve_Size (1 Mb) - ExtFlash_Storage_TotalSize 
-
-#define BlackBox_Storage_Start_Addr (ExtFlash_Start_Addr + \
-                                     ExtFlash_Storage_TotalSize + \
-                                     ExtFlash_Storage_Reserve_Size)
-
-/* store boot info boot parameter and firmware */
-#define ExternalFlash_BootDataSec_Size (32 Kb)
-#define ExternalFlash_SysDataSec_Size (64 Kb)
-#define ExternalFlash_UserDataSec_Size (64 Kb)
-
-extern BspGPIO_Obj_TypeDef ExtFlash_CSPin;
-extern BspSPI_PinConfig_TypeDef ExtFlash_SPIPin;
-#else
-#define App_Firmware_Addr 0
-#define App_Firmware_Size (0 Mb)
-
-#define ExtFlash_Start_Addr (App_Firmware_Addr + App_Firmware_Size)
-
-#define ExtFlash_Storage_DefaultData FLASH_DEFAULT_DATA
-#define ExtFlash_Storage_TotalSize (0 Kb)
-#define ExtFlash_Storage_TabSize Flash_Storage_TabSize
-#define ExtFlash_Storage_InfoPageSize Flash_Storage_InfoPageSize
-#define ExtFlash_Storage_Reserve_Size (0 Mb) - ExtFlash_Storage_TotalSize 
-
-#define BlackBox_Storage_Start_Addr (ExtFlash_Start_Addr + \
-                                     ExtFlash_Storage_TotalSize + \
-                                     ExtFlash_Storage_Reserve_Size)
-
-/* store boot info boot parameter and firmware */
-#define ExternalFlash_BootDataSec_Size (0 Kb)
-#define ExternalFlash_SysDataSec_Size (0 Kb)
-#define ExternalFlash_UserDataSec_Size (0 Kb)
 #endif
 
 extern DebugPinObj_TypeDef Debug_PC0;

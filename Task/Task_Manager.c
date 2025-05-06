@@ -6,10 +6,7 @@
 #include "cmsis_os.h"
 #include "Srv_ComTrans.h"
 #include "Srv_Upgrade.h"
-
-/* test code */
-#include "Storage_Bus_Port.h"
-/* test code */
+#include "../System/storage/Storage.h"
 
 #define WINDOW_SIZE 100         /* unit: ms */
 #define RECEIVE_TIME_OUT 3000   /* unit: ms */
@@ -60,9 +57,7 @@ void Task_Main_Logic(void const *arg)
         SYS_INFO("Bootloader", "Tmp_Frimware_Buf malloc error");
 
     /* storage hardware module init */
-    /* test code */
-    StoragePort_Api.init(SrvOsCommon.malloc, SrvOsCommon.free);
-    /* test code */
+    Storage.init();
 
     while(1)
     {

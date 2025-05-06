@@ -11,7 +11,7 @@ extern "C" {
 #include "HW_Def.h"
 
 typedef void* (*StorageBus_Malloc_Callback)(uint32_t size);
-typedef void (*StorageBus_Free_Callback)(void *ptr);
+typedef void (*StorageBus_Free_Callback)(void **ptr);
 
 typedef struct
 {

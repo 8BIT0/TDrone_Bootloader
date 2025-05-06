@@ -51,6 +51,7 @@ common/YModem/YModem.c \
 common/util.c \
 System/storage/Storage_Bus_Port.c \
 System/storage/Storage_Dev_Port.c \
+System/storage/Storage.c \
 System/FreeRTOS/croutine.c \
 System/FreeRTOS/event_groups.c \
 System/FreeRTOS/list.c \
@@ -106,7 +107,6 @@ HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_ll_fmc.c \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_sdram.c \
 HW_Lib/STM32H7/HAL_Lib/STM32H7xx_HAL_Driver/Src/stm32h7xx_ll_usb.c \
 HW_Lib/STM32H7/PinPort_Def/Neure/HW_Def.c
-# System/storage/Storage.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -213,7 +213,7 @@ C_INCLUDES =  \
 -IHW_Lib/STM32H7/USB/USB_DEVICE/App \
 -IHW_Lib/STM32H7/USB/USB_DEVICE/Target \
 -IHW_Lib/STM32H7/PinPort_Def/Neure \
-# -ISystem/storage
+-ISystem/storage
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
