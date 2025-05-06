@@ -20,12 +20,15 @@ osThreadId TaskManager_Handle = NULL;
 static uint32_t time_out_tick = WINDOW_SIZE;
 static SrvComObj_TypeDef SrvComObj;
 static uint8_t *Tmp_Frimware_Buf;
+static StorageDevObj_TypeDef StorageDevObj;
 
 /* internal function */
 static void Bootloader_Check(uint32_t sys_time);
 
 void Task_Manager_Init(void)
 {
+    memset(&StorageDevObj, 0, sizeof(StorageDevObj_TypeDef));
+
     DevLED.init(Led1);
 
     /* heap memory init */
@@ -57,7 +60,7 @@ void Task_Main_Logic(void const *arg)
         SYS_INFO("Bootloader", "Tmp_Frimware_Buf malloc error");
 
     /* storage hardware module init */
-    Storage.init();
+    Storage.init(&StorageDevObj);
 
     while(1)
     {

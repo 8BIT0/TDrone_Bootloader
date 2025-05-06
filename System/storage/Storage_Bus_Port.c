@@ -63,10 +63,14 @@ static void* Storage_External_Chip_Bus_Init(StorageBus_Malloc_Callback p_malloc,
         return NULL;
     
     To_QSPI_Handle_Ptr(ExtFlash_Bus_InstObj.p_qspi)->Instance = ExtFlash_Bus_Instance;
-    ExtFlash_Bus_Api.init(obj, &ExtFlash_Bus_InstObj);
+    if (!ExtFlash_Bus_Api.init(obj, &ExtFlash_Bus_InstObj))
+    {
+        p_free(&obj);
+        return NULL;
+    }
 #endif
     
-    return NULL;
+    return obj;
 }
 
 #if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)

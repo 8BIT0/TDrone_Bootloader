@@ -16,12 +16,12 @@ typedef enum
     Storage_Chip_None = 0,
     Storage_ChipType_W25Qxx,
     Storage_ChipType_All,
-} Storage_ExtFlashChipType_List;
+} Storage_FlashChipType_List;
 
 /* hadware flash chip info */
 typedef struct
 {
-    Storage_ExtFlashChipType_List chip_type;
+    Storage_FlashChipType_List chip_type;
 
     uint32_t start_addr;
     uint32_t total_size;
