@@ -34,7 +34,7 @@ void Task_Manager_Init(void)
     StorageDevObj.api = (void *)&DevQSPIW25Qxx;
 #endif
     StorageDevObj.chip_type = Flash_Chip_Type;
-    
+
     DevLED.init(Led1);
 
     /* heap memory init */
@@ -58,15 +58,15 @@ void Task_Main_Logic(void const *arg)
     SYS_INFO("Hardware Version %d.%d.%d", HWVer[0], HWVer[1], HWVer[2]);
     SYS_INFO("Bootloader", "Start");
     
+    /* storage hardware module init */
+    Storage.init(&StorageDevObj);
+
     SrvCom.init(&SrvComObj);
     SrvUpgrade.init((SrvUpgrade_Send_Callback)SrvCom.write);
     
     Tmp_Frimware_Buf = SrvOsCommon.malloc(2048);
     if (Tmp_Frimware_Buf == NULL)
         SYS_INFO("Bootloader", "Tmp_Frimware_Buf malloc error");
-
-    /* storage hardware module init */
-    Storage.init(&StorageDevObj);
 
     while(1)
     {
