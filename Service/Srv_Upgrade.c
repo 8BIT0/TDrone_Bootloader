@@ -14,8 +14,12 @@
 #define PARA_NAME           "Upgrade_Info"
 
 #if (CODE_TYPE == ON_BOOT)
-#define FORCE_MODE_CODE     "Force_Mode"
+#define FORCE_MODE_CODE         "force_mode"    /* force to receive firmware mode */
 #endif
+
+#define RAM_FIRMWARE_DUMP       "ram_dump"      /* dump from sdram */
+#define INTER_ROM_FIRMWARE_DUMP "i_rom_dump"    /* dump from stm32h743 rom */
+#define EXTER_ROM_FIRMWARE_DUMP "e_rom_dump"    /* dump from w25qxx flash chip */
 
 /* internal function */
 
