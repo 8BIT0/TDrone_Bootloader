@@ -5,6 +5,9 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 #include "Storage_Def.h"
 #include "Storage_Dev_Port.h"
@@ -182,7 +185,15 @@ typedef struct
     Storage_ErrorCode_List (*get_dev_info)(StorageDevObj_TypeDef *info);
 } Storage_TypeDef;
 
+typedef struct
+{
+    bool (*erase)(void);
+    bool (*read_sec)(uint8_t *p_data, uint16_t size);
+    bool (*write_sec)(uint8_t *p_data, uint16_t size);
+} StorageFirmware_TypeDef;
+
 extern Storage_TypeDef Storage;
+extern StorageFirmware_TypeDef StorageFirmware;
 
 #ifdef __cplusplus
 }

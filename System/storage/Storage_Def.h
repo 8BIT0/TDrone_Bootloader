@@ -40,6 +40,7 @@ extern "C" {
 #define STORAGE_MIN_BYTE_SIZE           1
 #define STORAGE_FREEITEM_NAME           "Item_Avaliable"
 
+#define App_Firmware_PhyAddrOffset      0x00
 #define App_Firmware_Size               (1 Mb)
 
 #define Flash_Start_Addr                App_Firmware_Size

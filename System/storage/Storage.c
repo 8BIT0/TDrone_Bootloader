@@ -7,10 +7,8 @@
  * 
  * NOTICED: STORAGE MODULE ONLY SUPPORT NOR-FLASH
  */
-#include <stdlib.h>
-#include "Srv_OsCommon.h"
 #include "Storage.h"
-#include "util.h"
+#include "Srv_OsCommon.h"
 #include "Storage_Bus_Port.h"
 #include "Storage_Dev_Port.h"
 
@@ -67,14 +65,24 @@ static Storage_ErrorCode_List Storage_SlotData_Update(Storage_ParaClassType_List
 static Storage_ErrorCode_List Storage_Get_Data(Storage_ParaClassType_List _class, Storage_Item_TypeDef item, uint8_t *p_data, uint16_t *size);
 static Storage_ErrorCode_List Storage_Get_DevInfo(StorageDevObj_TypeDef *info);
 
+static bool Storage_Erase_FirmwareSection(void);
+static bool Storage_Read_Firmware(uint8_t *p_data, uint32_t size);
+static bool Storage_Write_Firmware(uint8_t *p_data, uint32_t size);
+
 Storage_TypeDef Storage = {
-    .init = Storage_Init,
-    .search = Storage_Search,
-    .create = Storage_CreateItem,
-    .delete = Storage_DeleteItem,
-    .get = Storage_Get_Data,
-    .update = Storage_SlotData_Update,
-    .get_dev_info = Storage_Get_DevInfo,
+    .init           = Storage_Init,
+    .search         = Storage_Search,
+    .create         = Storage_CreateItem,
+    .delete         = Storage_DeleteItem,
+    .get            = Storage_Get_Data,
+    .update         = Storage_SlotData_Update,
+    .get_dev_info   = Storage_Get_DevInfo,
+};
+
+StorageFirmware_TypeDef StorageFirmware = {
+    .erase     = Storage_Erase_FirmwareSection,
+    .read_sec  = Storage_Read_Firmware,
+    .write_sec = Storage_Write_Firmware,
 };
 
 static bool Storage_Init(StorageDevObj_TypeDef *ExtDev)
@@ -1828,6 +1836,97 @@ static bool Storage_Fill_ReserveSec(uint32_t addr)
             Storage_Assert(true);
             return false;
         }
+    }
+
+    return true;
+}
+
+/************************************************************* Firmware API ****************************************************************/
+static bool Storage_Erase_FirmwareSection(void)
+{
+    uint32_t Addr = Storage_Monitor.info. base_addr + App_Firmware_PhyAddrOffset;
+    return StorageDev.erase_phy_sec(Storage_Monitor.ExtDev_ptr, Addr, App_Firmware_Size);
+}
+
+static bool Storage_Read_Firmware(uint8_t *p_data, uint32_t size)
+{
+    StorageDevObj_TypeDef *p_DevObj = Storage_Monitor.ExtDev_ptr;
+    static uint8_t *p_tmp = NULL;
+    uint32_t Addr = Storage_Monitor.info.base_addr + App_Firmware_PhyAddrOffset;
+    uint32_t offset = 0;
+
+    if ((p_data == NULL) || (size == 0) || (p_DevObj == NULL) || !Storage_Monitor.init_state)
+        return false;
+
+    if (p_tmp == NULL)
+    {
+        p_tmp = Storage_Malloc(p_DevObj->sector_size);
+        if (p_tmp == NULL)
+            return false;
+    }
+
+    while (size)
+    {
+        if (!StorageDev.read_phy_sec(Storage_Monitor.ExtDev_ptr, Addr, p_tmp, p_DevObj->sector_size))
+            return false;
+
+        if (size >= p_DevObj->sector_size)
+        {
+            memcpy(p_data + offset, p_tmp, p_DevObj->sector_size);
+        }
+        else
+        {
+            memcpy(p_data + offset, p_tmp, size);
+            size = 0;
+            return true;
+        }
+
+        size -= p_DevObj->sector_size;
+        offset += p_DevObj->sector_size;
+        Addr += p_DevObj->sector_size;
+    }
+
+    return false;
+}
+
+static bool Storage_Write_Firmware(uint8_t *p_data, uint32_t size)
+{
+    StorageDevObj_TypeDef *p_DevObj = Storage_Monitor.ExtDev_ptr;
+    static uint8_t *p_tmp = NULL;
+    uint32_t Addr = Storage_Monitor.info.base_addr + App_Firmware_PhyAddrOffset;
+    uint32_t offset = 0;
+
+    if ((p_data == NULL) || (size == 0) || (p_DevObj == NULL) || !Storage_Monitor.init_state)
+        return false;
+
+    if (p_tmp == NULL)
+    {
+        p_tmp = Storage_Malloc(p_DevObj->sector_size);
+        if (p_tmp == NULL)
+            return false;
+    }
+
+    while (size)
+    {
+        if (size >= p_DevObj->sector_size)
+        {
+            memcpy(p_tmp, p_data + offset, p_DevObj->sector_size);
+            size -= p_DevObj->sector_size;
+        }
+        else
+        {
+            if (!StorageDev.read_phy_sec(Storage_Monitor.ExtDev_ptr, Addr, p_tmp, p_DevObj->sector_size))
+                return false;
+
+            memcpy(p_tmp, p_data + offset, size);
+            size = 0;
+        }
+
+        if (!StorageDev.write_phy_sec(Storage_Monitor.ExtDev_ptr, Addr, p_tmp, p_DevObj->sector_size))
+            return false;
+
+        offset += p_DevObj->sector_size;
+        Addr += p_DevObj->sector_size;
     }
 
     return true;
