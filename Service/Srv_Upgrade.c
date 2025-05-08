@@ -227,9 +227,9 @@ static void SrvUpgrade_Firmware_Rec_Pack(void *arg, uint8_t *p_data, uint16_t pa
     if (valid)
     {
         SrvUpgradeObj.pack_ok_cnt ++;
-        SrvUpgradeObj.firmware_rec_size += payload_size;
         if (SrvUpgradeObj.firmware_buf)
             memcpy(SrvUpgradeObj.firmware_buf + SrvUpgradeObj.firmware_rec_size, p_payload, payload_size);
+        SrvUpgradeObj.firmware_rec_size += payload_size;
     }
     else
     {
