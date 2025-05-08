@@ -189,7 +189,7 @@ static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size
             if (YModem_Rx_Check_Pack_Empty((buf + PACKET_HEADER), Obj->pck_size))
             {
                 YModem_SendByte(Obj, ACK);
-                Obj->rx_status = YMODEM_RX_EXIT;
+                // Obj->rx_status = YMODEM_RX_EXIT;
                 return;
             }
             else

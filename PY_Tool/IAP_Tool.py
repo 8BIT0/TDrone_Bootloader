@@ -94,6 +94,7 @@ def main():
         return ser.read(size)
 
     def write(data, timeout = 100) -> any:
+        print('[YModem] trans size {}'.format(len(data)))
         ser.write_timeout = timeout
         ser.write(data)
         ser.flush()
@@ -120,7 +121,7 @@ def main():
             
             if force_mode == True:
                 # YModem transmit firmware to device
-                ymodem_tran.send(file_list[0], progress_bar.show)
+                ymodem_tran.send(file_list[0])
                 time.sleep(0.05)
 
 main()
