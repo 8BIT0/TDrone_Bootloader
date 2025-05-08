@@ -66,6 +66,7 @@ def main():
 
     while True:
         ser.write(b'force_mode')
+        ser.flush()
         force_mode = False
         cnt = 0
         while True:
