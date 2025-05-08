@@ -40,6 +40,7 @@ typedef struct
     bool queue_inuse;
     QueueObj_TypeDef p_queue;
     SrvUpgrade_BaseInfo_TypeDef FirmwareInfo;
+    Storage_ItemSearchOut_TypeDef SearchOut;
 
     YModem_Handle YM_hdl;
 } SrvUpgradeObj_TypeDef;
@@ -56,26 +57,29 @@ static void SrvUpgrade_Check_ForceMode_Enable(void *arg);
 /* external function */
 static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb);
 static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size);
+static bool SrvUpgrade_DumpFirmware(void *port, SrvUpgrade_Send_Callback tx_cb);
 
 /* external variable */
 SrvUpgrade_TypeDef SrvUpgrade = {
     .init = SrvUpgrade_Init,
     .DealRec = SrvUpgrade_DealRec,
+    .DumpFirmware = SrvUpgrade_DumpFirmware,
 };
 
 static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
 {
-    Storage_ItemSearchOut_TypeDef SearchOut;
     uint16_t info_size = 0;
+    Storage_ItemSearchOut_TypeDef *p_search = NULL;
 
     memset(&SrvUpgradeObj.FirmwareInfo, 0, sizeof(SrvUpgrade_BaseInfo_TypeDef));
-    memset(&SearchOut, 0, sizeof(Storage_ItemSearchOut_TypeDef));
+    memset(&SrvUpgradeObj.SearchOut, 0, sizeof(Storage_ItemSearchOut_TypeDef));
     memset(&SrvUpgradeObj, 0, sizeof(SrvUpgradeObj_TypeDef));
     
+    p_search = &SrvUpgradeObj.SearchOut;
     SrvUpgradeObj.init_state = false;
     SrvUpgradeObj.upgrade_on_bootup = false;
     SrvUpgradeObj.mode = Upgrade_Normal_Mode;
-    SrvUpgradeObj.firmware_buf = SrvOsCommon.malloc(App_Section_Size);
+    SrvUpgradeObj.firmware_buf = SrvOsCommon.malloc(App_Firmware_Size);
     if (SrvUpgradeObj.firmware_buf == NULL)
         return false;
 
@@ -85,8 +89,8 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
     
 #if (CODE_TYPE == ON_BOOT)
     /* check storage system data section */
-    SearchOut = Storage.search(PARA_TYPE, PARA_NAME);
-    if (SearchOut.item_addr == 0)
+    *p_search = Storage.search(PARA_TYPE, PARA_NAME);
+    if (p_search->item_addr == 0)
     {
         /* first time create section */
         Storage.create(PARA_TYPE, PARA_NAME, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
@@ -94,7 +98,7 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
     else
     {
         /* search data */
-        if ((Storage.get(PARA_TYPE, SearchOut.item, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, &info_size) != Storage_Error_None) || \
+        if ((Storage.get(PARA_TYPE, p_search->item, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, &info_size) != Storage_Error_None) || \
             (info_size != sizeof(SrvUpgrade_BaseInfo_TypeDef)))
         {
             SrvUpgradeObj.FirmwareInfo.compelet = false;
@@ -108,7 +112,7 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
 
             /* after upgrade the app clear the flag */
             SrvUpgradeObj.FirmwareInfo.update = false;
-            Storage.update(PARA_TYPE, SearchOut.item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
+            Storage.update(PARA_TYPE, p_search->item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
         }
     }
 
@@ -192,8 +196,9 @@ static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t *p_data, uint16_t p
     char *p_file_name = NULL;
     char *p_file_size = NULL;
     uint16_t offset = 0;
+    Storage_ItemSearchOut_TypeDef *p_search = &SrvUpgradeObj.SearchOut;
+    
     SrvUpgradeObj.pack_ok_cnt = 0;
-
     if (valid && (p_payload != NULL))
     {
         /* get file name */
@@ -214,6 +219,13 @@ static void SrvUpgrade_Firmware_Rec_Start(void *arg, uint8_t *p_data, uint16_t p
         {
             memcpy(SrvUpgradeObj.firmware_name, p_file_name, strlen(p_file_name) + 1);
             SrvUpgradeObj.firmware_size = atoi(p_file_size);
+
+            /* update storage data */
+            SrvUpgradeObj.FirmwareInfo.compelet = false;
+            SrvUpgradeObj.FirmwareInfo.update = false;
+            SrvUpgradeObj.FirmwareInfo.firmware_size = SrvUpgradeObj.firmware_size;
+
+            Storage.update(PARA_TYPE, p_search->item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
         }
         SrvUpgradeObj.firmware_rec_size = 0;
     }
@@ -248,18 +260,7 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
 {
     SrvUpgradeObj.YM_hdl = 0;
     SrvUpgradeObj.pack_ok_cnt = 0;
-
-    if (code == YModem_Rx_Error)
-    {
-        SrvOsCommon.delay_ms(50);
-        SrvUpgradeObj.send(arg, (uint8_t *)("YModem error\r\n"), strlen("YModem error\r\n"));
-
-        memset(SrvUpgradeObj.firmware_name, '\0', strlen((const char *)SrvUpgradeObj.firmware_name));
-        memset(SrvUpgradeObj.firmware_buf, 0, SrvUpgradeObj.firmware_rec_size);
-        SrvUpgradeObj.firmware_rec_size = 0;
-        SrvUpgradeObj.firmware_size = 0;
-        SrvOsCommon.free(SrvUpgradeObj.firmware_name); 
-    }
+    Storage_ItemSearchOut_TypeDef *p_search = &SrvUpgradeObj.SearchOut;
 
     if (code == YModem_Rx_Done)
     {
@@ -275,8 +276,31 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
        /* check firmware size */
        if (SrvUpgradeObj.firmware_rec_size >= SrvUpgradeObj.firmware_size)
        {
+            /* update storage data */
+            SrvUpgradeObj.FirmwareInfo.compelet = true;
+            SrvUpgradeObj.FirmwareInfo.update = true;
+            Storage.update(PARA_TYPE, p_search->item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
+
             /* update firmware data to flash and storage */
        }
+    }
+
+    if (code == YModem_Rx_Error)
+    {
+        SrvOsCommon.delay_ms(50);
+        SrvUpgradeObj.send(arg, (uint8_t *)("YModem error\r\n"), strlen("YModem error\r\n"));
+
+        memset(SrvUpgradeObj.firmware_name, '\0', strlen((const char *)SrvUpgradeObj.firmware_name));
+        memset(SrvUpgradeObj.firmware_buf, 0, SrvUpgradeObj.firmware_rec_size);
+        SrvUpgradeObj.firmware_rec_size = 0;
+        SrvUpgradeObj.firmware_size = 0;
+
+        SrvUpgradeObj.FirmwareInfo.compelet = false;
+        SrvUpgradeObj.FirmwareInfo.update = false;
+        SrvUpgradeObj.FirmwareInfo.firmware_size = 0;
+
+        Storage.update(PARA_TYPE, p_search->item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
+        SrvOsCommon.free(SrvUpgradeObj.firmware_name); 
     }
 
     Queue.reset(&SrvUpgradeObj.p_queue);
@@ -353,3 +377,25 @@ static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size)
     SrvUpgradeObj.rec_cnt ++;
 }
 
+static bool SrvUpgrade_DumpFirmware(void *port, SrvUpgrade_Send_Callback tx_cb)
+{
+    uint8_t *p_data = NULL;
+    uint16_t size = 0;
+    uint32_t firmware_size = 0;
+    uint16_t trans_cyc = 0;
+
+    if (!SrvUpgradeObj.init_state)
+        return false;
+
+    if (!SrvUpgradeObj.init_state || SrvUpgradeObj.YM_hdl || (SrvUpgradeObj.FirmwareInfo.firmware_size == 0))
+        return false;
+
+    /* test code */
+    /* dump from ram */
+    /* test code */
+
+    if (tx_cb)
+        tx_cb(port, p_data, size);
+
+    return true;
+}

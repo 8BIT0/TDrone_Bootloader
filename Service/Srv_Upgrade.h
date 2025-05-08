@@ -17,10 +17,6 @@ typedef struct
 {
     bool update;
     bool compelet;
-
-    uint8_t sw_ver[3];
-    uint8_t hw_ver[3];
-    
     uint32_t firmware_size;
 
     uint8_t res[128];
@@ -45,7 +41,7 @@ typedef struct
 {
     bool (*init)(SrvUpgrade_Send_Callback tx_cb);
     void (*DealRec)(void *com_obj, uint8_t *p_data, uint16_t size);
-    bool (*DumpFirmware)(SrvUpgrade_Send_Callback tx_cb);
+    bool (*DumpFirmware)(void *port, SrvUpgrade_Send_Callback tx_cb);
 } SrvUpgrade_TypeDef;
 
 extern SrvUpgrade_TypeDef SrvUpgrade;

@@ -29,7 +29,6 @@
 #define PACKET_HEADER           (3)     /* start, block, block-complement */  
 #define PACKET_TRAILER          (2)     /* CRC bytes */  
 #define PACKET_OVERHEAD         (PACKET_HEADER + PACKET_TRAILER)  
-#define PACKET_TIMEOUT          (1)  
 
 /* ASCII control codes: */  
 #define SOH                     ((uint8_t)0x01)      /* start of 128-byte data packet */  
@@ -40,7 +39,7 @@
 #define CAN                     ((uint8_t)0x18)      /* two of these in succession abortas transfer */  
 #define CNC                     ((uint8_t)0x43)      /* character CNC */
 
-#define YMODEM_REC_TIMEOUT      100                 /* unit: ms */
+#define YMODEM_REC_TIMEOUT      500                 /* unit: ms */
 
 /* external function */
 static YModem_Handle YModem_Obj_Init(void *port_obj, malloc_callback malloc_cb, free_callback free_cb, \
@@ -86,13 +85,12 @@ static int8_t YModem_Rx_Pack_Check(YModemObj_TypeDef *obj, uint8_t *buf, uint32_
     else
         return (int8_t)YModem_Pack_Error;
 
-    if (size > 3)
+    if ((size >= 3) && (buf[1] + buf[2] != 0xff))
     {
-        if (buf[1] + buf[2] != 0xff)
-            return YModem_Pack_Error;
+        return (int8_t)YModem_Pack_Error;
     }
 
-    if (size < obj->pck_size)
+    if (size < (obj->pck_size + YMODEM_FUNC_BYTE_SIZE))
     {
         if (obj->t_update && ((obj->t_sys - obj->t_update) >= YMODEM_REC_TIMEOUT))
             return (int8_t)YModem_Rx_TimeOut;
@@ -100,7 +98,7 @@ static int8_t YModem_Rx_Pack_Check(YModemObj_TypeDef *obj, uint8_t *buf, uint32_
         return (int8_t)YModem_Pack_Incomplete;
     }
 
-    if (((obj->pck_size + YMODEM_FUNC_BYTE_SIZE) <= size) && obj->pck_size)
+    if (obj->pck_size)
     {
         chk_crc = Common_CRC16((buf + PACKET_HEADER), (obj->pck_size + YMODEM_FUNC_BYTE_SIZE - PACKET_OVERHEAD));
         pck_crc = (buf[size - 2] << 8) + buf[size - 1];
@@ -217,10 +215,9 @@ static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size
         case YModem_Pack_Incomplete: break;
         case YModem_Rx_TimeOut:
             YModem_SendByte(Obj, CAN);
+            Obj->rx_status = YMODEM_RX_IDLE;
             if (Obj->start_cb)
                 Obj->start_cb(Obj->port_obj, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, false);
-
-            Obj->rx_status = YMODEM_RX_IDLE;
             break;
 
         default: Obj->rx_status = YMODEM_RX_ERR; break;
@@ -249,9 +246,10 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
 
         case CAN: Obj->rx_status = YMODEM_RX_ERR; break;
         case YModem_Pack_Incomplete: break;
+        case YModem_Rx_TimeOut:
+            Obj->rx_status = YMODEM_RX_ERR;
         case YModem_Pack_CRC_Error:
         case YModem_Pack_Error:
-        case YModem_Rx_TimeOut:
             YModem_SendByte(Obj, NAK);
             if (Obj->rec_pck_cb)
                 Obj->rec_pck_cb(NULL, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, false);
