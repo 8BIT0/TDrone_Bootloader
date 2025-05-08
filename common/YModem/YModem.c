@@ -26,19 +26,19 @@
 #define PACKET_SEQNO_INDEX      (1)  
 #define PACKET_SEQNO_COMP_INDEX (2)  
   
-#define PACKET_HEADER           (3)     /* start, block, block-complement */  
-#define PACKET_TRAILER          (2)     /* CRC bytes */  
+#define PACKET_HEADER           (3)                 /* start, block, block-complement */  
+#define PACKET_TRAILER          (2)                 /* CRC bytes */  
 #define PACKET_OVERHEAD         (PACKET_HEADER + PACKET_TRAILER)  
 
 /* ASCII control codes: */  
-#define SOH                     ((uint8_t)0x01)      /* start of 128-byte data packet */  
-#define STX                     ((uint8_t)0x02)      /* start of 1024-byte data packet */  
-#define EOT                     ((uint8_t)0x04)      /* end of transmission */  
-#define ACK                     ((uint8_t)0x06)      /* receive OK */  
-#define NAK                     ((uint8_t)0x15)      /* receiver error; retry */  
-#define CAN                     ((uint8_t)0x18)      /* two of these in succession abortas transfer */  
-#define CNC                     ((uint8_t)0x43)      /* character CNC */
-
+#define SOH                     ((uint8_t)0x01)     /* start of 128-byte data packet */  
+#define STX                     ((uint8_t)0x02)     /* start of 1024-byte data packet */  
+#define EOT                     ((uint8_t)0x04)     /* end of transmission */  
+#define ACK                     ((uint8_t)0x06)     /* receive OK */  
+#define NAK                     ((uint8_t)0x15)     /* receiver error; retry */  
+#define CAN                     ((uint8_t)0x18)     /* two of these in succession abortas transfer */  
+#define CNC                     ((uint8_t)0x43)     /* character CNC */
+                                                      
 #define YMODEM_REC_TIMEOUT      500                 /* unit: ms */
 
 /* external function */

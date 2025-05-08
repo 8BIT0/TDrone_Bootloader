@@ -8,10 +8,10 @@
 #include "../FCHW_Config.h"
 #include "HW_Def.h"
 
-#define UPGRADE_QUEUE_SIZE  (2 Kb)
+#define UPGRADE_QUEUE_SIZE      (2 Kb)
 
-#define PARA_TYPE           Para_Sys
-#define PARA_NAME           "Upgrade_Info"
+#define PARA_TYPE               Para_Sys
+#define PARA_NAME               "Upgrade_Info"
 
 #if (CODE_TYPE == ON_BOOT)
 #define FORCE_MODE_CODE         "force_mode"    /* force to receive firmware mode */
@@ -20,6 +20,8 @@
 #define RAM_FIRMWARE_DUMP       "ram_dump"      /* dump from sdram */
 #define INTER_ROM_FIRMWARE_DUMP "i_rom_dump"    /* dump from stm32h743 rom */
 #define EXTER_ROM_FIRMWARE_DUMP "e_rom_dump"    /* dump from w25qxx flash chip */
+
+#define FIRMWARE_DUMP_SIZE      (1 Kb)
 
 /* internal function */
 
@@ -274,7 +276,9 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
        }
 
        /* check firmware size */
-       if (SrvUpgradeObj.firmware_rec_size >= SrvUpgradeObj.firmware_size)
+       if (SrvUpgradeObj.firmware_size && \
+           SrvUpgradeObj.firmware_rec_size && \
+           (SrvUpgradeObj.firmware_rec_size >= SrvUpgradeObj.firmware_size))
        {
             /* update storage data */
             SrvUpgradeObj.FirmwareInfo.compelet = true;
@@ -282,6 +286,13 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
             Storage.update(PARA_TYPE, p_search->item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
 
             /* update firmware data to flash and storage */
+            // StorageFirmware.erase();
+            // StorageFirmware.write_sec(SrvUpgradeObj.firmware_buf, SrvUpgradeObj.firmware_size);
+
+            /* after this step new firmware become effective after reboot */
+#if (CODE_TYPE == ON_BOOT)
+            SrvOsCommon.reboot();
+#endif
        }
     }
 
@@ -380,22 +391,33 @@ static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size)
 static bool SrvUpgrade_DumpFirmware(void *port, SrvUpgrade_Send_Callback tx_cb)
 {
     uint8_t *p_data = NULL;
-    uint16_t size = 0;
-    uint32_t firmware_size = 0;
-    uint16_t trans_cyc = 0;
-
-    if (!SrvUpgradeObj.init_state)
-        return false;
+    uint32_t size = 0;
+    uint16_t trans_size = FIRMWARE_DUMP_SIZE;
 
     if (!SrvUpgradeObj.init_state || SrvUpgradeObj.YM_hdl || (SrvUpgradeObj.FirmwareInfo.firmware_size == 0))
         return false;
 
-    /* test code */
     /* dump from ram */
-    /* test code */
+    size = SrvUpgradeObj.FirmwareInfo.firmware_size;
+    p_data = SrvUpgradeObj.firmware_buf;
+    while (size)
+    {
+        if (size < FIRMWARE_DUMP_SIZE)
+        {
+            trans_size = size;
+            size = 0;
+        }
+        else
+            size -= FIRMWARE_DUMP_SIZE;
 
-    if (tx_cb)
-        tx_cb(port, p_data, size);
+        if (tx_cb)
+            tx_cb(port, p_data, trans_size);
+
+        p_data += trans_size;
+        
+        /* dump period force to 20Hz */
+        SrvOsCommon.delay_ms(50);
+    }
 
     return true;
 }
