@@ -2,7 +2,7 @@ import serial.tools.list_ports
 import time
 import os
 import sys
-import tkinter as tk
+
 
 def Port_Scan():
     ports = serial.tools.list_ports.comports()
@@ -64,10 +64,24 @@ def main():
     for i in range(file_list.__len__()):
         print('index {}  \t<---->\t  {}'.format(i, file_list[i]))
 
-    # while True:
-    #     ser.write('Force_Mode')
-    #     while True:
-    #         t = ser.read()
-    #         print(t)
+    while True:
+        ser.write(b'force_mode')
+        force_mode = False
+        cnt = 0
+        while True:
+            t = ser.read()
+            if force_mode != True:
+                if (t == b'C'):
+                    cnt = cnt + 1
+                    if (cnt == 32):
+                        force_mode = True
+                        print('device switch to force mode')
+                else:
+                    cnt = 0
+                    force_mode = False
+            
+            if force_mode == True:
+                # YModem transmit firmware to device
+                time.sleep(0.05)
 
 main()
