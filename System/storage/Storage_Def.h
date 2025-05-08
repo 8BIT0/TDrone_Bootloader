@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "util.h"
+#include "../../common/util.h"
 #include "Dev_W25Qxx_QSPI.h"
 #include "Dev_W25Qxx.h"
 #include "../../FCHW_Config.h"
