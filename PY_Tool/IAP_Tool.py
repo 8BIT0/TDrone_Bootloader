@@ -2,6 +2,32 @@ import serial.tools.list_ports
 import time
 import os
 import sys
+import math
+from ymodem.Socket import ModemSocket
+
+ser = None
+
+class ProgressBar:
+    def __init__(self):
+        self.bar_width = 50
+        self.last_task_name = ""
+        self.current_task_start_time = -1
+
+    def show(self, task_index, task_name, total, success):
+        if task_name != self.last_task_name:
+            self.current_task_start_time = time.perf_counter()
+            if self.last_task_name != "":
+                print('\n', end="")
+            self.last_task_name = task_name
+
+        success_width = math.ceil(success * self.bar_width / total)
+
+        a = "#" * success_width
+        b = "." * (self.bar_width - success_width)
+        progress = (success_width / self.bar_width) * 100
+        cost = time.perf_counter() - self.current_task_start_time
+
+        print(f"\r{task_index} - {task_name} {progress:.2f}% [{a}->{b}]{cost:.2f}s", end="")
 
 def Port_Scan():
     ports = serial.tools.list_ports.comports()
@@ -63,6 +89,18 @@ def main():
     for i in range(file_list.__len__()):
         print('index {}  \t<---->\t  {}'.format(i, file_list[i]))
 
+    def read(size, timeout = 100) -> any:
+        ser.timeout = timeout
+        return ser.read(size)
+
+    def write(data, timeout = 100) -> any:
+        ser.write_timeout = timeout
+        ser.write(data)
+        ser.flush()
+
+    ymodem_tran = ModemSocket(read, write)
+    progress_bar = ProgressBar()
+
     while True:
         ser.write(b'force_mode')
         ser.flush()
@@ -82,6 +120,7 @@ def main():
             
             if force_mode == True:
                 # YModem transmit firmware to device
+                ymodem_tran.send(file_list[0], progress_bar.show)
                 time.sleep(0.05)
 
 main()
