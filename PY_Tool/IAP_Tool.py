@@ -3,7 +3,6 @@ import time
 import os
 import sys
 
-
 def Port_Scan():
     ports = serial.tools.list_ports.comports()
     available_ports = []
