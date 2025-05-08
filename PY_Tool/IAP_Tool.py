@@ -3,7 +3,11 @@ import time
 import os
 import sys
 import math
+import logging
+
+from ymodem.Protocol import ProtocolType
 from ymodem.Socket import ModemSocket
+from typing import Optional, Any, Union
 
 ser = None
 
@@ -89,18 +93,24 @@ def main():
     for i in range(file_list.__len__()):
         print('index {}  \t<---->\t  {}'.format(i, file_list[i]))
 
-    def read(size, timeout = 100) -> any:
+    def read(size: int, timeout: Optional[float] = 3) -> Any:
         ser.timeout = timeout
         return ser.read(size)
 
-    def write(data, timeout = 100) -> any:
-        print('[YModem] trans size {}'.format(len(data)))
+    def write(data: Union[bytes, bytearray], timeout: Optional[float] = 3) -> Any:
+        print('[YModem] port trans size {}'.format(len(data)))
         ser.write_timeout = timeout
         ser.write(data)
         ser.flush()
 
-    ymodem_tran = ModemSocket(read, write)
+    socket_args = {
+        'packet_size': 1024,
+        'protocol_type': ProtocolType.YMODEM,
+        'protocol_type_options': []
+    }
+
     progress_bar = ProgressBar()
+    ymodem_tran = ModemSocket(read, write, **socket_args)
 
     while True:
         ser.write(b'force_mode')
@@ -115,13 +125,16 @@ def main():
                     if (cnt == 32):
                         force_mode = True
                         print('device switch to force mode')
+
+                        # ser.close()
+                        # return
                 else:
                     cnt = 0
                     force_mode = False
             
             if force_mode == True:
                 # YModem transmit firmware to device
-                ymodem_tran.send(file_list[0])
-                time.sleep(0.05)
+                ymodem_tran.send(file_list, progress_bar.show)
+                # time.sleep(0.05)
 
 main()
