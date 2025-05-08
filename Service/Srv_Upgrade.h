@@ -37,11 +37,18 @@ typedef enum
     SrvUpgrade_PackData_Error,
 } SrvUpgradeError_TypeDef;
 
+typedef enum
+{
+    From_Ram = 0,   /* from ram */
+    From_IRom,      /* from internal flash */
+    From_ERom,      /* from external flash */
+} SrvUpgrade_FirmwareDumpType_List;
+
 typedef struct
 {
     bool (*init)(SrvUpgrade_Send_Callback tx_cb);
     void (*DealRec)(void *com_obj, uint8_t *p_data, uint16_t size);
-    bool (*DumpFirmware)(void *port, SrvUpgrade_Send_Callback tx_cb);
+    bool (*DumpFirmware)(SrvUpgrade_FirmwareDumpType_List type, void *port, SrvUpgrade_Send_Callback tx_cb);
 } SrvUpgrade_TypeDef;
 
 extern SrvUpgrade_TypeDef SrvUpgrade;

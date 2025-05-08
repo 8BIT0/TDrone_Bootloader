@@ -121,9 +121,6 @@ static void Bootloader_Check(uint32_t sys_time)
             /* Use YModem receive firmware */
             SrvUpgrade.DealRec(&SrvComObj, Tmp_Frimware_Buf, rec_size);
         }
-
-        /* check upgrade state */
-
     }
 
     // if (jump)

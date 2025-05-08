@@ -17,10 +17,6 @@
 #define FORCE_MODE_CODE         "force_mode"    /* force to receive firmware mode */
 #endif
 
-#define RAM_FIRMWARE_DUMP       "ram_dump"      /* dump from sdram */
-#define INTER_ROM_FIRMWARE_DUMP "i_rom_dump"    /* dump from stm32h743 rom */
-#define EXTER_ROM_FIRMWARE_DUMP "e_rom_dump"    /* dump from w25qxx flash chip */
-
 #define FIRMWARE_DUMP_SIZE      (1 Kb)
 
 /* internal function */
@@ -59,7 +55,7 @@ static void SrvUpgrade_Check_ForceMode_Enable(void *arg);
 /* external function */
 static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb);
 static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size);
-static bool SrvUpgrade_DumpFirmware(void *port, SrvUpgrade_Send_Callback tx_cb);
+static bool SrvUpgrade_DumpFirmware(SrvUpgrade_FirmwareDumpType_List type, void *port, SrvUpgrade_Send_Callback tx_cb);
 
 /* external variable */
 SrvUpgrade_TypeDef SrvUpgrade = {
@@ -286,7 +282,7 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
             Storage.update(PARA_TYPE, p_search->item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
 
             /* update firmware data to flash and storage */
-            // StorageFirmware.erase();
+            StorageFirmware.erase();
             // StorageFirmware.write_sec(SrvUpgradeObj.firmware_buf, SrvUpgradeObj.firmware_size);
 
             /* after this step new firmware become effective after reboot */
@@ -388,7 +384,7 @@ static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size)
     SrvUpgradeObj.rec_cnt ++;
 }
 
-static bool SrvUpgrade_DumpFirmware(void *port, SrvUpgrade_Send_Callback tx_cb)
+static bool SrvUpgrade_DumpFirmware(SrvUpgrade_FirmwareDumpType_List type, void *port, SrvUpgrade_Send_Callback tx_cb)
 {
     uint8_t *p_data = NULL;
     uint32_t size = 0;
@@ -399,7 +395,25 @@ static bool SrvUpgrade_DumpFirmware(void *port, SrvUpgrade_Send_Callback tx_cb)
 
     /* dump from ram */
     size = SrvUpgradeObj.FirmwareInfo.firmware_size;
-    p_data = SrvUpgradeObj.firmware_buf;
+    switch ((uint8_t)type)
+    {
+        case From_Ram:
+            p_data = SrvUpgradeObj.firmware_buf;
+            break;
+
+        /* dump from external flash chip */
+        case From_ERom:
+            if (!StorageFirmware.read_sec(SrvUpgradeObj.firmware_buf, size))
+                return false;
+            break;
+
+        /* dump from internal flash still developping */
+        case From_IRom:
+            return false;
+
+        default: return false;
+    }
+
     while (size)
     {
         if (size < FIRMWARE_DUMP_SIZE)
