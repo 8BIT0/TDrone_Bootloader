@@ -48,9 +48,9 @@ typedef struct
     bool (*init)(StorageDevObj_TypeDef *ext_dev, uint32_t *p_code);
 
     /* directly write data to physical section */
-    bool (*write_phy_sec)(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint8_t *p_data, uint16_t len);
-    bool (*read_phy_sec)(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint8_t *p_data, uint16_t len);
-    bool (*erase_phy_sec)(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint16_t len);
+    bool (*write_phy_sec)(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint8_t *p_data, uint32_t len);
+    bool (*read_phy_sec)(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint8_t *p_data, uint32_t len);
+    bool (*erase_phy_sec)(StorageDevObj_TypeDef *p_dev, uint32_t addr, uint32_t len);
 
     bool (*param_write)(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint8_t *p_data, uint32_t len);
     bool (*param_read)(StorageDevObj_TypeDef *p_dev, uint32_t base_addr, uint8_t *p_data, uint32_t len);

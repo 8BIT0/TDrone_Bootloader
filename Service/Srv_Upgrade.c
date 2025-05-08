@@ -66,6 +66,7 @@ SrvUpgrade_TypeDef SrvUpgrade = {
 static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
 {
     Storage_ItemSearchOut_TypeDef SearchOut;
+    uint16_t info_size = 0;
 
     memset(&SrvUpgradeObj.FirmwareInfo, 0, sizeof(SrvUpgrade_BaseInfo_TypeDef));
     memset(&SearchOut, 0, sizeof(Storage_ItemSearchOut_TypeDef));
@@ -88,12 +89,13 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
     if (SearchOut.item_addr == 0)
     {
         /* first time create section */
-        Storage.create(PARA_TYPE, PARA_NAME, &SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
+        Storage.create(PARA_TYPE, PARA_NAME, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
     }
     else
     {
         /* search data */
-        if (Storage.get(PARA_TYPE, SearchOut.item, &SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef)) != Storage_Error_None)
+        if ((Storage.get(PARA_TYPE, SearchOut.item, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, &info_size) != Storage_Error_None) || \
+            (info_size != sizeof(SrvUpgrade_BaseInfo_TypeDef)))
         {
             SrvUpgradeObj.FirmwareInfo.compelet = false;
             SrvUpgradeObj.FirmwareInfo.update = false;
@@ -106,7 +108,7 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
 
             /* after upgrade the app clear the flag */
             SrvUpgradeObj.FirmwareInfo.update = false;
-            Storage.update(PARA_TYPE, SearchOut.item.data_addr, &SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
+            Storage.update(PARA_TYPE, SearchOut.item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
         }
     }
 

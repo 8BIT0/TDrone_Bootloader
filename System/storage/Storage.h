@@ -188,8 +188,8 @@ typedef struct
 typedef struct
 {
     bool (*erase)(void);
-    bool (*read_sec)(uint8_t *p_data, uint16_t size);
-    bool (*write_sec)(uint8_t *p_data, uint16_t size);
+    bool (*read_sec)(uint8_t *p_data, uint32_t size);
+    bool (*write_sec)(uint8_t *p_data, uint32_t size);
 } StorageFirmware_TypeDef;
 
 extern Storage_TypeDef Storage;
