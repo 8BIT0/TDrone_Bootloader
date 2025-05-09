@@ -19,8 +19,6 @@
 
 #define FIRMWARE_DUMP_SIZE      (1 Kb)
 
-/* internal function */
-
 typedef struct
 {
     SrvUpgrade_Send_Callback send;
@@ -86,7 +84,7 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
         return false;
     
 #if (CODE_TYPE == ON_BOOT)
-    /* init on chip flash */
+    /* init stm32h743 internal flash */
     if (!BspFlash.init())
         return false;
 
@@ -124,7 +122,7 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
     return true;
 }
 
-/* copy firmware from back up area to on chip flash */
+/* copy firmware from back up area to stm32h743 internal flash */
 #if (CODE_TYPE == ON_BOOT)
 static bool SrvUpgrade_Upgrade_Firmware(uint32_t firmware_size)
 {
@@ -137,6 +135,9 @@ static bool SrvUpgrade_Upgrade_Firmware(uint32_t firmware_size)
         return false;
 
     /* update firmware to stm32h743 internal flash */
+
+    /* after update clear temporary buff */
+    memset(SrvUpgradeObj.firmware_buf, 0, App_Firmware_Size);
 
     return true;
 }
