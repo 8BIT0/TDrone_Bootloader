@@ -90,21 +90,21 @@ static void Bootloader_Check(uint32_t sys_time)
     bool jump = false;
 
     /* nothing receive when 100ms when power on */
-    // if (sys_time >= time_out_tick)
-    // {
-    //     SYS_INFO("Wait Firmware", "Time Out");
-    //     SYS_INFO("Bootloader exit", "Jump to APP");
+    if (sys_time >= time_out_tick)
+    {
+        SYS_INFO("Wait Firmware", "Time Out");
+        SYS_INFO("Bootloader exit", "Jump to APP");
 
-    //     SrvOsCommon.delay_ms(10);
+        SrvOsCommon.delay_ms(10);
 
-    //     /* deinit pin and port */
-    //     SrvCom.de_init(&SrvComObj);
-    //     SrvOsCommon.systimer_deinit();
+        /* deinit pin and port */
+        SrvCom.de_init(&SrvComObj);
+        SrvOsCommon.systimer_deinit();
 
-    //     /* jump to app */
-    //     jump = true;
-    // }
-    // else
+        /* jump to app */
+        jump = true;
+    }
+    else
     {
         /* check com port received size */
         if (SrvCom.available)
@@ -126,7 +126,7 @@ static void Bootloader_Check(uint32_t sys_time)
         }
     }
 
-    // if (jump)
-    //     SrvOsCommon.jump_to_addr(App_Address_Base);
+    if (jump)
+        SrvOsCommon.jump_to_addr(App_Address_Base);
 }
 
