@@ -56,6 +56,7 @@ void Debug_Port_Init(DebugPrintObj_TypeDef *Obj)
 
 void Debug_Print(DebugPrintObj_TypeDef *Obj, const char *tag, const char* fmt, ...)
 {
+#if (DEBUG_ENABLE == ON)
 	va_list ap;
     uint16_t length = 0;
     char new_fmt[256];
@@ -87,4 +88,5 @@ void Debug_Print(DebugPrintObj_TypeDef *Obj, const char *tag, const char* fmt, .
         Debug_PrintOut(Obj, Obj->p_buf, length);
         memset(Obj->p_buf, 0, length);
     }
+#endif
 }

@@ -43,4 +43,6 @@ extern uint32_t __sdram_s1_e;
 
 #define CODE_TYPE           ON_BOOT
 
+#define DEBUG_ENABLE        OFF
+
 #endif
