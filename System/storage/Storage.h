@@ -136,6 +136,7 @@ typedef struct
     uint8_t tag[32];
     uint8_t version[3];
 
+    uint32_t phy_start_addr;
     uint32_t base_addr;
 
     uint32_t total_size;

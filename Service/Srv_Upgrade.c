@@ -111,6 +111,9 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
         {
             /* after upgrade the app clear the flag */
             SrvUpgradeObj.FirmwareInfo.update = false;
+            SrvUpgradeObj.FirmwareInfo.compelet = false;
+            SrvUpgradeObj.FirmwareInfo.firmware_size = 0;
+
             Storage.update(PARA_TYPE, p_search->item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
         }
     }
@@ -139,7 +142,7 @@ static bool SrvUpgrade_Upgrade_Firmware(uint32_t firmware_size)
     /* after update clear temporary buff */
     memset(SrvUpgradeObj.firmware_buf, 0, App_Firmware_Size);
 
-    return true;
+    return StorageFirmware.erase();
 }
 
 /* if in boot mode check force code input */
@@ -290,6 +293,10 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, int8_t code)
             StorageFirmware.erase();
             StorageFirmware.write_sec(SrvUpgradeObj.firmware_buf, SrvUpgradeObj.firmware_size);
 
+            /* test code */
+            // SrvUpgrade_DumpFirmware(From_ERom, arg, SrvUpgradeObj.send); 
+            /* test code */
+
 #if (CODE_TYPE == ON_BOOT)
             /* In boot stage, after this step new firmware become effective after reboot directly */
             SrvOsCommon.reboot();
@@ -399,12 +406,37 @@ static bool SrvUpgrade_DumpFirmware(SrvUpgrade_FirmwareDumpType_List type, void 
     if (!SrvUpgradeObj.init_state || SrvUpgradeObj.YM_hdl || (SrvUpgradeObj.FirmwareInfo.firmware_size == 0))
         return false;
 
+    /* test code */
+    char *cn[] = {
+        "1\r\n",
+        "2\r\n",
+        "3\r\n",
+        "4\r\n",
+        "5\r\n",
+        "6\r\n",
+        "7\r\n",
+        "8\r\n",
+        "9\r\n",
+        "10\r\n",
+    };
+
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        if (tx_cb)
+            tx_cb(port, (uint8_t *)cn[i], strlen(cn[i]));
+
+        SrvOsCommon.delay_ms(1000);
+    }
+    
+    SrvOsCommon.delay_ms(1000);
+    /* test code */
+
     /* dump from ram */
     size = SrvUpgradeObj.FirmwareInfo.firmware_size;
+    p_data = SrvUpgradeObj.firmware_buf;
     switch ((uint8_t)type)
     {
         case From_Ram:
-            p_data = SrvUpgradeObj.firmware_buf;
             break;
 
         /* dump from external flash chip */

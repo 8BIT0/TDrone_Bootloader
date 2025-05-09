@@ -43,7 +43,7 @@ extern "C" {
 #define App_Firmware_PhyAddrOffset      0x00
 #define App_Firmware_Size               (1 Mb)
 
-#define Flash_Start_Addr                App_Firmware_Size
+#define Storage_Start_Addr              App_Firmware_Size
 
 #define Flash_Storage_DefaultData       0xFF
 #define Flash_Storage_ResData           0x55

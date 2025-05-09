@@ -38,7 +38,7 @@ __attribute__((weak)) void Storage_Free(void **ptr)
 /* internal vriable */
 Storage_Monitor_TypeDef Storage_Monitor;
 static uint8_t page_data_tmp[(Storage_TabSize * 2)] __attribute__((aligned(4))) = {0};
-const uint8_t version[STORAGE_VERSION_LEN] = {0, 0, 1};
+const uint8_t version[STORAGE_VERSION_LEN] = {0, 0, 2};
 
 /* internal function */
 static bool Storage_Build_StorageInfo(void);
@@ -143,7 +143,8 @@ reinit_external_flash_module:
     }
 
     /* set external flash device read write base address */
-    Storage_Monitor.info.base_addr = Flash_Start_Addr + ExtDev->start_addr;
+    Storage_Monitor.info.phy_start_addr = ExtDev->start_addr;
+    Storage_Monitor.info.base_addr = Storage_Start_Addr + ExtDev->start_addr;
     Storage_Monitor.Flash_Format_cnt = Format_Retry_Cnt;
 
     /* check storage item size */
@@ -166,7 +167,7 @@ reformat_external_flash_info:
             if (!Storage_Format())
             {
                 Storage_Monitor.Flash_Format_cnt --;
-                Storage_Monitor.info.base_addr = Flash_Start_Addr + ExtDev->start_addr;
+                Storage_Monitor.info.base_addr = Storage_Start_Addr + ExtDev->start_addr;
                 if (Storage_Monitor.Flash_Format_cnt == 0)
                 {
                     STORAGE_INFO("init", "Format failed");
@@ -1844,7 +1845,7 @@ static bool Storage_Fill_ReserveSec(uint32_t addr)
 /************************************************************* Firmware API ****************************************************************/
 static bool Storage_Erase_FirmwareSection(void)
 {
-    uint32_t Addr = Storage_Monitor.info. base_addr + App_Firmware_PhyAddrOffset;
+    uint32_t Addr = Storage_Monitor.info.phy_start_addr + App_Firmware_PhyAddrOffset;
     return StorageDev.erase_phy_sec(Storage_Monitor.ExtDev_ptr, Addr, (App_Firmware_Size - 1));
 }
 
@@ -1852,7 +1853,7 @@ static bool Storage_Read_Firmware(uint8_t *p_data, uint32_t size)
 {
     StorageDevObj_TypeDef *p_DevObj = Storage_Monitor.ExtDev_ptr;
     static uint8_t *p_tmp = NULL;
-    uint32_t Addr = Storage_Monitor.info.base_addr + App_Firmware_PhyAddrOffset;
+    uint32_t Addr = Storage_Monitor.info.phy_start_addr + App_Firmware_PhyAddrOffset;
     uint32_t offset = 0;
 
     if ((p_data == NULL) || (size == 0) || (p_DevObj == NULL) || !Storage_Monitor.init_state)
@@ -1893,7 +1894,7 @@ static bool Storage_Write_Firmware(uint8_t *p_data, uint32_t size)
 {
     StorageDevObj_TypeDef *p_DevObj = Storage_Monitor.ExtDev_ptr;
     static uint8_t *p_tmp = NULL;
-    uint32_t Addr = Storage_Monitor.info.base_addr + App_Firmware_PhyAddrOffset;
+    uint32_t Addr = Storage_Monitor.info.phy_start_addr + App_Firmware_PhyAddrOffset;
     uint32_t offset = 0;
 
     if ((p_data == NULL) || (size == 0) || (p_DevObj == NULL) || !Storage_Monitor.init_state)

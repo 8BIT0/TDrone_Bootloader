@@ -79,7 +79,13 @@ def main():
         sys.exit(1)
 
     # search firmware path
-    firmware_path = os.getcwd() + os.sep + 'build' + os.sep
+    while True:
+        firmware_path = input("input firmware file path: ")
+        if not os.path.exists(firmware_path):
+            print("firmware path not exist: {}".format(firmware_path))
+        else:
+            break
+
     file_list = []
     print("Firmware path {}".format(firmware_path))
     for root, dirs, files in os.walk(firmware_path):
