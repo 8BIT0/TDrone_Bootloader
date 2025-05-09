@@ -1845,7 +1845,7 @@ static bool Storage_Fill_ReserveSec(uint32_t addr)
 static bool Storage_Erase_FirmwareSection(void)
 {
     uint32_t Addr = Storage_Monitor.info. base_addr + App_Firmware_PhyAddrOffset;
-    return StorageDev.erase_phy_sec(Storage_Monitor.ExtDev_ptr, Addr, App_Firmware_Size);
+    return StorageDev.erase_phy_sec(Storage_Monitor.ExtDev_ptr, Addr, (App_Firmware_Size - 1));
 }
 
 static bool Storage_Read_Firmware(uint8_t *p_data, uint32_t size)

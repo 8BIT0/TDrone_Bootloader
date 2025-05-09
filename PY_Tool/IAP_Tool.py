@@ -3,7 +3,6 @@ import time
 import os
 import sys
 import math
-import logging
 
 from ymodem.Protocol import ProtocolType
 from ymodem.Socket import ModemSocket
@@ -98,7 +97,6 @@ def main():
         return ser.read(size)
 
     def write(data: Union[bytes, bytearray], timeout: Optional[float] = 3) -> Any:
-        print('[YModem] port trans size {}'.format(len(data)))
         ser.write_timeout = timeout
         ser.write(data)
         ser.flush()
