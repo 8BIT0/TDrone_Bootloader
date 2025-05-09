@@ -48,7 +48,7 @@ static SrvUpgradeObj_TypeDef SrvUpgradeObj;
 
 /* internanl function */
 #if (CODE_TYPE == ON_BOOT)
-static bool SrvUpgrade_Upgrade_Firmware(void);
+static bool SrvUpgrade_Upgrade_Firmware(uint32_t firmware_size);
 static void SrvUpgrade_Check_ForceMode_Enable(void *arg);
 #endif
 
@@ -108,7 +108,8 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
         }
 
         /* check upgrade on boot up */
-        if (SrvUpgradeObj.FirmwareInfo.compelet && SrvUpgradeObj.FirmwareInfo.update && SrvUpgrade_Upgrade_Firmware())
+        if ((SrvUpgradeObj.FirmwareInfo.compelet & SrvUpgradeObj.FirmwareInfo.update) && \
+             SrvUpgrade_Upgrade_Firmware(SrvUpgradeObj.FirmwareInfo.firmware_size))
         {
             /* after upgrade the app clear the flag */
             SrvUpgradeObj.FirmwareInfo.update = false;
@@ -125,7 +126,7 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
 
 /* copy firmware from back up area to on chip flash */
 #if (CODE_TYPE == ON_BOOT)
-static bool SrvUpgrade_Upgrade_Firmware(void)
+static bool SrvUpgrade_Upgrade_Firmware(uint32_t firmware_size)
 {
     if (!SrvUpgradeObj.init_state || (SrvUpgradeObj.firmware_buf == NULL))
         return false;
