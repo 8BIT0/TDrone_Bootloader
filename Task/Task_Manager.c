@@ -67,7 +67,8 @@ void Task_Main_Logic(void const *arg)
     if (Tmp_Frimware_Buf == NULL)
         SYS_INFO("Bootloader", "Tmp_Frimware_Buf malloc error");
 
-    while(1)
+    SrvCom.write(&SrvComObj, (uint8_t *)"<---------- TDrone Bootloader Start ---------->\r\n", strlen("<---------- TDrone Bootloader Start ---------->\r\n"));
+    while(true)
     {
         sys_time = SrvOsCommon.get_os_ms();
         if (time_out_tick == 0)

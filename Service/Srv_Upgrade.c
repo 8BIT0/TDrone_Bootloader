@@ -86,6 +86,10 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
         return false;
     
 #if (CODE_TYPE == ON_BOOT)
+    /* init on chip flash */
+    if (!BspFlash.init())
+        return false;
+
     /* check storage system data section */
     *p_search = Storage.search(PARA_TYPE, PARA_NAME);
     if (p_search->item_addr == 0)
@@ -104,19 +108,13 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
         }
 
         /* check upgrade on boot up */
-        if (SrvUpgradeObj.FirmwareInfo.compelet & SrvUpgradeObj.FirmwareInfo.update)
+        if (SrvUpgradeObj.FirmwareInfo.compelet && SrvUpgradeObj.FirmwareInfo.update && SrvUpgrade_Upgrade_Firmware())
         {
-            SrvUpgrade_Upgrade_Firmware();
-
             /* after upgrade the app clear the flag */
             SrvUpgradeObj.FirmwareInfo.update = false;
             Storage.update(PARA_TYPE, p_search->item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
         }
     }
-
-    /* init on chip flash */
-    if (!BspFlash.init())
-        return false;
 #endif
 
     SrvUpgradeObj.init_state = true;
@@ -129,11 +127,15 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
 #if (CODE_TYPE == ON_BOOT)
 static bool SrvUpgrade_Upgrade_Firmware(void)
 {
-    if (!SrvUpgradeObj.init_state)
+    if (!SrvUpgradeObj.init_state || (SrvUpgradeObj.firmware_buf == NULL))
         return false;
 
     /* after firmware loaded */
     /* clear all data in storage section */
+    if (!StorageFirmware.read_sec(SrvUpgradeObj.firmware_buf, App_Firmware_Size))
+        return false;
+
+    /* update firmware to stm32h743 internal flash */
 
     return true;
 }
