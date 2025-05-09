@@ -286,11 +286,12 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, int8_t code)
             Storage.update(PARA_TYPE, p_search->item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
 
             /* update firmware data to flash and storage */
+            /* start from erase whole firmware sector on external flash module */
             StorageFirmware.erase();
-            // StorageFirmware.write_sec(SrvUpgradeObj.firmware_buf, SrvUpgradeObj.firmware_size);
+            StorageFirmware.write_sec(SrvUpgradeObj.firmware_buf, SrvUpgradeObj.firmware_size);
 
-            /* after this step new firmware become effective after reboot */
 #if (CODE_TYPE == ON_BOOT)
+            /* In boot stage, after this step new firmware become effective after reboot directly */
             SrvOsCommon.reboot();
 #endif
        }
@@ -394,6 +395,7 @@ static bool SrvUpgrade_DumpFirmware(SrvUpgrade_FirmwareDumpType_List type, void 
     uint32_t size = 0;
     uint16_t trans_size = FIRMWARE_DUMP_SIZE;
 
+    /* when YM_hdl is set indicate this service is under transmitting */
     if (!SrvUpgradeObj.init_state || SrvUpgradeObj.YM_hdl || (SrvUpgradeObj.FirmwareInfo.firmware_size == 0))
         return false;
 
@@ -407,12 +409,16 @@ static bool SrvUpgrade_DumpFirmware(SrvUpgrade_FirmwareDumpType_List type, void 
 
         /* dump from external flash chip */
         case From_ERom:
+            /* clear temporary buff first */
+            memset(SrvUpgradeObj.firmware_buf, 0, size);
             if (!StorageFirmware.read_sec(SrvUpgradeObj.firmware_buf, size))
                 return false;
             break;
 
         /* dump from internal flash still in developping */
         case From_IRom:
+            /* clear temporary buff first */
+            memset(SrvUpgradeObj.firmware_buf, 0, size);
             return false;
 
         default: return false;
