@@ -107,28 +107,34 @@ def main():
         'protocol_type_options': []
     }
 
-    progress_bar = ProgressBar()
-    ymodem_tran = ModemSocket(read, write, **socket_args)
+    try:
+        progress_bar = ProgressBar()
+        ymodem_tran = ModemSocket(read, write, **socket_args)
 
-    while True:
-        ser.write(b'force_mode')
-        ser.flush()
-        force_mode = False
-        cnt = 0
         while True:
-            t = ser.read()
-            if force_mode != True:
-                if (t == b'C'):
-                    cnt = cnt + 1
-                    if (cnt == 32):
-                        force_mode = True
-                        print('device switch to force mode')
+            ser.write(b'force_mode')
+            ser.flush()
+            force_mode = False
+            cnt = 0
+            while True:
+                t = ser.read()
+                if force_mode != True:
+                    if (t == b'C'):
+                        cnt = cnt + 1
+                        if (cnt == 32):
+                            force_mode = True
+                            print('device switch to force mode')
+                    else:
+                        cnt = 0
+                        force_mode = False
                 else:
-                    cnt = 0
-                    force_mode = False
-            else:
-                # YModem transmit firmware to device
-                ymodem_tran.send(file_list, progress_bar.show)
-                # time.sleep(0.05)
+                    # YModem transmit firmware to device
+                    ymodem_tran.send(file_list, progress_bar.show)
+                    break
+            break
+    finally:
+        ser.close()
+        print("\r\nSerial port closed")
+        print("Firmware trans finish")
 
 main()

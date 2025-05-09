@@ -267,8 +267,8 @@ static void YModem_EOT_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
     switch (YModem_Rx_Pack_Check(Obj, buf, size))
     {
         case EOT:
-            YModem_SendByte(Obj, ACK);
             YModem_SendByte(Obj, CNC);
+            YModem_SendByte(Obj, ACK);
             Obj->rx_status = YMODEM_RX_DONE;
             if (Obj->rec_eot_cb)
                 Obj->rec_eot_cb(NULL, buf, Obj->pck_size);
@@ -296,10 +296,10 @@ static void YModem_Check_Exit(YModemObj_TypeDef *Obj)
     if (Obj == NULL)
         return;
 
+    YModem_SendByte(Obj, CAN);
     switch (Obj->rx_status)
     {
         case YMODEM_RX_ERR:
-            YModem_SendByte(Obj, CAN);
             if (Obj->done_cb)
                 Obj->done_cb(Obj->port_obj, YModem_Rx_Error);
         
