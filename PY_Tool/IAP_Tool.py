@@ -125,14 +125,10 @@ def main():
                     if (cnt == 32):
                         force_mode = True
                         print('device switch to force mode')
-
-                        # ser.close()
-                        # return
                 else:
                     cnt = 0
                     force_mode = False
-            
-            if force_mode == True:
+            else:
                 # YModem transmit firmware to device
                 ymodem_tran.send(file_list, progress_bar.show)
                 # time.sleep(0.05)
