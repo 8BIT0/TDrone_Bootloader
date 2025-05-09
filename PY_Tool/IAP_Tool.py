@@ -72,7 +72,7 @@ def main():
 
     # connect port
     try:
-        ser = serial.Serial(available_ports[input_code_i], 460800)
+        ser = serial.Serial(available_ports[input_code_i], 460800, timeout=1)
         print("connect port: {}".format(available_ports[input_code_i]))
     except serial.SerialException as e:
         print("Error: {}".format(e))
@@ -111,27 +111,28 @@ def main():
         progress_bar = ProgressBar()
         ymodem_tran = ModemSocket(read, write, **socket_args)
 
-        while True:
+        force_mode = False
+        while not force_mode:
+            print('set device to force mode send request')
             ser.write(b'force_mode')
             ser.flush()
-            force_mode = False
             cnt = 0
             while True:
                 t = ser.read()
-                if force_mode != True:
-                    if (t == b'C'):
-                        cnt = cnt + 1
-                        if (cnt == 32):
-                            force_mode = True
-                            print('device switch to force mode')
-                    else:
-                        cnt = 0
-                        force_mode = False
+                if t == b'C':
+                    cnt = cnt + 1
+                    if (cnt == 32):
+                        force_mode = True
+                        print('device switch to force mode')
+                        break
                 else:
-                    # YModem transmit firmware to device
-                    ymodem_tran.send(file_list, progress_bar.show)
-                    break
-            break
+                    force_mode = False
+                    if len(t) == 0:
+                        break
+                
+        # YModem transmit firmware to device
+        print('YModem start trans firmware')
+        ymodem_tran.send(file_list, progress_bar.show)
     finally:
         ser.close()
         print("\r\nSerial port closed")

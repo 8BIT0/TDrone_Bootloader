@@ -39,7 +39,8 @@
 #define CAN                     ((uint8_t)0x18)     /* two of these in succession abortas transfer */  
 #define CNC                     ((uint8_t)0x43)     /* character CNC */
                                                       
-#define YMODEM_REC_TIMEOUT      500                 /* unit: ms */
+#define YMODEM_REC_TIMEOUT      500                 /* if single package receive timeout over 500ms request again / timeout unit: ms */
+#define YMODEM_TRANS_TIMEOUT    2000                /* if YModem keep 2s without any data received after the first package than abort transmit / timeout unit: ms */
 
 /* external function */
 static YModem_Handle YModem_Obj_Init(void *port_obj, malloc_callback malloc_cb, free_callback free_cb, \
@@ -247,15 +248,13 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
         case CAN: Obj->rx_status = YMODEM_RX_ERR; break;
         case YModem_Pack_Incomplete: break;
         case YModem_Rx_TimeOut:
-            Obj->rx_status = YMODEM_RX_ERR;
         case YModem_Pack_CRC_Error:
         case YModem_Pack_Error:
+        default:
             YModem_SendByte(Obj, NAK);
             if (Obj->rec_pck_cb)
                 Obj->rec_pck_cb(NULL, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, false);
             break;
-        
-        default: YModem_SendByte(Obj, NAK); break;
     }
 }
 
@@ -326,8 +325,14 @@ static void YModem_Rx(YModem_Handle YM_hdl, uint32_t t_update, uint32_t t_sys, u
 
     if (size == 0)
     {
-        if (Obj->rx_status == YMODEM_RX_IDLE)
+        if (Obj->rx_status != YMODEM_RX_IDLE)
+        {
+            if (Obj->t_update && ((Obj->t_sys - Obj->t_update) >= YMODEM_TRANS_TIMEOUT))
+                Obj->rx_status = YMODEM_RX_ERR;
+        }
+        else
             YModem_SendByte(Obj, CNC);
+
         return;
     }
 

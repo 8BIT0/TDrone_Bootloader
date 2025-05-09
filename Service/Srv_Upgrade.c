@@ -254,7 +254,7 @@ static void SrvUpgrade_Firmware_Rec_EOT(void *arg, uint8_t *p_data, uint16_t siz
     Queue.reset(&SrvUpgradeObj.p_queue);
 }
 
-static void SrvUpgrade_Firmware_Rec_Done(void *arg, uint8_t code)
+static void SrvUpgrade_Firmware_Rec_Done(void *arg, int8_t code)
 {
     SrvUpgradeObj.YM_hdl = 0;
     SrvUpgradeObj.pack_ok_cnt = 0;
@@ -407,7 +407,7 @@ static bool SrvUpgrade_DumpFirmware(SrvUpgrade_FirmwareDumpType_List type, void 
                 return false;
             break;
 
-        /* dump from internal flash still developping */
+        /* dump from internal flash still in developping */
         case From_IRom:
             return false;
 
