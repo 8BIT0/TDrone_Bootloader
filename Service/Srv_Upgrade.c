@@ -129,19 +129,26 @@ static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
 #if (CODE_TYPE == ON_BOOT)
 static bool SrvUpgrade_Upgrade_Firmware(uint32_t firmware_size)
 {
-    if (!SrvUpgradeObj.init_state || (SrvUpgradeObj.firmware_buf == NULL))
-        return false;
+    uint32_t app_addr = App_Address_Base;
+    uint32_t flash_sector_size = 0;
 
-    /* after firmware loaded */
-    /* clear all data in storage section */
-    if (!StorageFirmware.read_sec(SrvUpgradeObj.firmware_buf, App_Firmware_Size))
+    if (!SrvUpgradeObj.init_state || \
+        (SrvUpgradeObj.firmware_buf == NULL) || \
+        (BspFlash.erase == NULL) || \
+        (BspFlash.write == NULL))
         return false;
 
     /* update firmware to stm32h743 internal flash */
+    if (!StorageFirmware.read_sec(SrvUpgradeObj.firmware_buf, App_Firmware_Size) || \
+        !BspFlash.erase(app_addr, App_Section_Size) || \
+        !BspFlash.write(app_addr, SrvUpgradeObj.firmware_buf, firmware_size))
+        return false;
 
     /* after update clear temporary buff */
     memset(SrvUpgradeObj.firmware_buf, 0, App_Firmware_Size);
 
+    /* after firmware loaded */
+    /* clear all data in storage section */
     return StorageFirmware.erase();
 }
 
