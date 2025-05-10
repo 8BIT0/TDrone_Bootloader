@@ -4,10 +4,12 @@
  * for stm32 some assemble and regsiter are in common
  */
 
-#include "kernel_stm32xxx.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "../../FCHW_Config.h"
-// #include "stm32h7xx_hal_rcc.h"
-// #include "stm32h7xx_hal_tim.h"
 #include "stm32h743xx.h"
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_hal_pwr.h"

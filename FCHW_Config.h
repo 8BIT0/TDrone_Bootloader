@@ -13,8 +13,6 @@
 #define Storage_ChipBus_Spi     (Storage_ChipBus_None + 1)
 #define Storage_ChipBus_QSpi    (Storage_ChipBus_Spi + 1)
 
-#define SDRAM_ENABLE_STATE      ON
-#define FLASH_CHIP_ENABLE_STATE ON
 #define RADIO_NUM               1
 
 /* get virable from .ld file defined */
@@ -33,8 +31,6 @@ extern uint32_t __sdram_s1_e;
 #define App_Address_Base    ((uint32_t)&__app_s)
 #define App_Section_Size    ((uint32_t)&__app_e - (uint32_t)&__app_s)
 
-#define SDRAM_EN            SDRAM_ENABLE_STATE
-#define SD_CARD             SD_CARD_ENABLE_STATE
 #define FLASH_CHIP_STATE    Storage_ChipBus_QSpi
 #define RADIO_UART_NUM      RADIO_NUM
 

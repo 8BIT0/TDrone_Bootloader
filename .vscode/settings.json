@@ -37,6 +37,7 @@
         "dev_w25qxx_qspi.h": "c",
         "storage_dev_port.h": "c",
         "storage_def.h": "c",
-        "objbase.h": "c"
+        "objbase.h": "c",
+        "stm32h7xx_hal_pwr.h": "c"
     }
 }
