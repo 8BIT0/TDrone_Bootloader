@@ -13,7 +13,6 @@ static bool BspFlash_Get_Sector(uint32_t addr, uint32_t *p_bank, uint32_t *p_sec
 /* external function */
 static bool BspFlash_Init(void);
 static void BspFlash_DeInit(void);
-static uint8_t BspFlash_Get_AlignSize(void);
 static bool BspFlash_Erase(uint32_t addr, uint32_t len);
 static bool BspFlash_Read_From_Addr(uint32_t addr, uint8_t *p_data, uint32_t size);
 static bool BspFlash_Write_To_Addr(uint32_t addr, uint8_t *p_data, uint32_t size);
@@ -24,7 +23,6 @@ BspFlash_TypeDef BspFlash = {
     .erase = BspFlash_Erase,
     .read = BspFlash_Read_From_Addr,
     .write = BspFlash_Write_To_Addr,
-    .get_align_size = BspFlash_Get_AlignSize,
 };
 
 static bool BspFlash_Init(void)
@@ -38,6 +36,15 @@ static bool BspFlash_Init(void)
     /* Allow Access to Flash control registers and user Flash */
     HAL_FLASH_Unlock();
     
+    /* wait till flash idle */
+    while (__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY));
+    
+    __HAL_FLASH_CLEAR_FLAG_BANK1(FLASH_FLAG_EOP_BANK1);
+    __HAL_FLASH_CLEAR_FLAG_BANK1(FLASH_FLAG_EOP_BANK2);
+        
+    __HAL_FLASH_CLEAR_FLAG_BANK1(FLASH_FLAG_ALL_ERRORS_BANK1);
+    __HAL_FLASH_CLEAR_FLAG_BANK2(FLASH_FLAG_ALL_ERRORS_BANK2);
+
     /* Disable FLASH_WRP_SECTORS write protection */
     ob_init.OptionType = OPTIONBYTE_WRP;
     ob_init.Banks      = FLASH_BANK_1;
@@ -74,6 +81,8 @@ static bool BspFlash_Init(void)
         /* Write  protection is not disabled */
         return false;
     
+    HAL_FLASH_Lock();
+
     /* Prevent Access to option bytes sector */
     HAL_FLASH_OB_Lock();
     
@@ -88,29 +97,32 @@ static void BspFlash_DeInit(void)
 
 static bool BspFlash_Read_From_Addr(uint32_t addr, uint8_t *p_data, uint32_t size)
 {
-    if(addr && p_data && size)
+    if ((p_data == NULL) || (addr < FLASH_BASE_ADDR) || \
+        (addr + size >= FLASH_BASE_ADDR + FLASH_SIZE))
+        return false;
+
+    while (__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY));
+
+    SCB_DisableICache();
+    for(uint32_t i = 0; i < (size / 4); i++)
     {
-        for(uint32_t i = 0; i < size; i++)
-        {
-            p_data[i] = ((__IO uint8_t *)addr)[i];
-            __DSB();
-        }
-
-        return true;
+        ((uint32_t *)p_data)[i] = ((volatile uint32_t *)addr)[i];
+        __DSB();
     }
+    SCB_EnableICache();
 
-    return false;
+    return true;
 }
 
 static bool BspFlash_Write_To_Addr(uint32_t addr, uint8_t *p_data, uint32_t size)
 {
-    uint8_t read_tmp[BSP_FLASH_WRITE_UNIT] = {0};
-    uint8_t write_tmp[BSP_FLASH_WRITE_UNIT] = {0};
-    uint8_t remain_size = 0;
+    uint8_t buff_tmp[BSP_FLASH_WRITE_UNIT] = {0};
+    uint16_t write_len = 0;
 
     if ((addr <= FLASH_BASE_ADDR) || \
         (addr >= FLASH_END) || \
-        (p_data == NULL) || (size == 0))
+        (p_data == NULL) || (size == 0) || \
+        (HAL_FLASH_Unlock() != HAL_OK))
         return false;
 
     /* check bank */
@@ -127,39 +139,47 @@ static bool BspFlash_Write_To_Addr(uint32_t addr, uint8_t *p_data, uint32_t size
         return false;
     }
 
-    for (uint32_t i = 0; i < (size / BSP_FLASH_WRITE_UNIT); i ++)
+    for (uint32_t i = 0; i < size; i += 32)
     {
-        memcpy(write_tmp, p_data, BSP_FLASH_WRITE_UNIT);
-        if (HAL_OK != HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, addr, (uint32_t)p_data))
-            return false;
-        
-        if(!BspFlash_Read_From_Addr(addr, read_tmp, BSP_FLASH_WRITE_UNIT))
-            return false;
-
-        if(memcmp(write_tmp, read_tmp, BSP_FLASH_WRITE_UNIT) != 0)
-            return false;           
-
-        addr += BSP_FLASH_WRITE_UNIT;
-        p_data += BSP_FLASH_WRITE_UNIT;
+        write_len = (size - i) < 32 ? (size - i) : 32;
+        if (32 == write_len)
+        {
+            /* program 32 byte */
+            if (HAL_OK != HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, addr + i, (uint32_t)p_data + i))
+            {
+                HAL_FLASH_Lock();
+                return false;
+            }
+            
+            /* program check */
+            BspFlash_Read_From_Addr(addr + i, buff_tmp, 32);
+            if (0 != memcmp(p_data + i, buff_tmp, 32))
+            {
+                HAL_FLASH_Lock();
+                return false;
+            }
+        }
+        else
+        {
+            BspFlash_Read_From_Addr(addr + i, buff_tmp, 32);
+            memcpy(buff_tmp, p_data + i, write_len);
+            
+            if (HAL_OK != HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, addr + i, (uint32_t)buff_tmp))
+            {
+                HAL_FLASH_Lock();
+                return 0;
+            }
+            
+            BspFlash_Read_From_Addr(addr + i, buff_tmp, write_len);
+            if (0 != memcmp(p_data + i, buff_tmp, write_len))
+            {
+                HAL_FLASH_Lock();
+                return false;
+            }
+        }
     }
-
-    remain_size = size % BSP_FLASH_WRITE_UNIT;
-    if(remain_size)
-    {
-        if(!BspFlash_Read_From_Addr(addr, write_tmp, BSP_FLASH_WRITE_UNIT))
-            return false;
-
-        memcpy(write_tmp, p_data, remain_size);
-        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, addr, (uint32_t)write_tmp) != HAL_OK)
-            return false;
     
-        if(!BspFlash_Read_From_Addr(addr, read_tmp, BSP_FLASH_WRITE_UNIT))
-            return false;
-
-        if(memcmp(write_tmp, read_tmp, BSP_FLASH_WRITE_UNIT) != 0)
-            return false;
-    }
-
+    HAL_FLASH_Lock();
     return true;
 }
 
@@ -168,9 +188,14 @@ static bool BspFlash_Erase(uint32_t addr, uint32_t len)
     uint32_t PageError = 0;
     uint8_t sector_number;
     uint32_t erase_addr, erase_len;
+    HAL_StatusTypeDef status;
     FLASH_EraseInitTypeDef eraseinitstruct;
     
-    if ((addr < FLASH_BASE_ADDR) || (addr + len >= FLASH_BASE_ADDR + FLASH_SIZE))
+    /* 参数检查 */
+    if ((addr < FLASH_BASE_ADDR) || \
+        (addr + len >= FLASH_BASE_ADDR + FLASH_SIZE) || \
+        ((addr - FLASH_BASE_ADDR) % FLASH_SECTOR_SIZE) || \
+        (HAL_FLASH_Unlock() != HAL_OK))
         return false;
     
     erase_addr = addr;
@@ -181,19 +206,25 @@ static bool BspFlash_Erase(uint32_t addr, uint32_t len)
         erase_len = FLASH_BANK2_BASE - erase_addr;
         sector_number = erase_len / FLASH_SECTOR_SIZE;
         if (0 != erase_len % FLASH_SECTOR_SIZE)
-        {
             sector_number += 1;
-        }
         
         if (0 == BspFlash_Get_Sector(erase_addr, &eraseinitstruct.Banks, &eraseinitstruct.Sector))
+        {
+            HAL_FLASH_Lock();
             return false;
+        }
 
         eraseinitstruct.TypeErase = FLASH_TYPEERASE_SECTORS;
         eraseinitstruct.NbSectors = sector_number;
         eraseinitstruct.VoltageRange = FLASH_VOLTAGE_RANGE_3;
         
-        if(HAL_FLASHEx_Erase(&eraseinitstruct, &PageError) != HAL_OK)
+        status = HAL_FLASHEx_Erase(&eraseinitstruct, &PageError);
+        
+        if (status != HAL_OK)
+        {
+            HAL_FLASH_Lock();
             return false;
+        }
         
         erase_addr = FLASH_BANK2_BASE;
         erase_len = len - erase_len;
@@ -201,26 +232,18 @@ static bool BspFlash_Erase(uint32_t addr, uint32_t len)
     
     sector_number = erase_len / FLASH_SECTOR_SIZE;
     if (0 != erase_len % FLASH_SECTOR_SIZE)
-    {
         sector_number += 1;
-    }
     
-    if (!BspFlash_Get_Sector(erase_addr, &eraseinitstruct.Banks, &eraseinitstruct.Sector))
+    if (0 == BspFlash_Get_Sector(erase_addr, &eraseinitstruct.Banks, &eraseinitstruct.Sector))
+    {
+        HAL_FLASH_Lock();
         return false;
-    
+    }
+
     eraseinitstruct.TypeErase = FLASH_TYPEERASE_SECTORS;
     eraseinitstruct.NbSectors = sector_number;
-    eraseinitstruct.VoltageRange = FLASH_VOLTAGE_RANGE_3;
-    
-    if(HAL_FLASHEx_Erase(&eraseinitstruct, &PageError) != HAL_OK)
-        return false;
-    
-    return true;
-}
 
-static uint8_t BspFlash_Get_AlignSize(void)
-{
-    return BSP_FLASH_ADDR_ALIGN_SIZE;
+    return true;
 }
 
 static bool BspFlash_Get_Sector(uint32_t addr, uint32_t *p_bank, uint32_t *p_sector)

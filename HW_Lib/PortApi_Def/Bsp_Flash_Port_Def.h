@@ -13,7 +13,6 @@ typedef struct
 {
     bool (*init)(void);
     void (*de_init)(void);
-    uint8_t (*get_align_size)(void);
     
     bool (*erase)(uint32_t addr, uint32_t len);
     bool (*read)(uint32_t addr, uint8_t *p_data, uint32_t size);
