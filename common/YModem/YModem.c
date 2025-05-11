@@ -351,3 +351,189 @@ static void YModem_Rx(YModem_Handle YM_hdl, uint32_t t_update, uint32_t t_sys, u
 
     YModem_Check_Exit(Obj);
 }
+
+/******************************************************** transmit section ****************************************************/
+static void YModem_Pack(YModem_Handle YM_hdl, uint8_t *p_buf, uint32_t pac_size)
+{
+    // uint16_t crc = 0;
+  
+    // p_buf[0] = pac_sz==128? SOH:STX;
+    // p_buf[1] = ym_cyc;
+    // p_buf[2] = ~ym_cyc;
+
+    // crc = crc16( (unsigned char const*)pbuf, pac_sz );
+    // pbuf[PACKET_HEADER+pac_sz]   = (u8)(crc/256);
+    // pbuf[PACKET_HEADER+pac_sz+1] = (u8)(crc&0x00ff);
+    // ym_cyc++;
+}
+
+// uint8 ymodem_tx_make_pac_header( char *pbuf, char *fil_nm, size_t fil_sz )
+// {
+//   uint8 ans = YMODEM_ERR;
+//   uint8 nm_len;
+//   memset( pbuf+PACKET_HEADER, 0, 128);
+//   if( fil_nm )
+//   {
+//     nm_len = strlen( fil_nm );
+//     strcpy( pbuf+PACKET_HEADER, fil_nm );
+//     strcpy( pbuf+PACKET_HEADER+nm_len+1, u32_to_str( fil_sz ) );
+//   }
+//   ym_cyc = 0x00;
+//   ymodem_tx_make_pac_data( pbuf, 128 );
+//   return ans;
+// }
+// /*********************************************************************
+//  * @fn      ymodem_tx_put : Ymodem发送时，逻辑轮转调用函数
+//  * @param   buf : 数据缓冲区 buf : 数据大小
+//  * 说明：
+//  * 1.发送 [包  头] 状态：如果没有文件名，则发送空包，否则发送封装的头包
+//  * 2.发送 [数据包] 状态：发送数据包，出现问题或结束，则进入结束状态
+//  * 3.发送 [结  束] 状态：处理发送完成的相关事情
+//  */ 
+// void ymodem_tx_put( char *buf, size_t rx_sz )
+// {
+//   char *fil_nm=NULL;
+//   size_t fil_sz=NULL;
+//   switch( ym_tx_status )
+//   {
+//   case YMODEM_TX_IDLE:
+//     switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
+//     {
+//     case CNC:
+//       {
+//         if( NULL == ym_tx_pbuf )
+//         {
+//           ym_tx_pbuf = pvPortMalloc( PACKET_OVERHEAD + PACKET_1K_SIZE );
+//           if( NULL == ym_tx_pbuf )      //申请失败，则返回
+//             break;
+//         }
+//         if( YMODEM_OK == ymodem_tx_header( &fil_nm, &fil_sz ) )   //得到 文件名和大小
+//         {//封装一个包头，然后发送出去
+//           ym_tx_fil_sz = fil_sz;
+//           ymodem_tx_make_pac_header( ym_tx_pbuf, fil_nm, fil_sz );
+//           __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_SIZE );
+//           ym_tx_status = YMODEM_TX_IDLE_ACK;
+//         }
+//         else //封装一个空包，然后发出去
+//         {
+//           ymodem_tx_make_pac_header( ym_tx_pbuf, NULL, NULL );
+//           __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_SIZE );
+//         }
+//       }
+//     break;
+//     case CAN:
+//       ym_rx_status = YMODEM_TX_ERR;
+//       goto err_tx;
+//     break;
+//     default:
+//      goto err_tx;              //这儿暂时认为，包有误，就退出
+//      break;
+//     }
+//     break;
+//     case YMODEM_TX_IDLE_ACK:
+//       {
+//         switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
+//         {
+//         case ACK://准备发数据包
+//           ym_tx_status = YMODEM_TX_DATA;
+//           break;
+//         case NAK://准备重发包头
+//           ym_tx_status = YMODEM_TX_IDLE;
+//           break;
+//         default://啥也不做
+//           break;
+//         }
+//       }
+//       break;
+// dt_tx: case YMODEM_TX_DATA:                             //1级——文件发送状态中
+//       switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
+//       {
+//         case CNC:
+//           if( YMODEM_OK == ymodem_tx_pac_get( ym_tx_pbuf+PACKET_HEADER, seek, PACKET_1K_SIZE ) )  //读取下一组数据
+//           {
+//             if( YMODEM_OK == ymodem_tx_make_pac_data( ym_tx_pbuf, PACKET_1K_SIZE ) )
+//             {
+//               __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_1K_SIZE );
+//               ym_tx_status = YMODEM_TX_DATA_ACK;
+//             }
+//             else        //读取数据出错，结束传输
+//             {
+//               ym_tx_status = YMODEM_TX_ERR;
+//               goto err_tx;
+//             }
+//           }
+//           break;
+//         case CAN:
+//           ym_rx_status = YMODEM_TX_ERR;
+//           goto err_tx;
+//           break;
+//         default:        //暂时啥也不做
+//           break;
+//       }
+//       break;
+//     case YMODEM_TX_DATA_ACK:
+//       {
+//         switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
+//         {
+//         case ACK:
+//           seek += PACKET_1K_SIZE;
+//           if( seek < ym_tx_fil_sz )     //数据未发送完（不能加‘=’！）
+//             ym_tx_status = YMODEM_TX_DATA_ACK;
+//           else  //数据发送完
+//           {
+//             ym_tx_status = YMODEM_TX_EOT;
+//             __putchar( EOT );
+//           }
+//         break;
+//         case CNC:       //如果接收方不先应答[ACK]而是直接发'C'在这里处理
+//           seek += PACKET_1K_SIZE;
+//           if( seek < ym_tx_fil_sz )     //数据未发送完（不能加‘=’！）
+//           {
+//             ym_tx_status = YMODEM_TX_DATA_ACK;
+//             //下面的状态，因为我需要马上回复，所以用goto
+//             goto dt_tx;         //发送下一个数据包
+//           }
+//           else  //数据发送完
+//           {
+//             ym_tx_status = YMODEM_TX_EOT;
+//             __putchar( EOT );
+//           }
+//         break;
+//         default:
+//         break;
+//         }
+//       }
+//     break;
+//     case YMODEM_TX_EOT:
+//     {
+//       switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
+//       {
+//           //指令包
+//         case NAK:
+//           __putchar( EOT );
+//           break;
+//         case ACK:
+//           __putchar( ACK );
+//           ymodem_tx_finish( YMODEM_OK );
+//           ym_rx_status = YMODEM_TX_IDLE;
+//           break;
+//         default:
+//           break;
+//       }
+//     }
+//       break;
+// err_tx:  case YMODEM_TX_ERR:         //在这里放弃保存文件,终止传输
+//       __putchar( CAN );
+//       ymodem_rx_finish( YMODEM_ERR );
+//       //break;                    //没有break，和下面公用代码
+//   case YMODEM_TX_EXIT:        //到这里，就收拾好，然后退出
+//       ym_rx_status = YMODEM_RX_IDLE;
+//       //*这里还需要进行某些操作，使在退出后，不会再重新进入ymodem_rx_put()函数
+//       vPortFree( ym_tx_pbuf );
+//       ym_tx_pbuf = NULL;
+//       usart_protocol_model_cur = USART_PROTOCOL_DEFAULT;
+//       return;
+//     default:
+//       break;
+//   }
+// }

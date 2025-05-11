@@ -21,6 +21,12 @@ typedef void (*free_callback)(void *ptr);
 
 typedef enum
 {
+    YModem_Dir_Rx = 0,
+    YModem_Dir_Tx,
+} YModem_TransDir_TypeDef;
+
+typedef enum
+{
     YModem_Error_None       = 0,
     YModem_Rx_Done          = 1,
     YModem_Pack_Error       = -1,
@@ -32,6 +38,7 @@ typedef enum
 
 typedef struct
 {
+    YModem_TransDir_TypeDef dir;
     uint16_t pck_cnt;
     uint16_t pck_size;
     uint8_t rx_status;
