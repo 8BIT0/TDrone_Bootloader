@@ -370,6 +370,7 @@ static void YModem_Rx(YModem_Handle YM_hdl, uint32_t t_update, uint32_t t_sys, u
     YModem_Check_Exit(Obj);
 }
 
+/*************************************************** transmit section untested ************************************************/
 /******************************************************** transmit section ****************************************************/
 static void YModem_Pack_File(YModem_Handle YM_hdl, uint8_t pck_header, uint8_t *p_buf, uint32_t buf_size)
 {
@@ -460,46 +461,53 @@ static void YModem_Pack_FileInfo(YModem_Handle YM_hdl, uint8_t pck_header, uint8
         Obj->trans_cb(Obj->port_obj, Obj->p_tx_tmp, Obj->tx_trans_size);
 }
 
-// void ymodem_tx_put( char *buf, size_t rx_sz )
-// {
-//   char *fil_nm=NULL;
-//   size_t fil_sz=NULL;
-//   switch( ym_tx_status )
-//   {
-//   case YMODEM_TX_IDLE:
-//     switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
-//     {
-//     case CNC:
-//       {
-//         if( NULL == ym_tx_pbuf )
-//         {
-//           ym_tx_pbuf = pvPortMalloc( PACKET_OVERHEAD + PACKET_1K_SIZE );
-//           if( NULL == ym_tx_pbuf )      //申请失败，则返回
-//             break;
-//         }
-//         if( YMODEM_OK == ymodem_tx_header( &fil_nm, &fil_sz ) )   //得到 文件名和大小
-//         {//封装一个包头，然后发送出去
-//           ym_tx_fil_sz = fil_sz;
-//           ymodem_tx_make_pac_header( ym_tx_pbuf, fil_nm, fil_sz );
-//           __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_SIZE );
-//           ym_tx_status = YMODEM_TX_IDLE_ACK;
-//         }
-//         else //封装一个空包，然后发出去
-//         {
-//           ymodem_tx_make_pac_header( ym_tx_pbuf, NULL, NULL );
-//           __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_SIZE );
-//         }
-//       }
-//     break;
-//     case CAN:
-//       ym_rx_status = YMODEM_TX_ERR;
-//       goto err_tx;
-//     break;
-//     default:
-//      goto err_tx;              //这儿暂时认为，包有误，就退出
-//      break;
-//     }
-//     break;
+static void YModem_Tx_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
+{
+    // switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
+    // {
+    //     case CNC:
+    //     {
+    //         if( NULL == ym_tx_pbuf )
+    //         {
+    //             ym_tx_pbuf = pvPortMalloc( PACKET_OVERHEAD + PACKET_1K_SIZE );
+    //             if( NULL == ym_tx_pbuf )      //申请失败，则返回
+    //                 break;
+    //         }
+
+        //     if( YMODEM_OK == ymodem_tx_header( &fil_nm, &fil_sz ) )   //得到 文件名和大小
+        //     {//封装一个包头，然后发送出去
+        //     ym_tx_fil_sz = fil_sz;
+        //     ymodem_tx_make_pac_header( ym_tx_pbuf, fil_nm, fil_sz );
+        //     __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_SIZE );
+        //     ym_tx_status = YMODEM_TX_IDLE_ACK;
+        //     }
+        //     else //封装一个空包，然后发出去
+        //     {
+        //     ymodem_tx_make_pac_header( ym_tx_pbuf, NULL, NULL );
+        //     __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_SIZE );
+        //     }
+        // }
+        // break;
+    // case CAN:
+    // ym_rx_status = YMODEM_TX_ERR;
+    // goto err_tx;
+    // break;
+    //     default:
+    //     goto err_tx;              //这儿暂时认为，包有误，就退出
+    //     break;
+    // }
+}
+
+static void YModem_Tx(YModem_Handle YM_hdl, uint8_t *p_file, uint8_t *p_file_name, uint32_t file_size)
+{
+    YModemObj_TypeDef *Obj = To_YModem_Obj(YM_hdl);
+
+    if ((Obj == NULL) || (Obj->dir == YModem_Dir_Rx) || (p_file == NULL) || (file_size == 0))
+        return;
+    
+    switch (Obj->tx_status)
+    {
+        case YMODEM_TX_IDLE: break;
 //     case YMODEM_TX_IDLE_ACK:
 //       {
 //         switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
@@ -603,7 +611,6 @@ static void YModem_Pack_FileInfo(YModem_Handle YM_hdl, uint8_t pck_header, uint8
 //       ym_tx_pbuf = NULL;
 //       usart_protocol_model_cur = USART_PROTOCOL_DEFAULT;
 //       return;
-//     default:
-//       break;
-//   }
-// }
+        default: break;
+    }
+}
