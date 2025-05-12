@@ -498,7 +498,7 @@ static void YModem_Tx_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t s
     // }
 }
 
-static void YModem_Tx(YModem_Handle YM_hdl, uint8_t *p_file, uint8_t *p_file_name, uint32_t file_size)
+static void YModem_Tx(YModem_Handle YM_hdl, uint32_t sys_time, uint8_t *p_file, uint8_t *p_file_name, uint32_t file_size, uint8_t *p_rx_data, uint16_t rx_size)
 {
     YModemObj_TypeDef *Obj = To_YModem_Obj(YM_hdl);
 
