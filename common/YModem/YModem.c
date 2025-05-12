@@ -143,19 +143,11 @@ static YModem_Handle YModem_Obj_Init(void *port_obj, YModem_TransDir_TypeDef dir
     }
 
     memset(obj, 0, sizeof(YModemObj_TypeDef));
+    obj->dir = dir;
     obj->port_obj = port_obj;
     obj->malloc_cb = malloc_cb;
     obj->free_cb = free_cb;
     obj->trans_cb = trans_cb;
-    obj->start_cb = rec_start_cb;
-    obj->done_cb = rec_done_cb;
-    obj->rec_pck_cb = rec_pck_cb;
-    obj->rec_eot_cb = rec_eot_cb;
-
-    obj->pck_cnt = 0;
-    obj->pck_size = 0;
-    obj->rx_status = YMODEM_RX_IDLE;
-    obj->dir = dir;
 
     if (obj->dir == YModem_Dir_Tx)
     {
@@ -166,6 +158,17 @@ static YModem_Handle YModem_Obj_Init(void *port_obj, YModem_TransDir_TypeDef dir
             free_cb(obj);
             return NULL;
         }
+    }
+    else if (obj->dir == YModem_Dir_Rx)
+    {
+        obj->start_cb = rec_start_cb;
+        obj->done_cb = rec_done_cb;
+        obj->rec_pck_cb = rec_pck_cb;
+        obj->rec_eot_cb = rec_eot_cb;
+
+        obj->pck_cnt = 0;
+        obj->pck_size = 0;
+        obj->rx_status = YMODEM_RX_IDLE;
     }
 
     return (YModem_Handle)obj;
