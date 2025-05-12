@@ -357,12 +357,9 @@ static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_
 
     /* Create YMdoem object */
     if (SrvUpgradeObj.YM_hdl == 0)
-        SrvUpgradeObj.YM_hdl = YModem.Init(com_obj, SrvOsCommon.malloc, SrvOsCommon.free, \
-                                           SrvUpgradeObj.send, \
-                                           SrvUpgrade_Firmware_Rec_Start, \
-                                           SrvUpgrade_Firmware_Rec_EOT, \
-                                           SrvUpgrade_Firmware_Rec_Done, \
-                                           SrvUpgrade_Firmware_Rec_Pack);
+        SrvUpgradeObj.YM_hdl = YModem.Init(com_obj, YModem_Dir_Rx, SrvOsCommon.malloc, SrvOsCommon.free, SrvUpgradeObj.send, \
+                                           SrvUpgrade_Firmware_Rec_Start, SrvUpgrade_Firmware_Rec_EOT, \
+                                           SrvUpgrade_Firmware_Rec_Done, SrvUpgrade_Firmware_Rec_Pack);
     
     p_size = Queue.size(SrvUpgradeObj.p_queue);
     if (p_size)

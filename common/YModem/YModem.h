@@ -8,6 +8,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 typedef uint32_t YModem_Handle;
 
@@ -27,18 +29,19 @@ typedef enum
 
 typedef enum
 {
-    YModem_Error_None       = 0,
-    YModem_Rx_Done          = 1,
-    YModem_Pack_Error       = -1,
-    YModem_Pack_CRC_Error   = -2,
-    YModem_Rx_Error         = -3,
-    YModem_Pack_Incomplete  = -4,
-    YModem_Rx_TimeOut       = -5,
+    YModem_Rx_Error_None      = 0,
+    YModem_Rx_Done            = 1,
+    YModem_Rx_Pack_Error      = -1,
+    YModem_Rx_Pack_CRC_Error  = -2,
+    YModem_Rx_Error           = -3,
+    YModem_Rx_Pack_Incomplete = -4,
+    YModem_Rx_TimeOut         = -5,
 } YModem_ErrorCode_TypeDef;
 
 typedef struct
 {
     YModem_TransDir_TypeDef dir;
+
     uint16_t pck_cnt;
     uint16_t pck_size;
     uint8_t rx_status;
@@ -47,6 +50,12 @@ typedef struct
 
     uint32_t t_sys;
     uint32_t t_update;
+
+    /* valid when ymodem tx mode */
+    uint16_t tx_trans_size;
+    uint8_t tx_status;
+    uint8_t tx_cyc;
+    uint8_t *p_tx_tmp;
 
     malloc_callback malloc_cb;
     free_callback free_cb;
@@ -59,11 +68,11 @@ typedef struct
 
 typedef struct
 {
-    YModem_Handle (*Init)(void *port_obj, malloc_callback malloc_cb, free_callback free_cb, \
+    YModem_Handle (*Init)(void *port_obj, YModem_TransDir_TypeDef dir, malloc_callback malloc_cb, free_callback free_cb, \
                           trans_callback trans_cb, rec_start_callback rec_start_cb, rec_eot_callback rec_eot_cb,\
                           rec_done_callback rec_done_cb, rec_pack_callback rec_pck_cb);
     void (*Rx)(YModem_Handle YM_hdl, uint32_t t_update, uint32_t t_sys, uint8_t *buf, uint32_t size);
-    void (*Tx)(YModem_Handle YM_hdl, uint8_t *buf, uint32_t size);
+    void (*Tx)(YModem_Handle YM_hdl, uint32_t t_sys, uint8_t *p_buf, uint32_t buf_size);
 } YModem_TypeDef;
 
 extern YModem_TypeDef YModem;
