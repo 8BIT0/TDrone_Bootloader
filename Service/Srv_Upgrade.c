@@ -52,6 +52,7 @@ static void SrvUpgrade_Check_ForceMode_Enable(void *arg);
 
 /* external function */
 static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb);
+static void SrvUpgrade_Set_TransCallback(SrvUpgrade_Send_Callback tx_cb);
 static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size);
 static bool SrvUpgrade_DumpFirmware(SrvUpgrade_FirmwareDumpType_List type, void *port, SrvUpgrade_Send_Callback tx_cb);
 
@@ -60,6 +61,7 @@ SrvUpgrade_TypeDef SrvUpgrade = {
     .init = SrvUpgrade_Init,
     .DealRec = SrvUpgrade_DealRec,
     .DumpFirmware = SrvUpgrade_DumpFirmware,
+    .set_trans_callback = SrvUpgrade_Set_TransCallback,
 };
 
 static bool SrvUpgrade_Init(SrvUpgrade_Send_Callback tx_cb)
@@ -398,6 +400,11 @@ static void SrvUpgrade_DealRec(void *com_obj, uint8_t *p_data, uint16_t size)
 #endif
 
     SrvUpgradeObj.rec_cnt ++;
+}
+
+static void SrvUpgrade_Set_TransCallback(SrvUpgrade_Send_Callback tx_cb)
+{
+    SrvUpgradeObj.send = tx_cb;
 }
 
 static bool SrvUpgrade_DumpFirmware(SrvUpgrade_FirmwareDumpType_List type, void *port, SrvUpgrade_Send_Callback tx_cb)

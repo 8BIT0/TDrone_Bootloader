@@ -47,6 +47,7 @@ typedef enum
 typedef struct
 {
     bool (*init)(SrvUpgrade_Send_Callback tx_cb);
+    void (*set_trans_callback)(SrvUpgrade_Send_Callback tx_cb);
     void (*DealRec)(void *com_obj, uint8_t *p_data, uint16_t size);
     bool (*DumpFirmware)(SrvUpgrade_FirmwareDumpType_List type, void *port, SrvUpgrade_Send_Callback tx_cb);
 } SrvUpgrade_TypeDef;
