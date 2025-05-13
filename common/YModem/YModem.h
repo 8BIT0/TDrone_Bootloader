@@ -53,6 +53,8 @@ typedef struct
 
     /* valid when ymodem tx mode */
     uint16_t tx_trans_size;
+    uint16_t tx_file_pack_index;
+    uint16_t tx_file_pack_num;
     uint8_t tx_status;
     uint8_t tx_cyc;
     uint8_t *p_tx_tmp;

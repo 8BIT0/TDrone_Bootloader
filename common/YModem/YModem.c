@@ -501,7 +501,12 @@ static void YModem_Tx_Idle_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8_t 
     }
 }
 
-static void YModem_Tx_IdleACK_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8_t *p_rx_data, uint8_t rx_size)
+static void YModem_Tx_DataPack_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8_t *p_file, uint32_t file_size, uint8_t *p_rx_data, uint8_t rx_size)
+{
+    // if ()
+}
+
+static void YModem_Tx_IdleACK_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint32_t file_size, uint8_t *p_rx_data, uint8_t rx_size)
 {
     if ((Obj == NULL) || (p_rx_data == NULL) || (rx_size == 0))
         return;
@@ -516,8 +521,8 @@ static void YModem_Tx_IdleACK_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8
             case NAK:
                 /* receiver request file info again */
                 /* reset update time */
-                Obj->t_update = 0;
                 Obj->tx_status = YMODEM_TX_IDLE;
+                Obj->t_update = 0;
                 break;
             default: break;
         }
@@ -528,6 +533,10 @@ static void YModem_Tx_IdleACK_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8
         /* transmit data pack to receiver */
         Obj->tx_status = YMODEM_TX_DATA;
         Obj->t_update = Obj->t_sys;
+        Obj->tx_file_pack_index = 0;
+        Obj->tx_file_pack_num = file_size / YMODEM_DATA_SIZE_1024;
+        if (file_size % YMODEM_DATA_SIZE_1024)
+            Obj->tx_file_pack_num ++;
     }
     else if (sys_t - Obj->t_update >= YMODEM_TRANS_TIMEOUT)
     {
@@ -548,7 +557,7 @@ static void YModem_Tx(YModem_Handle YM_hdl, uint32_t sys_time, uint8_t *p_file, 
     switch (Obj->tx_status)
     {
         case YMODEM_TX_IDLE: YModem_Tx_Idle_Proc(Obj, sys_time, p_file_name, file_size, p_rx_data, rx_size); break;
-        case YMODEM_TX_IDLE_ACK: YModem_Tx_IdleACK_Proc(Obj, sys_time, p_rx_data, rx_size); break;
+        case YMODEM_TX_IDLE_ACK: YModem_Tx_IdleACK_Proc(Obj, sys_time, file_size, p_rx_data, rx_size); break;
 // dt_tx: case YMODEM_TX_DATA:                             //1级——文件发送状态中
 //       switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
 //       {
