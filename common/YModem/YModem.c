@@ -503,7 +503,10 @@ static void YModem_Tx_Idle_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8_t 
 
 static void YModem_Tx_DataPack_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8_t *p_file, uint32_t file_size, uint8_t *p_rx_data, uint8_t rx_size)
 {
-    // if ()
+    if (Obj->tx_file_pack_index == 0)
+    {
+        /* first data pack transmit */
+    }
 }
 
 static void YModem_Tx_IdleACK_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint32_t file_size, uint8_t *p_rx_data, uint8_t rx_size)
