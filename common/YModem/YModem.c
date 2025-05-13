@@ -501,11 +501,44 @@ static void YModem_Tx_Idle_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8_t 
     }
 }
 
+/* trans byte size 1024 */
 static void YModem_Tx_DataPack_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8_t *p_file, uint32_t file_size, uint8_t *p_rx_data, uint8_t rx_size)
 {
-    if (Obj->tx_file_pack_index == 0)
+    bool proto_pack = true;
+    uint8_t *p_tmp = NULL;
+    uint32_t remain_size = 0;
+
+    if ((Obj == NULL) || (p_file == NULL) || (file_size == 0))
+        return;
+
+    if (Obj->tx_file_pack_index != 0)
     {
-        /* first data pack transmit */
+        /* wait ACK from receiver */
+        if ((p_rx_data == NULL) || (rx_size == 0))
+        {
+            /* check request timeout */
+            if (sys_t - Obj->t_update >= YMODEM_TRANS_TIMEOUT)
+                Obj->tx_status = YMODEM_TX_ERR;
+            return;
+        }
+
+        switch (p_rx_data[rx_size - 1])
+        {
+            case ACK: Obj->t_update = sys_t; break;
+            case CAN: Obj->tx_status = YMODEM_TX_EXIT; break;
+            default: return;
+        }
+    }
+
+    if (proto_pack)
+    {
+        p_tmp = p_file + Obj->tx_file_pack_index * YMODEM_DATA_SIZE_1024;
+        remain_size = Obj->tx_file_pack_num * YMODEM_DATA_SIZE_1024 - Obj->tx_file_pack_index * YMODEM_DATA_SIZE_1024;
+        YModem_Pack_File(Obj, STX, p_tmp, remain_size);
+        Obj->tx_file_pack_index ++;
+
+        if (Obj->tx_file_pack_index == Obj->tx_file_pack_num)
+            Obj->tx_status = YMODEM_TX_EOT;
     }
 }
 
