@@ -529,11 +529,12 @@ static void YModem_Tx_IdleACK_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8
         Obj->tx_status = YMODEM_TX_DATA;
         Obj->t_update = Obj->t_sys;
     }
-    else
+    else if (sys_t - Obj->t_update >= YMODEM_TRANS_TIMEOUT)
     {
         /* unknown reply from the receiver */
         /* or got nothing reply from receiver */
         /* check for timeout */
+        Obj->tx_status = YMODEM_TX_ERR;
     }
 }
 
@@ -547,21 +548,7 @@ static void YModem_Tx(YModem_Handle YM_hdl, uint32_t sys_time, uint8_t *p_file, 
     switch (Obj->tx_status)
     {
         case YMODEM_TX_IDLE: YModem_Tx_Idle_Proc(Obj, sys_time, p_file_name, file_size, p_rx_data, rx_size); break;
-//     case YMODEM_TX_IDLE_ACK:
-//       {
-//         switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
-//         {
-//         case ACK://准备发数据包
-//           ym_tx_status = YMODEM_TX_DATA;
-//           break;
-//         case NAK://准备重发包头
-//           ym_tx_status = YMODEM_TX_IDLE;
-//           break;
-//         default://啥也不做
-//           break;
-//         }
-//       }
-//       break;
+        case YMODEM_TX_IDLE_ACK: YModem_Tx_IdleACK_Proc(Obj, sys_time, p_rx_data, rx_size); break;
 // dt_tx: case YMODEM_TX_DATA:                             //1级——文件发送状态中
 //       switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
 //       {
