@@ -58,8 +58,8 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
 static void YModem_EOT_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size);
 static void YModem_Check_Exit(YModemObj_TypeDef *Obj);
 
-static void YModem_Pack_File(YModem_Handle YM_hdl, uint8_t pck_header, uint8_t *p_buf, uint32_t buf_size);
-static void YModem_Pack_FileInfo(YModem_Handle YM_hdl, uint8_t pck_header, uint8_t *file_name, uint32_t file_size);
+static bool YModem_Pack_File(YModemObj_TypeDef *Obj, uint8_t pck_header, uint8_t *p_buf, uint32_t buf_size);
+static bool YModem_Pack_FileInfo(YModemObj_TypeDef *Obj, uint8_t pck_header, uint8_t *file_name, uint32_t file_size);
 
 /* external vairable */
 YModem_TypeDef YModem = {
@@ -372,23 +372,22 @@ static void YModem_Rx(YModem_Handle YM_hdl, uint32_t t_update, uint32_t t_sys, u
 
 /*************************************************** transmit section untested ************************************************/
 /******************************************************** transmit section ****************************************************/
-static void YModem_Pack_File(YModem_Handle YM_hdl, uint8_t pck_header, uint8_t *p_buf, uint32_t buf_size)
+static bool YModem_Pack_File(YModemObj_TypeDef *Obj, uint8_t pck_header, uint8_t *p_buf, uint32_t buf_size)
 {
     uint16_t crc = 0;
-    YModemObj_TypeDef *Obj = To_YModem_Obj(YM_hdl);
 
     if ((Obj == NULL) || \
         (Obj->dir == YModem_Dir_Rx) || \
         (Obj->p_tx_tmp == NULL) || \
         (p_buf == 0) || (buf_size == 0))
-        return;
+        return false;
 
     Obj->tx_trans_size = 0;
     switch (pck_header)
     {
         case SOH: Obj->tx_trans_size = YMODEM_DATA_SIZE_128;  break;
         case STX: Obj->tx_trans_size = YMODEM_DATA_SIZE_1024; break;
-        default: return;
+        default: return false;
     }
 
     memset(Obj->p_tx_tmp, 0, Obj->tx_trans_size + YMODEM_FUNC_BYTE_SIZE);
@@ -415,25 +414,29 @@ static void YModem_Pack_File(YModem_Handle YM_hdl, uint8_t pck_header, uint8_t *
 
     /* transmit data */
     if (Obj->trans_cb)
+    {
         Obj->trans_cb(Obj->port_obj, Obj->p_tx_tmp, Obj->tx_trans_size);
+        return true;
+    }
+    
+    return false;
 }
 
-static void YModem_Pack_FileInfo(YModem_Handle YM_hdl, uint8_t pck_header, uint8_t *file_name, uint32_t file_size)
+static bool YModem_Pack_FileInfo(YModemObj_TypeDef *Obj, uint8_t pck_header, uint8_t *file_name, uint32_t file_size)
 {
-    YModemObj_TypeDef *Obj = To_YModem_Obj(YM_hdl);
     char size_str[32];
     char *p_size_str = NULL;
     uint16_t crc = 0;
 
     if ((Obj == NULL) || (Obj->p_tx_tmp == NULL) || (file_name == NULL) || (file_size == 0))
-        return;
+        return false;
 
     Obj->tx_trans_size = 0;
     switch (pck_header)
     {
         case SOH: Obj->tx_trans_size = YMODEM_DATA_SIZE_128;  break;
         case STX: Obj->tx_trans_size = YMODEM_DATA_SIZE_1024; break;
-        default: return;
+        default: return false;
     }
 
     memset(size_str, 0, sizeof(size_str));
@@ -446,7 +449,7 @@ static void YModem_Pack_FileInfo(YModem_Handle YM_hdl, uint8_t pck_header, uint8
 
     p_size_str = itoa(file_size, size_str, 10);
     if (p_size_str == NULL)
-        return;
+        return false;
 
     strcpy(&Obj->p_tx_tmp[PACKET_HEADER], file_name);
     strcpy(&Obj->p_tx_tmp[PACKET_HEADER + strlen(file_name) + 1], size_str);
@@ -458,56 +461,70 @@ static void YModem_Pack_FileInfo(YModem_Handle YM_hdl, uint8_t pck_header, uint8
     
     /* transmit data */
     if (Obj->trans_cb)
+    {
         Obj->trans_cb(Obj->port_obj, Obj->p_tx_tmp, Obj->tx_trans_size);
+        return true;
+    }
+
+    return false;
 }
 
-static void YModem_Tx_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
+/* when tx idle if module received letter 'C' proto first pack with file name and file size to receiver */
+static void YModem_Tx_Idle_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8_t *p_file_name, uint32_t file_size, uint8_t *p_rx_data, uint32_t rx_size)
 {
-    // switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
-    // {
-    //     case CNC:
-    //     {
-    //         if( NULL == ym_tx_pbuf )
-    //         {
-    //             ym_tx_pbuf = pvPortMalloc( PACKET_OVERHEAD + PACKET_1K_SIZE );
-    //             if( NULL == ym_tx_pbuf )      //申请失败，则返回
-    //                 break;
-    //         }
+    if ((Obj == NULL) || \
+        (p_file_name == NULL) || \
+        (file_size == 0) || \
+        (p_rx_data == NULL) || \
+        (rx_size == 0))
+        return;
 
-        //     if( YMODEM_OK == ymodem_tx_header( &fil_nm, &fil_sz ) )   //得到 文件名和大小
-        //     {//封装一个包头，然后发送出去
-        //     ym_tx_fil_sz = fil_sz;
-        //     ymodem_tx_make_pac_header( ym_tx_pbuf, fil_nm, fil_sz );
-        //     __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_SIZE );
-        //     ym_tx_status = YMODEM_TX_IDLE_ACK;
-        //     }
-        //     else //封装一个空包，然后发出去
-        //     {
-        //     ymodem_tx_make_pac_header( ym_tx_pbuf, NULL, NULL );
-        //     __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_SIZE );
-        //     }
-        // }
-        // break;
-    // case CAN:
-    // ym_rx_status = YMODEM_TX_ERR;
-    // goto err_tx;
-    // break;
-    //     default:
-    //     goto err_tx;              //这儿暂时认为，包有误，就退出
-    //     break;
-    // }
+    /* 20s timeout checking */
+    if (Obj->t_update != 0)
+    {
+        if (sys_t - Obj->t_update >= YMODEM_TRANS_TIMEOUT * 10)
+        {
+            Obj->tx_status = YMODEM_TX_ERR;
+            return;
+        }
+    }
+    else
+        Obj->t_update = sys_t;
+
+    switch (p_rx_data[rx_size - 1])
+    {
+        case CNC:
+            /* request first pack */
+            if (!YModem_Pack_FileInfo(Obj, SOH, p_file_name, file_size))
+            {
+                Obj->tx_status = YMODEM_TX_ERR;
+                return;
+            }
+
+            Obj->t_update = Obj->t_sys;
+            Obj->tx_status = YMODEM_TX_IDLE_ACK;
+            break;
+
+        case CAN:
+            /* requCANest first pack */
+            /* cnacel transmit */
+            Obj->tx_status = YMODEM_TX_ERR;
+            break;
+        
+        default: break;
+    }
 }
 
 static void YModem_Tx(YModem_Handle YM_hdl, uint32_t sys_time, uint8_t *p_file, uint8_t *p_file_name, uint32_t file_size, uint8_t *p_rx_data, uint16_t rx_size)
 {
     YModemObj_TypeDef *Obj = To_YModem_Obj(YM_hdl);
 
-    if ((Obj == NULL) || (Obj->dir == YModem_Dir_Rx) || (p_file == NULL) || (file_size == 0))
+    if ((Obj == NULL) || (Obj->dir == YModem_Dir_Rx) || (p_file == NULL) || (p_file_name == NULL) || (file_size == 0))
         return;
     
     switch (Obj->tx_status)
     {
-        case YMODEM_TX_IDLE: break;
+        case YMODEM_TX_IDLE: YModem_Tx_Idle_Proc(Obj, sys_time, p_file_name, file_size, p_rx_data, rx_size); break;
 //     case YMODEM_TX_IDLE_ACK:
 //       {
 //         switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
