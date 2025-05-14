@@ -299,7 +299,6 @@ static bool BspUart_Init(BspUARTObj_TypeDef *obj)
         default: return false;
     }
 
-    __HAL_UART_DISABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_ERR);
     __HAL_UART_DISABLE_IT(To_Uart_Handle_Ptr(obj->hdl), UART_IT_PE);
 
     if (BspUart_SetIRQ(obj, true) < 0)

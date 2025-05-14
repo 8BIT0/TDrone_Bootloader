@@ -83,7 +83,14 @@ void Debug_Print(DebugPrintObj_TypeDef *Obj, const char *tag, const char* fmt, .
 	    va_end(ap);
 
         if (length > MAX_PRINT_SIZE)
+        {
             length = MAX_PRINT_SIZE;
+        }
+        else
+        {
+            memcpy(&Obj->p_buf[length], "\r\n", 2);
+            length += 2;
+        }
 
         Debug_PrintOut(Obj, Obj->p_buf, length);
         memset(Obj->p_buf, 0, length);

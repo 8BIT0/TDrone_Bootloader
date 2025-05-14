@@ -79,6 +79,7 @@ def main():
         sys.exit(1)
 
     # search firmware path
+    # firmware_path = '/Users/bit8/Desktop/develop/TDrone/TDrone_Bootloader/build'
     while True:
         firmware_path = input("input firmware file path: ")
         if not os.path.exists(firmware_path):

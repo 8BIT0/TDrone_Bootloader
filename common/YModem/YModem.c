@@ -1,6 +1,14 @@
 #include "YModem.h"
 #include "../util.h"
 
+/* test code */
+#include "HW_Def.h"
+#include "debug_util.h"
+/* test code */
+
+#define YMODEM_TAG "[ YMODEM ]"
+#define YMODEM_DEBUG(fmt, ...) __disable_irq(); Debug_Print(&DebugPort, YMODEM_TAG, fmt, ##__VA_ARGS__); __enable_irq()
+
 #define To_YModem_Obj(x)        ((YModemObj_TypeDef *)x)
 
 #define YMODEM_FUNC_BYTE_SIZE   5
@@ -93,13 +101,17 @@ static int8_t YModem_Rx_Pack_Check(YModemObj_TypeDef *obj, uint8_t *buf, uint32_
 
     if ((size >= 3) && (buf[1] + buf[2] != 0xff))
     {
+        YMODEM_DEBUG("Pack data invalide size %d, buff[1] + buff[2] = 0x%02x", size, buf[1] + buf[2]);
         return (int8_t)YModem_Rx_Pack_Error;
     }
 
     if (size < (obj->pck_size + YMODEM_FUNC_BYTE_SIZE))
     {
         if (obj->t_update && ((obj->t_sys - obj->t_update) >= YMODEM_REC_TIMEOUT))
+        {
+            YMODEM_DEBUG("receive time out, sys_time %d, latest update_time %d receive size %d def pack size %d", obj->t_sys, obj->t_update, size, obj->pck_size);
             return (int8_t)YModem_Rx_TimeOut;
+        }
 
         return (int8_t)YModem_Rx_Pack_Incomplete;
     }
@@ -112,6 +124,7 @@ static int8_t YModem_Rx_Pack_Check(YModemObj_TypeDef *obj, uint8_t *buf, uint32_
         if ((chk_crc == pck_crc) && (0xff == (buf[1] + buf[2])))
             return buf[0];
         
+        YMODEM_DEBUG("receive pack CRC error, %d / %d", pck_crc, chk_crc);
         return (int8_t)YModem_Rx_Pack_CRC_Error;
     }
     
@@ -217,11 +230,12 @@ static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size
                     if (Obj->start_cb)
                         Obj->start_cb(Obj->port_obj, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, true);
                     
-
+                    YMODEM_DEBUG("Idle proc rec size %d", size);
                     Obj->rx_status = YMODEM_RX_ACK;
                     return;
                 }
                 
+                YMODEM_DEBUG("Idle proc invalid pack size %d", Obj->pck_size);
                 Obj->rx_status = YMODEM_RX_ERR;
             }
             break;
@@ -248,6 +262,7 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
     {
         case SOH:
         case STX:
+            YMODEM_DEBUG("Ack proc transmit ACK");
             YModem_SendByte(Obj, ACK);
 
             if (Obj->rec_pck_cb)
@@ -255,11 +270,16 @@ static void YModem_Ack_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
             break;
 
         case EOT:
+            YMODEM_DEBUG("Ack proc receive EOT ack with NAK");
             YModem_SendByte(Obj, NAK);
             Obj->rx_status = YMODEM_RX_EOT;
             break;
 
-        case CAN: Obj->rx_status = YMODEM_RX_ERR; break;
+        case CAN:
+            Obj->rx_status = YMODEM_RX_ERR;
+            YMODEM_DEBUG("Ack proc receive CAN request");
+            break;
+
         case YModem_Rx_Pack_Incomplete: break;
         case YModem_Rx_TimeOut:
         case YModem_Rx_Pack_CRC_Error:

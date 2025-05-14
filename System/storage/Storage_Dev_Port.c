@@ -88,7 +88,7 @@ static bool Storage_Dev_Set(StorageDevObj_TypeDef *ext_dev)
 
     if (ext_dev->chip_type == Storage_ChipType_W25Qxx)
     {
-        STORAGE_DEV_INFO(" W25Qxx selected\r\n");
+        STORAGE_DEV_INFO(" W25Qxx selected");
 #if (FLASH_CHIP_STATE == Storage_ChipBus_Spi)
         ext_dev->obj = Storage_Dev_Malloc(sizeof(DevW25QxxObj_TypeDef));
         if (ext_dev->obj == NULL)
@@ -138,7 +138,7 @@ static bool Storage_Dev_Init(StorageDevObj_TypeDef *ext_dev, uint32_t *p_code)
         return false;
 
     memset(&FlashInfo, 0, sizeof(DevNorFlash_Info_TypeDef));
-    STORAGE_DEV_INFO(" Module initializing\r\n");
+    STORAGE_DEV_INFO(" Module initializing");
 
     init_state = Dev.init(ext_dev->obj);
     FlashInfo  = Dev.info(ext_dev->obj);
