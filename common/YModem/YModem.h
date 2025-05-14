@@ -58,6 +58,7 @@ typedef struct
     uint8_t tx_status;
     uint8_t tx_cyc;
     uint8_t *p_tx_tmp;
+    uint8_t eot_cnt;
 
     malloc_callback malloc_cb;
     free_callback free_cb;
