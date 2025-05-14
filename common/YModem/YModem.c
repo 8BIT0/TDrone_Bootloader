@@ -525,7 +525,10 @@ static void YModem_Tx_DataPack_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint
         switch (p_rx_data[rx_size - 1])
         {
             case ACK: Obj->t_update = sys_t; break;
-            case CAN: Obj->tx_status = YMODEM_TX_EXIT; break;
+            case CAN:
+                Obj->tx_status = YMODEM_TX_EXIT;
+                proto_pack = false;
+                break;
             default: return;
         }
     }
@@ -594,65 +597,7 @@ static void YModem_Tx(YModem_Handle YM_hdl, uint32_t sys_time, uint8_t *p_file, 
     {
         case YMODEM_TX_IDLE: YModem_Tx_Idle_Proc(Obj, sys_time, p_file_name, file_size, p_rx_data, rx_size); break;
         case YMODEM_TX_IDLE_ACK: YModem_Tx_IdleACK_Proc(Obj, sys_time, file_size, p_rx_data, rx_size); break;
-// dt_tx: case YMODEM_TX_DATA:                             //1级——文件发送状态中
-//       switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
-//       {
-//         case CNC:
-//           if( YMODEM_OK == ymodem_tx_pac_get( ym_tx_pbuf+PACKET_HEADER, seek, PACKET_1K_SIZE ) )  //读取下一组数据
-//           {
-//             if( YMODEM_OK == ymodem_tx_make_pac_data( ym_tx_pbuf, PACKET_1K_SIZE ) )
-//             {
-//               __putbuf( ym_tx_pbuf, PACKET_OVERHEAD+PACKET_1K_SIZE );
-//               ym_tx_status = YMODEM_TX_DATA_ACK;
-//             }
-//             else        //读取数据出错，结束传输
-//             {
-//               ym_tx_status = YMODEM_TX_ERR;
-//               goto err_tx;
-//             }
-//           }
-//           break;
-//         case CAN:
-//           ym_rx_status = YMODEM_TX_ERR;
-//           goto err_tx;
-//           break;
-//         default:        //暂时啥也不做
-//           break;
-//       }
-//       break;
-//     case YMODEM_TX_DATA_ACK:
-//       {
-//         switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
-//         {
-//         case ACK:
-//           seek += PACKET_1K_SIZE;
-//           if( seek < ym_tx_fil_sz )     //数据未发送完（不能加‘=’！）
-//             ym_tx_status = YMODEM_TX_DATA_ACK;
-//           else  //数据发送完
-//           {
-//             ym_tx_status = YMODEM_TX_EOT;
-//             __putchar( EOT );
-//           }
-//         break;
-//         case CNC:       //如果接收方不先应答[ACK]而是直接发'C'在这里处理
-//           seek += PACKET_1K_SIZE;
-//           if( seek < ym_tx_fil_sz )     //数据未发送完（不能加‘=’！）
-//           {
-//             ym_tx_status = YMODEM_TX_DATA_ACK;
-//             //下面的状态，因为我需要马上回复，所以用goto
-//             goto dt_tx;         //发送下一个数据包
-//           }
-//           else  //数据发送完
-//           {
-//             ym_tx_status = YMODEM_TX_EOT;
-//             __putchar( EOT );
-//           }
-//         break;
-//         default:
-//         break;
-//         }
-//       }
-//     break;
+        case YMODEM_TX_DATA: YModem_Tx_DataPack_Proc(Obj, sys_time, p_file, file_size, p_rx_data, rx_size); break;
 //     case YMODEM_TX_EOT:
 //     {
 //       switch( ymodem_rx_pac_check( buf, rx_sz ) )   //检查当前包是否合法,并返回包的类型
