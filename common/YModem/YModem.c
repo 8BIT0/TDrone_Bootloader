@@ -47,6 +47,7 @@ static YModem_Handle YModem_Obj_Init(void *port_obj, YModem_TransDir_TypeDef dir
                                      trans_callback trans_cb, rec_start_callback rec_start_cb, rec_eot_callback rec_eot_cb,\
                                      rec_done_callback rec_done_cb, rec_pack_callback rec_pck_cb);
 static void YModem_Rx(YModem_Handle YM_hdl, uint32_t t_update, uint32_t t_sys, uint8_t *buf, uint32_t size);
+static void YModem_Tx(YModem_Handle YM_hdl, uint32_t sys_time, uint8_t *p_file, uint8_t *p_file_name, uint32_t file_size, uint8_t *p_rx_data, uint8_t rx_size);
 
 /* internal function */
 static int8_t YModem_Rx_Pack_Check(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size);
@@ -65,6 +66,7 @@ static bool YModem_Pack_FileInfo(YModemObj_TypeDef *Obj, uint8_t pck_header, uin
 YModem_TypeDef YModem = {
     .Init = YModem_Obj_Init,
     .Rx   = YModem_Rx,
+    .Tx   = YModem_Tx,
 };
 
 /* get pack type */
@@ -493,6 +495,8 @@ static void YModem_Tx_Idle_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint8_t 
 
             Obj->t_update = sys_t;
             Obj->tx_status = YMODEM_TX_IDLE_ACK;
+            if (Obj->start_cb)
+                Obj->start_cb(Obj->port_obj, NULL, 0, NULL, 0, true);
             break;
 
         /* cnacel transmit */
@@ -555,7 +559,7 @@ static void YModme_Tx_EOT_Proc(YModemObj_TypeDef *Obj, uint32_t t_sys, uint8_t *
     if (Obj->eot_cnt != 0)
     {
         /* wait NAK */
-        if ((p_rx_data == NULL) || (rx_size != 1))
+        if ((p_rx_data == NULL) || (rx_size != 1) || (Obj->eot_cnt > 1))
         {
             /* check NAK receive timeout */
             if (Obj->t_update && ((t_sys - Obj->t_update) >= YMODEM_TRANS_TIMEOUT))
@@ -624,17 +628,41 @@ static void YModem_Tx_IdleACK_Proc(YModemObj_TypeDef *Obj, uint32_t sys_t, uint3
 
 static void YModem_Check_Tx_Exit(YModemObj_TypeDef *Obj)
 {
-// err_tx:  case YMODEM_TX_ERR:         //在这里放弃保存文件,终止传输
-//       __putchar( CAN );
-//       ymodem_rx_finish( YMODEM_ERR );
-//       //break;                    //没有break，和下面公用代码
-//   case YMODEM_TX_EXIT:        //到这里，就收拾好，然后退出
-//       ym_rx_status = YMODEM_RX_IDLE;
-//       //*这里还需要进行某些操作，使在退出后，不会再重新进入ymodem_rx_put()函数
-//       vPortFree( ym_tx_pbuf );
-//       ym_tx_pbuf = NULL;
-//       usart_protocol_model_cur = USART_PROTOCOL_DEFAULT;
-//       return;
+    uint8_t data = CAN;
+
+    switch (Obj->tx_status)
+    {
+        case YMODEM_TX_ERR:
+            if (Obj->trans_cb)
+                Obj->trans_cb(Obj->port_obj, &data, 1);
+
+            if (Obj->done_cb)
+                Obj->done_cb(Obj->port_obj, YModem_Tx_Error);
+
+        case YMODEM_TX_EXIT:
+            Obj->t_sys = 0;
+            Obj->tx_cyc = 0;
+            Obj->eot_cnt = 0;
+            Obj->t_update = 0;
+            Obj->tx_trans_size = 0;
+            Obj->tx_file_pack_num = 0;
+            Obj->tx_file_pack_index = 0;
+            Obj->tx_status = YMODEM_TX_IDLE;
+
+            /* clear temporary buff */
+            if (Obj->p_tx_tmp)
+            {
+                memset(Obj->p_tx_tmp, 0, YMODEM_DATA_SIZE_1024 + YMODEM_FUNC_BYTE_SIZE);
+                Obj->free_cb(Obj->p_tx_tmp);
+                Obj->p_tx_tmp = NULL;
+            }
+
+            if (Obj->done_cb)
+                Obj->done_cb(Obj->port_obj, YModem_Tx_Done);
+            break;
+
+        default: break;
+    }
 }
 
 static void YModem_Tx(YModem_Handle YM_hdl, uint32_t sys_time, uint8_t *p_file, uint8_t *p_file_name, uint32_t file_size, uint8_t *p_rx_data, uint8_t rx_size)
