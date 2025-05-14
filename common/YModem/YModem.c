@@ -242,9 +242,10 @@ static void YModem_Idle_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size
 
         case EOT: Obj->rx_status = YMODEM_RX_EXIT; break;
         case YModem_Rx_Pack_Incomplete: break;
+        case YModem_Rx_Pack_CRC_Error:
         case YModem_Rx_TimeOut:
-            YModem_SendByte(Obj, CAN);
-            Obj->rx_status = YMODEM_RX_IDLE;
+            YModem_SendByte(Obj, NAK);
+            // Obj->rx_status = YMODEM_RX_IDLE;
             if (Obj->start_cb)
                 Obj->start_cb(Obj->port_obj, buf, (Obj->pck_size + YMODEM_FUNC_BYTE_SIZE), &buf[PACKET_HEADER], Obj->pck_size, false);
             break;
