@@ -301,8 +301,8 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, int8_t code)
 
             /* update firmware data to flash and storage */
             /* start from erase whole firmware sector on external flash module */
-            // StorageFirmware.erase();
-            // StorageFirmware.write_sec(SrvUpgradeObj.firmware_buf, SrvUpgradeObj.firmware_size);
+            StorageFirmware.erase();
+            StorageFirmware.write_sec(SrvUpgradeObj.firmware_buf, SrvUpgradeObj.firmware_size);
 
             /* test code */
             // SrvUpgrade_DumpFirmware(From_ERom, arg, SrvUpgradeObj.send); 
