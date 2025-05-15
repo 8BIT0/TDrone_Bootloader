@@ -119,8 +119,13 @@ static bool SrvComTrans_DeInit(SrvComObj_TypeDef *obj)
 
     /* de-init com port */
     state = BspUart.de_init(To_BspUart_ObjPtr(obj->port_obj));
+
+    /* de-init debug port */
+    state &= BspUart.de_init(To_BspUart_ObjPtr(DebugPort.port_obj));
     
     /* free malloc */
+    SrvOsCommon.free(To_BspUart_ObjPtr(DebugPort.port_obj)->hdl);
+    
     SrvOsCommon.free(To_BspUart_ObjPtr(obj->port_obj)->hdl);
     SrvOsCommon.free(obj->port_obj);
 
