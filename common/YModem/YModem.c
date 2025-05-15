@@ -306,6 +306,7 @@ static void YModem_EOT_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t size)
             Obj->rx_status = YMODEM_RX_DONE;
             if (Obj->rec_eot_cb)
                 Obj->rec_eot_cb(NULL, buf, Obj->pck_size);
+            YMODEM_DEBUG("file transmit done");    
             break;
 
         default: Obj->rx_status = YMODEM_RX_ERR; break;
@@ -317,12 +318,9 @@ static void YModem_RX_Done_Proc(YModemObj_TypeDef *Obj, uint8_t *buf, uint32_t s
     if (Obj == NULL)
         return;
 
-    if (YModem_Rx_Pack_Check(Obj, buf, size) > 0)
-    {
-        /* final pack carry empty data in payload section (all 0) */
-        YModem_SendByte(Obj, ACK);
-        Obj->rx_status = YMODEM_RX_EXIT;
-    }
+    /* final pack carry empty data in payload section (all 0) */
+    YModem_SendByte(Obj, ACK);
+    Obj->rx_status = YMODEM_RX_EXIT;
 }
 
 static void YModem_Check_Rx_Exit(YModemObj_TypeDef *Obj)

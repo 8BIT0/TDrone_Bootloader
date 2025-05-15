@@ -276,13 +276,15 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, int8_t code)
     SrvUpgradeObj.pack_ok_cnt = 0;
     Storage_ItemSearchOut_TypeDef *p_search = &SrvUpgradeObj.SearchOut;
 
+    Queue.reset(&SrvUpgradeObj.p_queue);
+    SrvUpgradeObj.mode = Upgrade_Normal_Mode;
+    
     if (code == YModem_Rx_Done)
     {
         /* store firmware into external or on chip flash */
        if (SrvUpgradeObj.send)
        {
             SrvOsCommon.delay_ms(50);
-            SrvUpgradeObj.send(arg, (uint8_t *)("YModem finish\r\n"), strlen("YModem finish\r\n"));
 
             /* print / firmware name / firmware size / receive size / */
        }
@@ -330,9 +332,6 @@ static void SrvUpgrade_Firmware_Rec_Done(void *arg, int8_t code)
         Storage.update(PARA_TYPE, p_search->item.data_addr, (uint8_t *)&SrvUpgradeObj.FirmwareInfo, sizeof(SrvUpgrade_BaseInfo_TypeDef));
         SrvOsCommon.free(SrvUpgradeObj.firmware_name); 
     }
-
-    Queue.reset(&SrvUpgradeObj.p_queue);
-    SrvUpgradeObj.mode = Upgrade_Normal_Mode;
 }
 
 static bool SrvUpgrade_Firmware_Download(void *com_obj, uint8_t *p_data, uint16_t size)

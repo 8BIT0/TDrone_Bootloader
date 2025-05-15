@@ -109,7 +109,7 @@ def main():
         ser.flush()
 
     socket_args = {
-        'packet_size': 1024,
+        'packet_size': 128,
         'protocol_type': ProtocolType.YMODEM,
         'protocol_type_options': []
     }

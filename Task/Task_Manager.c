@@ -67,9 +67,6 @@ void Task_Main_Logic(void const *arg)
     if (Tmp_Frimware_Buf == NULL)
         SYS_INFO("Bootloader", "Tmp_Frimware_Buf malloc error");
 
-    /* test code */
-    SrvCom.write(&SrvComObj, (uint8_t *)"<---------- TDrone Bootloader Start ---------->\r\n", strlen("<---------- TDrone Bootloader Start ---------->\r\n"));
-    /* test code */
     while(true)
     {
         sys_time = SrvOsCommon.get_os_ms();
@@ -90,21 +87,21 @@ static void Bootloader_Check(uint32_t sys_time)
     bool jump = false;
 
     /* nothing receive when 100ms when power on */
-    // if (sys_time >= time_out_tick)
-    // {
-    //     SYS_INFO("Wait Firmware", "Time Out");
-    //     SYS_INFO("Bootloader exit", "Jump to APP");
+    if (sys_time >= time_out_tick)
+    {
+        SYS_INFO("Wait Firmware", "Time Out");
+        SYS_INFO("Bootloader exit", "Jump to APP");
 
-    //     SrvOsCommon.delay_ms(10);
+        SrvOsCommon.delay_ms(10);
 
-    //     /* deinit pin and port */
-    //     SrvCom.de_init(&SrvComObj);
-    //     SrvOsCommon.systimer_deinit();
+        /* deinit pin and port */
+        SrvCom.de_init(&SrvComObj);
+        SrvOsCommon.systimer_deinit();
 
-    //     /* jump to app */
-    //     jump = true;
-    // }
-    // else
+        /* jump to app */
+        jump = true;
+    }
+    else
     {
         /* check com port received size */
         if (SrvCom.available)
@@ -126,7 +123,7 @@ static void Bootloader_Check(uint32_t sys_time)
         }
     }
 
-    // if (jump)
-    //     SrvOsCommon.jump_to_addr(App_Address_Base);
+    if (jump)
+        SrvOsCommon.jump_to_addr(App_Address_Base);
 }
 
