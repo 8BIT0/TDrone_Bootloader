@@ -261,7 +261,7 @@ static bool Storage_Format(void)
 
         for(uint32_t j = 0; j < size; j++)
         {
-            if (page_data_tmp[i] != default_data)
+            if (page_data_tmp[j] != default_data)
             {
                 STORAGE_INFO("format", "Default data error");
                 Storage_Assert(true);
