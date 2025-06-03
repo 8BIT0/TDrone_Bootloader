@@ -64,6 +64,7 @@ static bool KernelClock_Init(void)
 {
 	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
 	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
 	/** Supply configuration update enable
 	 */
@@ -112,6 +113,17 @@ static bool KernelClock_Init(void)
 
 	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
         return false;
+
+	PeriphClkInitStruct.PLL2.PLL2M = 5;
+	PeriphClkInitStruct.PLL2.PLL2N = 128;
+	PeriphClkInitStruct.PLL2.PLL2P = 4;
+	PeriphClkInitStruct.PLL2.PLL2Q = 4;
+	PeriphClkInitStruct.PLL2.PLL2R = 4;
+	PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_2;
+	PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
+	PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
+	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
+		return false;
 
     return true;
 }
