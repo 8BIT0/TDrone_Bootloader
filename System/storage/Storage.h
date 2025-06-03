@@ -179,7 +179,7 @@ typedef struct
 {
     bool (*init)(StorageDevObj_TypeDef *ExtDev);
     Storage_ItemSearchOut_TypeDef (*search)(Storage_ParaClassType_List _class, const char *name);
-    Storage_ErrorCode_List (*delete)(Storage_ParaClassType_List _class, const char *name);
+    Storage_ErrorCode_List (*remove)(Storage_ParaClassType_List _class, const char *name);
     Storage_ErrorCode_List (*create)(Storage_ParaClassType_List _class, const char *name, uint8_t *p_data, uint16_t size);
     Storage_ErrorCode_List (*update)(Storage_ParaClassType_List _class, uint32_t data_addr , uint8_t *p_data, uint16_t size);
     Storage_ErrorCode_List (*get)(Storage_ParaClassType_List _class, Storage_Item_TypeDef item, uint8_t *p_data, uint16_t *size);

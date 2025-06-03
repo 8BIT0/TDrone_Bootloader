@@ -1,0 +1,256 @@
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s 			page 1
+
+
+   1              		.cpu cortex-m7
+   2              		.arch armv7e-m
+   3              		.fpu fpv5-d16
+   4              		.eabi_attribute 28, 1
+   5              		.eabi_attribute 20, 1
+   6              		.eabi_attribute 21, 1
+   7              		.eabi_attribute 23, 3
+   8              		.eabi_attribute 24, 1
+   9              		.eabi_attribute 25, 1
+  10              		.eabi_attribute 26, 1
+  11              		.eabi_attribute 30, 6
+  12              		.eabi_attribute 34, 1
+  13              		.eabi_attribute 18, 4
+  14              		.file	"freertos.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.vApplicationTickHook,"ax",%progbits
+  19              		.align	1
+  20              		.global	vApplicationTickHook
+  21              		.syntax unified
+  22              		.thumb
+  23              		.thumb_func
+  25              	vApplicationTickHook:
+  26              	.LFB5:
+  27              		.file 1 "System/FreeRTOS/freertos.c"
+   1:System/FreeRTOS/freertos.c **** /**
+   2:System/FreeRTOS/freertos.c ****   ******************************************************************************
+   3:System/FreeRTOS/freertos.c ****   * File Name          : freertos.c
+   4:System/FreeRTOS/freertos.c ****   * Description        : Code for freertos applications
+   5:System/FreeRTOS/freertos.c ****   ******************************************************************************
+   6:System/FreeRTOS/freertos.c ****   * @attention
+   7:System/FreeRTOS/freertos.c ****   *
+   8:System/FreeRTOS/freertos.c ****   * <h2><center>&copy; Copyright (c) 2023 STMicroelectronics.
+   9:System/FreeRTOS/freertos.c ****   * All rights reserved.</center></h2>
+  10:System/FreeRTOS/freertos.c ****   *
+  11:System/FreeRTOS/freertos.c ****   * This software component is licensed by ST under Ultimate Liberty license
+  12:System/FreeRTOS/freertos.c ****   * SLA0044, the "License"; You may not use this file except in compliance with
+  13:System/FreeRTOS/freertos.c ****   * the License. You may obtain a copy of the License at:
+  14:System/FreeRTOS/freertos.c ****   *                             www.st.com/SLA0044
+  15:System/FreeRTOS/freertos.c ****   *
+  16:System/FreeRTOS/freertos.c ****   ******************************************************************************
+  17:System/FreeRTOS/freertos.c ****   */
+  18:System/FreeRTOS/freertos.c **** 
+  19:System/FreeRTOS/freertos.c **** /* Includes ------------------------------------------------------------------*/
+  20:System/FreeRTOS/freertos.c **** #include "FreeRTOS.h"
+  21:System/FreeRTOS/freertos.c **** #include "task.h"
+  22:System/FreeRTOS/freertos.c **** /* GetIdleTaskMemory prototype (linked to static allocation support) */
+  23:System/FreeRTOS/freertos.c **** void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskS
+  24:System/FreeRTOS/freertos.c **** 
+  25:System/FreeRTOS/freertos.c **** /* Hook prototypes */
+  26:System/FreeRTOS/freertos.c **** void vApplicationTickHook(void);
+  27:System/FreeRTOS/freertos.c **** void vApplicationMallocFailedHook(void);
+  28:System/FreeRTOS/freertos.c **** 
+  29:System/FreeRTOS/freertos.c **** __attribute__((__weak)) void vApplicationTickHook( void )
+  30:System/FreeRTOS/freertos.c **** {
+  28              		.loc 1 30 1
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s 			page 2
+
+
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 1, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+  33 0000 80B4     		push	{r7}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 4
+  36              		.cfi_offset 7, -4
+  37 0002 00AF     		add	r7, sp, #0
+  38              	.LCFI1:
+  39              		.cfi_def_cfa_register 7
+  31:System/FreeRTOS/freertos.c ****    /* This function will be called by each tick interrupt if
+  32:System/FreeRTOS/freertos.c ****    configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h. User code can be
+  33:System/FreeRTOS/freertos.c ****    added here, but the tick hook is called from an interrupt context, so
+  34:System/FreeRTOS/freertos.c ****    code must not attempt to block, and only the interrupt safe FreeRTOS API
+  35:System/FreeRTOS/freertos.c ****    functions can be used (those that end in FromISR()). */
+  36:System/FreeRTOS/freertos.c **** }
+  40              		.loc 1 36 1
+  41 0004 00BF     		nop
+  42 0006 BD46     		mov	sp, r7
+  43              	.LCFI2:
+  44              		.cfi_def_cfa_register 13
+  45              		@ sp needed
+  46 0008 5DF8047B 		ldr	r7, [sp], #4
+  47              	.LCFI3:
+  48              		.cfi_restore 7
+  49              		.cfi_def_cfa_offset 0
+  50 000c 7047     		bx	lr
+  51              		.cfi_endproc
+  52              	.LFE5:
+  54              		.section	.text.vApplicationMallocFailedHook,"ax",%progbits
+  55              		.align	1
+  56              		.global	vApplicationMallocFailedHook
+  57              		.syntax unified
+  58              		.thumb
+  59              		.thumb_func
+  61              	vApplicationMallocFailedHook:
+  62              	.LFB6:
+  37:System/FreeRTOS/freertos.c **** 
+  38:System/FreeRTOS/freertos.c **** __attribute__((__weak)) void vApplicationMallocFailedHook(void)
+  39:System/FreeRTOS/freertos.c **** {
+  63              		.loc 1 39 1
+  64              		.cfi_startproc
+  65              		@ args = 0, pretend = 0, frame = 0
+  66              		@ frame_needed = 1, uses_anonymous_args = 0
+  67              		@ link register save eliminated.
+  68 0000 80B4     		push	{r7}
+  69              	.LCFI4:
+  70              		.cfi_def_cfa_offset 4
+  71              		.cfi_offset 7, -4
+  72 0002 00AF     		add	r7, sp, #0
+  73              	.LCFI5:
+  74              		.cfi_def_cfa_register 7
+  40:System/FreeRTOS/freertos.c ****    /* vApplicationMallocFailedHook() will only be called if
+  41:System/FreeRTOS/freertos.c ****    configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h. It is a hook
+  42:System/FreeRTOS/freertos.c ****    function that will get called if a call to pvPortMalloc() fails.
+  43:System/FreeRTOS/freertos.c ****    pvPortMalloc() is called internally by the kernel whenever a task, queue,
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s 			page 3
+
+
+  44:System/FreeRTOS/freertos.c ****    timer or semaphore is created. It is also called by various parts of the
+  45:System/FreeRTOS/freertos.c ****    demo application. If heap_1.c or heap_2.c are used, then the size of the
+  46:System/FreeRTOS/freertos.c ****    heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
+  47:System/FreeRTOS/freertos.c ****    FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
+  48:System/FreeRTOS/freertos.c ****    to query the size of free heap space that remains (although it does not
+  49:System/FreeRTOS/freertos.c ****    provide information on how the remaining heap might be fragmented). */
+  50:System/FreeRTOS/freertos.c **** }
+  75              		.loc 1 50 1
+  76 0004 00BF     		nop
+  77 0006 BD46     		mov	sp, r7
+  78              	.LCFI6:
+  79              		.cfi_def_cfa_register 13
+  80              		@ sp needed
+  81 0008 5DF8047B 		ldr	r7, [sp], #4
+  82              	.LCFI7:
+  83              		.cfi_restore 7
+  84              		.cfi_def_cfa_offset 0
+  85 000c 7047     		bx	lr
+  86              		.cfi_endproc
+  87              	.LFE6:
+  89              		.section	.bss.xIdleTaskTCBBuffer,"aw",%nobits
+  90              		.align	2
+  93              	xIdleTaskTCBBuffer:
+  94 0000 00000000 		.space	96
+  94      00000000 
+  94      00000000 
+  94      00000000 
+  94      00000000 
+  95              		.section	.bss.xIdleStack,"aw",%nobits
+  96              		.align	2
+  99              	xIdleStack:
+ 100 0000 00000000 		.space	512
+ 100      00000000 
+ 100      00000000 
+ 100      00000000 
+ 100      00000000 
+ 101              		.section	.text.vApplicationGetIdleTaskMemory,"ax",%progbits
+ 102              		.align	1
+ 103              		.global	vApplicationGetIdleTaskMemory
+ 104              		.syntax unified
+ 105              		.thumb
+ 106              		.thumb_func
+ 108              	vApplicationGetIdleTaskMemory:
+ 109              	.LFB7:
+  51:System/FreeRTOS/freertos.c **** 
+  52:System/FreeRTOS/freertos.c **** static StaticTask_t xIdleTaskTCBBuffer;
+  53:System/FreeRTOS/freertos.c **** static StackType_t xIdleStack[configMINIMAL_STACK_SIZE];
+  54:System/FreeRTOS/freertos.c **** 
+  55:System/FreeRTOS/freertos.c **** void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskS
+  56:System/FreeRTOS/freertos.c **** {
+ 110              		.loc 1 56 1
+ 111              		.cfi_startproc
+ 112              		@ args = 0, pretend = 0, frame = 16
+ 113              		@ frame_needed = 1, uses_anonymous_args = 0
+ 114              		@ link register save eliminated.
+ 115 0000 80B4     		push	{r7}
+ 116              	.LCFI8:
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s 			page 4
+
+
+ 117              		.cfi_def_cfa_offset 4
+ 118              		.cfi_offset 7, -4
+ 119 0002 85B0     		sub	sp, sp, #20
+ 120              	.LCFI9:
+ 121              		.cfi_def_cfa_offset 24
+ 122 0004 00AF     		add	r7, sp, #0
+ 123              	.LCFI10:
+ 124              		.cfi_def_cfa_register 7
+ 125 0006 F860     		str	r0, [r7, #12]
+ 126 0008 B960     		str	r1, [r7, #8]
+ 127 000a 7A60     		str	r2, [r7, #4]
+  57:System/FreeRTOS/freertos.c ****   *ppxIdleTaskTCBBuffer = &xIdleTaskTCBBuffer;
+ 128              		.loc 1 57 25
+ 129 000c FB68     		ldr	r3, [r7, #12]
+ 130 000e 074A     		ldr	r2, .L4
+ 131 0010 1A60     		str	r2, [r3]
+  58:System/FreeRTOS/freertos.c ****   *ppxIdleTaskStackBuffer = &xIdleStack[0];
+ 132              		.loc 1 58 27
+ 133 0012 BB68     		ldr	r3, [r7, #8]
+ 134 0014 064A     		ldr	r2, .L4+4
+ 135 0016 1A60     		str	r2, [r3]
+  59:System/FreeRTOS/freertos.c ****   *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+ 136              		.loc 1 59 25
+ 137 0018 7B68     		ldr	r3, [r7, #4]
+ 138 001a 8022     		movs	r2, #128
+ 139 001c 1A60     		str	r2, [r3]
+  60:System/FreeRTOS/freertos.c ****   /* place for user code */
+  61:System/FreeRTOS/freertos.c **** }
+ 140              		.loc 1 61 1
+ 141 001e 00BF     		nop
+ 142 0020 1437     		adds	r7, r7, #20
+ 143              	.LCFI11:
+ 144              		.cfi_def_cfa_offset 4
+ 145 0022 BD46     		mov	sp, r7
+ 146              	.LCFI12:
+ 147              		.cfi_def_cfa_register 13
+ 148              		@ sp needed
+ 149 0024 5DF8047B 		ldr	r7, [sp], #4
+ 150              	.LCFI13:
+ 151              		.cfi_restore 7
+ 152              		.cfi_def_cfa_offset 0
+ 153 0028 7047     		bx	lr
+ 154              	.L5:
+ 155 002a 00BF     		.align	2
+ 156              	.L4:
+ 157 002c 00000000 		.word	xIdleTaskTCBBuffer
+ 158 0030 00000000 		.word	xIdleStack
+ 159              		.cfi_endproc
+ 160              	.LFE7:
+ 162              		.text
+ 163              	.Letext0:
+ 164              		.file 2 "d:\\hpm-compile-tool\\gcc-arm-none-eabi-10.3-win\\arm-none-eabi\\include\\machine\\_defau
+ 165              		.file 3 "d:\\hpm-compile-tool\\gcc-arm-none-eabi-10.3-win\\arm-none-eabi\\include\\sys\\_stdint.h"
+ 166              		.file 4 "System/FreeRTOS/portable/GCC/ARM_CM4F/portmacro.h"
+ 167              		.file 5 "System/FreeRTOS/include/FreeRTOS.h"
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s 			page 5
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 freertos.c
+C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s:19     .text.vApplicationTickHook:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s:25     .text.vApplicationTickHook:00000000 vApplicationTickHook
+C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s:55     .text.vApplicationMallocFailedHook:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s:61     .text.vApplicationMallocFailedHook:00000000 vApplicationMallocFailedHook
+C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s:90     .bss.xIdleTaskTCBBuffer:00000000 $d
+C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s:93     .bss.xIdleTaskTCBBuffer:00000000 xIdleTaskTCBBuffer
+C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s:96     .bss.xIdleStack:00000000 $d
+C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s:99     .bss.xIdleStack:00000000 xIdleStack
+C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s:102    .text.vApplicationGetIdleTaskMemory:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s:108    .text.vApplicationGetIdleTaskMemory:00000000 vApplicationGetIdleTaskMemory
+C:\Users\HUAV\AppData\Local\Temp\ccDe5nNe.s:157    .text.vApplicationGetIdleTaskMemory:0000002c $d
+
+NO UNDEFINED SYMBOLS

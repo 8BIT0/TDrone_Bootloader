@@ -1,0 +1,1775 @@
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 1
+
+
+   1              		.cpu cortex-m7
+   2              		.arch armv7e-m
+   3              		.fpu fpv5-d16
+   4              		.eabi_attribute 28, 1
+   5              		.eabi_attribute 20, 1
+   6              		.eabi_attribute 21, 1
+   7              		.eabi_attribute 23, 3
+   8              		.eabi_attribute 24, 1
+   9              		.eabi_attribute 25, 1
+  10              		.eabi_attribute 26, 1
+  11              		.eabi_attribute 30, 6
+  12              		.eabi_attribute 34, 1
+  13              		.eabi_attribute 18, 4
+  14              		.file	"shell_ext.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.shellExtNumType,"ax",%progbits
+  19              		.align	1
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  24              	shellExtNumType:
+  25              	.LFB0:
+  26              		.file 1 "System/shell/shell_ext.c"
+   1:System/shell/shell_ext.c **** /**
+   2:System/shell/shell_ext.c ****  * @file shell_ext.c
+   3:System/shell/shell_ext.c ****  * @author Letter (NevermindZZT@gmail.com)
+   4:System/shell/shell_ext.c ****  * @brief shell extensions
+   5:System/shell/shell_ext.c ****  * @version 3.0.0
+   6:System/shell/shell_ext.c ****  * @date 2019-12-31
+   7:System/shell/shell_ext.c ****  * 
+   8:System/shell/shell_ext.c ****  * @copyright (c) 2019 Letter
+   9:System/shell/shell_ext.c ****  * 
+  10:System/shell/shell_ext.c ****  */
+  11:System/shell/shell_ext.c **** 
+  12:System/shell/shell_ext.c **** #include "shell_cfg.h"
+  13:System/shell/shell_ext.c **** #include "shell.h"
+  14:System/shell/shell_ext.c **** #include "shell_ext.h"
+  15:System/shell/shell_ext.c **** 
+  16:System/shell/shell_ext.c **** 
+  17:System/shell/shell_ext.c **** extern ShellCommand* shellSeekCommand(Shell *shell,
+  18:System/shell/shell_ext.c ****                                       const char *cmd,
+  19:System/shell/shell_ext.c ****                                       ShellCommand *base,
+  20:System/shell/shell_ext.c ****                                       unsigned short compareLength);
+  21:System/shell/shell_ext.c **** extern int shellGetVarValue(Shell *shell, ShellCommand *command);
+  22:System/shell/shell_ext.c **** 
+  23:System/shell/shell_ext.c **** /**
+  24:System/shell/shell_ext.c ****  * @brief 判断数字进制
+  25:System/shell/shell_ext.c ****  * 
+  26:System/shell/shell_ext.c ****  * @param string 参数字符串
+  27:System/shell/shell_ext.c ****  * @return ShellNumType 进制
+  28:System/shell/shell_ext.c ****  */
+  29:System/shell/shell_ext.c **** static ShellNumType shellExtNumType(char *string)
+  30:System/shell/shell_ext.c **** {
+  27              		.loc 1 30 1
+  28              		.cfi_startproc
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 2
+
+
+  29              		@ args = 0, pretend = 0, frame = 16
+  30              		@ frame_needed = 1, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  32 0000 80B4     		push	{r7}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 4
+  35              		.cfi_offset 7, -4
+  36 0002 85B0     		sub	sp, sp, #20
+  37              	.LCFI1:
+  38              		.cfi_def_cfa_offset 24
+  39 0004 00AF     		add	r7, sp, #0
+  40              	.LCFI2:
+  41              		.cfi_def_cfa_register 7
+  42 0006 7860     		str	r0, [r7, #4]
+  31:System/shell/shell_ext.c ****     char *p = string;
+  43              		.loc 1 31 11
+  44 0008 7B68     		ldr	r3, [r7, #4]
+  45 000a FB60     		str	r3, [r7, #12]
+  32:System/shell/shell_ext.c ****     ShellNumType type = NUM_TYPE_DEC;
+  46              		.loc 1 32 18
+  47 000c 0023     		movs	r3, #0
+  48 000e FB72     		strb	r3, [r7, #11]
+  33:System/shell/shell_ext.c **** 
+  34:System/shell/shell_ext.c ****     if ((*p == '0') && ((*(p + 1) == 'x') || (*(p + 1) == 'X')))
+  49              		.loc 1 34 10
+  50 0010 FB68     		ldr	r3, [r7, #12]
+  51 0012 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+  52              		.loc 1 34 8
+  53 0014 302B     		cmp	r3, #48
+  54 0016 0CD1     		bne	.L2
+  55              		.loc 1 34 30 discriminator 1
+  56 0018 FB68     		ldr	r3, [r7, #12]
+  57 001a 0133     		adds	r3, r3, #1
+  58              		.loc 1 34 26 discriminator 1
+  59 001c 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+  60              		.loc 1 34 21 discriminator 1
+  61 001e 782B     		cmp	r3, #120
+  62 0020 04D0     		beq	.L3
+  63              		.loc 1 34 51 discriminator 2
+  64 0022 FB68     		ldr	r3, [r7, #12]
+  65 0024 0133     		adds	r3, r3, #1
+  66              		.loc 1 34 47 discriminator 2
+  67 0026 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+  68              		.loc 1 34 43 discriminator 2
+  69 0028 582B     		cmp	r3, #88
+  70 002a 02D1     		bne	.L2
+  71              	.L3:
+  35:System/shell/shell_ext.c ****     {
+  36:System/shell/shell_ext.c ****         type = NUM_TYPE_HEX;
+  72              		.loc 1 36 14
+  73 002c 0323     		movs	r3, #3
+  74 002e FB72     		strb	r3, [r7, #11]
+  75 0030 16E0     		b	.L4
+  76              	.L2:
+  37:System/shell/shell_ext.c ****     }
+  38:System/shell/shell_ext.c ****     else if ((*p == '0') && ((*(p + 1) == 'b') || (*(p + 1) == 'B')))
+  77              		.loc 1 38 15
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 3
+
+
+  78 0032 FB68     		ldr	r3, [r7, #12]
+  79 0034 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+  80              		.loc 1 38 13
+  81 0036 302B     		cmp	r3, #48
+  82 0038 0CD1     		bne	.L5
+  83              		.loc 1 38 35 discriminator 1
+  84 003a FB68     		ldr	r3, [r7, #12]
+  85 003c 0133     		adds	r3, r3, #1
+  86              		.loc 1 38 31 discriminator 1
+  87 003e 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+  88              		.loc 1 38 26 discriminator 1
+  89 0040 622B     		cmp	r3, #98
+  90 0042 04D0     		beq	.L6
+  91              		.loc 1 38 56 discriminator 2
+  92 0044 FB68     		ldr	r3, [r7, #12]
+  93 0046 0133     		adds	r3, r3, #1
+  94              		.loc 1 38 52 discriminator 2
+  95 0048 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+  96              		.loc 1 38 48 discriminator 2
+  97 004a 422B     		cmp	r3, #66
+  98 004c 02D1     		bne	.L5
+  99              	.L6:
+  39:System/shell/shell_ext.c ****     {
+  40:System/shell/shell_ext.c ****         type = NUM_TYPE_BIN;
+ 100              		.loc 1 40 14
+ 101 004e 0123     		movs	r3, #1
+ 102 0050 FB72     		strb	r3, [r7, #11]
+ 103 0052 05E0     		b	.L4
+ 104              	.L5:
+  41:System/shell/shell_ext.c ****     }
+  42:System/shell/shell_ext.c ****     else if (*p == '0')
+ 105              		.loc 1 42 14
+ 106 0054 FB68     		ldr	r3, [r7, #12]
+ 107 0056 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 108              		.loc 1 42 13
+ 109 0058 302B     		cmp	r3, #48
+ 110 005a 0ED1     		bne	.L7
+  43:System/shell/shell_ext.c ****     {
+  44:System/shell/shell_ext.c ****         type = NUM_TYPE_OCT;
+ 111              		.loc 1 44 14
+ 112 005c 0223     		movs	r3, #2
+ 113 005e FB72     		strb	r3, [r7, #11]
+ 114              	.L4:
+  45:System/shell/shell_ext.c ****     }
+  46:System/shell/shell_ext.c ****     
+  47:System/shell/shell_ext.c ****     while (*p++)
+ 115              		.loc 1 47 11
+ 116 0060 0BE0     		b	.L7
+ 117              	.L9:
+  48:System/shell/shell_ext.c ****     {
+  49:System/shell/shell_ext.c ****         if (*p == '.' && *(p + 1) != 0)
+ 118              		.loc 1 49 13
+ 119 0062 FB68     		ldr	r3, [r7, #12]
+ 120 0064 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 121              		.loc 1 49 12
+ 122 0066 2E2B     		cmp	r3, #46
+ 123 0068 07D1     		bne	.L7
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 4
+
+
+ 124              		.loc 1 49 30 discriminator 1
+ 125 006a FB68     		ldr	r3, [r7, #12]
+ 126 006c 0133     		adds	r3, r3, #1
+ 127              		.loc 1 49 26 discriminator 1
+ 128 006e 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 129              		.loc 1 49 23 discriminator 1
+ 130 0070 002B     		cmp	r3, #0
+ 131 0072 02D0     		beq	.L7
+  50:System/shell/shell_ext.c ****         {
+  51:System/shell/shell_ext.c ****             type = NUM_TYPE_FLOAT;
+ 132              		.loc 1 51 18
+ 133 0074 0423     		movs	r3, #4
+ 134 0076 FB72     		strb	r3, [r7, #11]
+  52:System/shell/shell_ext.c ****             break;
+ 135              		.loc 1 52 13
+ 136 0078 05E0     		b	.L8
+ 137              	.L7:
+  47:System/shell/shell_ext.c ****     {
+ 138              		.loc 1 47 14
+ 139 007a FB68     		ldr	r3, [r7, #12]
+ 140 007c 5A1C     		adds	r2, r3, #1
+ 141 007e FA60     		str	r2, [r7, #12]
+  47:System/shell/shell_ext.c ****     {
+ 142              		.loc 1 47 12
+ 143 0080 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+  47:System/shell/shell_ext.c ****     {
+ 144              		.loc 1 47 11
+ 145 0082 002B     		cmp	r3, #0
+ 146 0084 EDD1     		bne	.L9
+ 147              	.L8:
+  53:System/shell/shell_ext.c ****         }
+  54:System/shell/shell_ext.c ****     }
+  55:System/shell/shell_ext.c **** 
+  56:System/shell/shell_ext.c ****     return type;
+ 148              		.loc 1 56 12
+ 149 0086 FB7A     		ldrb	r3, [r7, #11]	@ zero_extendqisi2
+  57:System/shell/shell_ext.c **** }
+ 150              		.loc 1 57 1
+ 151 0088 1846     		mov	r0, r3
+ 152 008a 1437     		adds	r7, r7, #20
+ 153              	.LCFI3:
+ 154              		.cfi_def_cfa_offset 4
+ 155 008c BD46     		mov	sp, r7
+ 156              	.LCFI4:
+ 157              		.cfi_def_cfa_register 13
+ 158              		@ sp needed
+ 159 008e 5DF8047B 		ldr	r7, [sp], #4
+ 160              	.LCFI5:
+ 161              		.cfi_restore 7
+ 162              		.cfi_def_cfa_offset 0
+ 163 0092 7047     		bx	lr
+ 164              		.cfi_endproc
+ 165              	.LFE0:
+ 167              		.section	.text.shellExtToNum,"ax",%progbits
+ 168              		.align	1
+ 169              		.syntax unified
+ 170              		.thumb
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 5
+
+
+ 171              		.thumb_func
+ 173              	shellExtToNum:
+ 174              	.LFB1:
+  58:System/shell/shell_ext.c **** 
+  59:System/shell/shell_ext.c **** 
+  60:System/shell/shell_ext.c **** /**
+  61:System/shell/shell_ext.c ****  * @brief 字符转数字
+  62:System/shell/shell_ext.c ****  * 
+  63:System/shell/shell_ext.c ****  * @param code 字符
+  64:System/shell/shell_ext.c ****  * @return char 数字
+  65:System/shell/shell_ext.c ****  */
+  66:System/shell/shell_ext.c **** static char shellExtToNum(char code)
+  67:System/shell/shell_ext.c **** {
+ 175              		.loc 1 67 1
+ 176              		.cfi_startproc
+ 177              		@ args = 0, pretend = 0, frame = 8
+ 178              		@ frame_needed = 1, uses_anonymous_args = 0
+ 179              		@ link register save eliminated.
+ 180 0000 80B4     		push	{r7}
+ 181              	.LCFI6:
+ 182              		.cfi_def_cfa_offset 4
+ 183              		.cfi_offset 7, -4
+ 184 0002 83B0     		sub	sp, sp, #12
+ 185              	.LCFI7:
+ 186              		.cfi_def_cfa_offset 16
+ 187 0004 00AF     		add	r7, sp, #0
+ 188              	.LCFI8:
+ 189              		.cfi_def_cfa_register 7
+ 190 0006 0346     		mov	r3, r0
+ 191 0008 FB71     		strb	r3, [r7, #7]
+  68:System/shell/shell_ext.c ****     if ((code >= '0') && (code <= '9'))
+ 192              		.loc 1 68 8
+ 193 000a FB79     		ldrb	r3, [r7, #7]	@ zero_extendqisi2
+ 194 000c 2F2B     		cmp	r3, #47
+ 195 000e 06D9     		bls	.L12
+ 196              		.loc 1 68 23 discriminator 1
+ 197 0010 FB79     		ldrb	r3, [r7, #7]	@ zero_extendqisi2
+ 198 0012 392B     		cmp	r3, #57
+ 199 0014 03D8     		bhi	.L12
+  69:System/shell/shell_ext.c ****     {
+  70:System/shell/shell_ext.c ****         return code -'0';
+ 200              		.loc 1 70 21
+ 201 0016 FB79     		ldrb	r3, [r7, #7]
+ 202 0018 303B     		subs	r3, r3, #48
+ 203 001a DBB2     		uxtb	r3, r3
+ 204 001c 14E0     		b	.L13
+ 205              	.L12:
+  71:System/shell/shell_ext.c ****     }
+  72:System/shell/shell_ext.c ****     else if ((code >= 'a') && (code <= 'f'))
+ 206              		.loc 1 72 13
+ 207 001e FB79     		ldrb	r3, [r7, #7]	@ zero_extendqisi2
+ 208 0020 602B     		cmp	r3, #96
+ 209 0022 06D9     		bls	.L14
+ 210              		.loc 1 72 28 discriminator 1
+ 211 0024 FB79     		ldrb	r3, [r7, #7]	@ zero_extendqisi2
+ 212 0026 662B     		cmp	r3, #102
+ 213 0028 03D8     		bhi	.L14
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 6
+
+
+  73:System/shell/shell_ext.c ****     {
+  74:System/shell/shell_ext.c ****         return code - 'a' + 10;
+ 214              		.loc 1 74 27
+ 215 002a FB79     		ldrb	r3, [r7, #7]
+ 216 002c 573B     		subs	r3, r3, #87
+ 217 002e DBB2     		uxtb	r3, r3
+ 218 0030 0AE0     		b	.L13
+ 219              	.L14:
+  75:System/shell/shell_ext.c ****     }
+  76:System/shell/shell_ext.c ****     else if ((code >= 'A') && (code <= 'F'))
+ 220              		.loc 1 76 13
+ 221 0032 FB79     		ldrb	r3, [r7, #7]	@ zero_extendqisi2
+ 222 0034 402B     		cmp	r3, #64
+ 223 0036 06D9     		bls	.L15
+ 224              		.loc 1 76 28 discriminator 1
+ 225 0038 FB79     		ldrb	r3, [r7, #7]	@ zero_extendqisi2
+ 226 003a 462B     		cmp	r3, #70
+ 227 003c 03D8     		bhi	.L15
+  77:System/shell/shell_ext.c ****     {
+  78:System/shell/shell_ext.c ****         return code - 'A' + 10;
+ 228              		.loc 1 78 27
+ 229 003e FB79     		ldrb	r3, [r7, #7]
+ 230 0040 373B     		subs	r3, r3, #55
+ 231 0042 DBB2     		uxtb	r3, r3
+ 232 0044 00E0     		b	.L13
+ 233              	.L15:
+  79:System/shell/shell_ext.c ****     }
+  80:System/shell/shell_ext.c ****     else
+  81:System/shell/shell_ext.c ****     {
+  82:System/shell/shell_ext.c ****         return 0;
+ 234              		.loc 1 82 16
+ 235 0046 0023     		movs	r3, #0
+ 236              	.L13:
+  83:System/shell/shell_ext.c ****     }
+  84:System/shell/shell_ext.c **** }
+ 237              		.loc 1 84 1
+ 238 0048 1846     		mov	r0, r3
+ 239 004a 0C37     		adds	r7, r7, #12
+ 240              	.LCFI9:
+ 241              		.cfi_def_cfa_offset 4
+ 242 004c BD46     		mov	sp, r7
+ 243              	.LCFI10:
+ 244              		.cfi_def_cfa_register 13
+ 245              		@ sp needed
+ 246 004e 5DF8047B 		ldr	r7, [sp], #4
+ 247              	.LCFI11:
+ 248              		.cfi_restore 7
+ 249              		.cfi_def_cfa_offset 0
+ 250 0052 7047     		bx	lr
+ 251              		.cfi_endproc
+ 252              	.LFE1:
+ 254              		.section	.text.shellExtParseChar,"ax",%progbits
+ 255              		.align	1
+ 256              		.syntax unified
+ 257              		.thumb
+ 258              		.thumb_func
+ 260              	shellExtParseChar:
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 7
+
+
+ 261              	.LFB2:
+  85:System/shell/shell_ext.c **** 
+  86:System/shell/shell_ext.c **** 
+  87:System/shell/shell_ext.c **** /**
+  88:System/shell/shell_ext.c ****  * @brief 解析字符参数
+  89:System/shell/shell_ext.c ****  * 
+  90:System/shell/shell_ext.c ****  * @param string 字符串参数
+  91:System/shell/shell_ext.c ****  * @return char 解析出的字符
+  92:System/shell/shell_ext.c ****  */
+  93:System/shell/shell_ext.c **** static char shellExtParseChar(char *string)
+  94:System/shell/shell_ext.c **** {
+ 262              		.loc 1 94 1
+ 263              		.cfi_startproc
+ 264              		@ args = 0, pretend = 0, frame = 16
+ 265              		@ frame_needed = 1, uses_anonymous_args = 0
+ 266              		@ link register save eliminated.
+ 267 0000 80B4     		push	{r7}
+ 268              	.LCFI12:
+ 269              		.cfi_def_cfa_offset 4
+ 270              		.cfi_offset 7, -4
+ 271 0002 85B0     		sub	sp, sp, #20
+ 272              	.LCFI13:
+ 273              		.cfi_def_cfa_offset 24
+ 274 0004 00AF     		add	r7, sp, #0
+ 275              	.LCFI14:
+ 276              		.cfi_def_cfa_register 7
+ 277 0006 7860     		str	r0, [r7, #4]
+  95:System/shell/shell_ext.c ****     char *p = string + 1;
+ 278              		.loc 1 95 11
+ 279 0008 7B68     		ldr	r3, [r7, #4]
+ 280 000a 0133     		adds	r3, r3, #1
+ 281 000c BB60     		str	r3, [r7, #8]
+  96:System/shell/shell_ext.c ****     char value = 0;
+ 282              		.loc 1 96 10
+ 283 000e 0023     		movs	r3, #0
+ 284 0010 FB73     		strb	r3, [r7, #15]
+  97:System/shell/shell_ext.c **** 
+  98:System/shell/shell_ext.c ****     if (*p == '\\')
+ 285              		.loc 1 98 9
+ 286 0012 BB68     		ldr	r3, [r7, #8]
+ 287 0014 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 288              		.loc 1 98 8
+ 289 0016 5C2B     		cmp	r3, #92
+ 290 0018 49D1     		bne	.L17
+  99:System/shell/shell_ext.c ****     {
+ 100:System/shell/shell_ext.c ****         switch (*(p + 1))
+ 291              		.loc 1 100 21
+ 292 001a BB68     		ldr	r3, [r7, #8]
+ 293 001c 0133     		adds	r3, r3, #1
+ 294              		.loc 1 100 17
+ 295 001e 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 296              		.loc 1 100 9
+ 297 0020 302B     		cmp	r3, #48
+ 298 0022 3DD0     		beq	.L18
+ 299 0024 302B     		cmp	r3, #48
+ 300 0026 3EDB     		blt	.L19
+ 301 0028 742B     		cmp	r3, #116
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 8
+
+
+ 302 002a 3CDC     		bgt	.L19
+ 303 002c 622B     		cmp	r3, #98
+ 304 002e 3ADB     		blt	.L19
+ 305 0030 623B     		subs	r3, r3, #98
+ 306 0032 122B     		cmp	r3, #18
+ 307 0034 37D8     		bhi	.L19
+ 308 0036 01A2     		adr	r2, .L21
+ 309 0038 52F823F0 		ldr	pc, [r2, r3, lsl #2]
+ 310              		.p2align 2
+ 311              	.L21:
+ 312 003c 89000000 		.word	.L24+1
+ 313 0040 A7000000 		.word	.L19+1
+ 314 0044 A7000000 		.word	.L19+1
+ 315 0048 A7000000 		.word	.L19+1
+ 316 004c A7000000 		.word	.L19+1
+ 317 0050 A7000000 		.word	.L19+1
+ 318 0054 A7000000 		.word	.L19+1
+ 319 0058 A7000000 		.word	.L19+1
+ 320 005c A7000000 		.word	.L19+1
+ 321 0060 A7000000 		.word	.L19+1
+ 322 0064 A7000000 		.word	.L19+1
+ 323 0068 A7000000 		.word	.L19+1
+ 324 006c 95000000 		.word	.L23+1
+ 325 0070 A7000000 		.word	.L19+1
+ 326 0074 A7000000 		.word	.L19+1
+ 327 0078 A7000000 		.word	.L19+1
+ 328 007c 8F000000 		.word	.L22+1
+ 329 0080 A7000000 		.word	.L19+1
+ 330 0084 9B000000 		.word	.L20+1
+ 331              		.p2align 1
+ 332              	.L24:
+ 101:System/shell/shell_ext.c ****         {
+ 102:System/shell/shell_ext.c ****         case 'b':
+ 103:System/shell/shell_ext.c ****             value = '\b';
+ 333              		.loc 1 103 19
+ 334 0088 0823     		movs	r3, #8
+ 335 008a FB73     		strb	r3, [r7, #15]
+ 104:System/shell/shell_ext.c ****             break;
+ 336              		.loc 1 104 13
+ 337 008c 12E0     		b	.L26
+ 338              	.L22:
+ 105:System/shell/shell_ext.c ****         case 'r':
+ 106:System/shell/shell_ext.c ****             value = '\r';
+ 339              		.loc 1 106 19
+ 340 008e 0D23     		movs	r3, #13
+ 341 0090 FB73     		strb	r3, [r7, #15]
+ 107:System/shell/shell_ext.c ****             break;
+ 342              		.loc 1 107 13
+ 343 0092 0FE0     		b	.L26
+ 344              	.L23:
+ 108:System/shell/shell_ext.c ****         case 'n':
+ 109:System/shell/shell_ext.c ****             value = '\n';
+ 345              		.loc 1 109 19
+ 346 0094 0A23     		movs	r3, #10
+ 347 0096 FB73     		strb	r3, [r7, #15]
+ 110:System/shell/shell_ext.c ****             break;
+ 348              		.loc 1 110 13
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 9
+
+
+ 349 0098 0CE0     		b	.L26
+ 350              	.L20:
+ 111:System/shell/shell_ext.c ****         case 't':
+ 112:System/shell/shell_ext.c ****             value = '\t';
+ 351              		.loc 1 112 19
+ 352 009a 0923     		movs	r3, #9
+ 353 009c FB73     		strb	r3, [r7, #15]
+ 113:System/shell/shell_ext.c ****             break;
+ 354              		.loc 1 113 13
+ 355 009e 09E0     		b	.L26
+ 356              	.L18:
+ 114:System/shell/shell_ext.c ****         case '0':
+ 115:System/shell/shell_ext.c ****             value = 0;
+ 357              		.loc 1 115 19
+ 358 00a0 0023     		movs	r3, #0
+ 359 00a2 FB73     		strb	r3, [r7, #15]
+ 116:System/shell/shell_ext.c ****             break;
+ 360              		.loc 1 116 13
+ 361 00a4 06E0     		b	.L26
+ 362              	.L19:
+ 117:System/shell/shell_ext.c ****         default:
+ 118:System/shell/shell_ext.c ****             value = *(p + 1);
+ 363              		.loc 1 118 19
+ 364 00a6 BB68     		ldr	r3, [r7, #8]
+ 365 00a8 5B78     		ldrb	r3, [r3, #1]
+ 366 00aa FB73     		strb	r3, [r7, #15]
+ 119:System/shell/shell_ext.c ****             break;
+ 367              		.loc 1 119 13
+ 368 00ac 02E0     		b	.L26
+ 369              	.L17:
+ 120:System/shell/shell_ext.c ****         }
+ 121:System/shell/shell_ext.c ****     }
+ 122:System/shell/shell_ext.c ****     else
+ 123:System/shell/shell_ext.c ****     {
+ 124:System/shell/shell_ext.c ****         value = *p;
+ 370              		.loc 1 124 15
+ 371 00ae BB68     		ldr	r3, [r7, #8]
+ 372 00b0 1B78     		ldrb	r3, [r3]
+ 373 00b2 FB73     		strb	r3, [r7, #15]
+ 374              	.L26:
+ 125:System/shell/shell_ext.c ****     }
+ 126:System/shell/shell_ext.c ****     return value;
+ 375              		.loc 1 126 12
+ 376 00b4 FB7B     		ldrb	r3, [r7, #15]	@ zero_extendqisi2
+ 127:System/shell/shell_ext.c **** }
+ 377              		.loc 1 127 1
+ 378 00b6 1846     		mov	r0, r3
+ 379 00b8 1437     		adds	r7, r7, #20
+ 380              	.LCFI15:
+ 381              		.cfi_def_cfa_offset 4
+ 382 00ba BD46     		mov	sp, r7
+ 383              	.LCFI16:
+ 384              		.cfi_def_cfa_register 13
+ 385              		@ sp needed
+ 386 00bc 5DF8047B 		ldr	r7, [sp], #4
+ 387              	.LCFI17:
+ 388              		.cfi_restore 7
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 10
+
+
+ 389              		.cfi_def_cfa_offset 0
+ 390 00c0 7047     		bx	lr
+ 391              		.cfi_endproc
+ 392              	.LFE2:
+ 394 00c2 00BF     		.section	.text.shellExtParseString,"ax",%progbits
+ 395              		.align	1
+ 396              		.syntax unified
+ 397              		.thumb
+ 398              		.thumb_func
+ 400              	shellExtParseString:
+ 401              	.LFB3:
+ 128:System/shell/shell_ext.c **** 
+ 129:System/shell/shell_ext.c **** 
+ 130:System/shell/shell_ext.c **** /**
+ 131:System/shell/shell_ext.c ****  * @brief 解析字符串参数
+ 132:System/shell/shell_ext.c ****  * 
+ 133:System/shell/shell_ext.c ****  * @param string 字符串参数
+ 134:System/shell/shell_ext.c ****  * @return char* 解析出的字符串
+ 135:System/shell/shell_ext.c ****  */
+ 136:System/shell/shell_ext.c **** static char* shellExtParseString(char *string)
+ 137:System/shell/shell_ext.c **** {
+ 402              		.loc 1 137 1
+ 403              		.cfi_startproc
+ 404              		@ args = 0, pretend = 0, frame = 16
+ 405              		@ frame_needed = 1, uses_anonymous_args = 0
+ 406 0000 90B5     		push	{r4, r7, lr}
+ 407              	.LCFI18:
+ 408              		.cfi_def_cfa_offset 12
+ 409              		.cfi_offset 4, -12
+ 410              		.cfi_offset 7, -8
+ 411              		.cfi_offset 14, -4
+ 412 0002 85B0     		sub	sp, sp, #20
+ 413              	.LCFI19:
+ 414              		.cfi_def_cfa_offset 32
+ 415 0004 00AF     		add	r7, sp, #0
+ 416              	.LCFI20:
+ 417              		.cfi_def_cfa_register 7
+ 418 0006 7860     		str	r0, [r7, #4]
+ 138:System/shell/shell_ext.c ****     char *p = string;
+ 419              		.loc 1 138 11
+ 420 0008 7B68     		ldr	r3, [r7, #4]
+ 421 000a FB60     		str	r3, [r7, #12]
+ 139:System/shell/shell_ext.c ****     unsigned short index = 0;
+ 422              		.loc 1 139 20
+ 423 000c 0023     		movs	r3, #0
+ 424 000e 7B81     		strh	r3, [r7, #10]	@ movhi
+ 140:System/shell/shell_ext.c **** 
+ 141:System/shell/shell_ext.c ****     if (*string == '\"')
+ 425              		.loc 1 141 9
+ 426 0010 7B68     		ldr	r3, [r7, #4]
+ 427 0012 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 428              		.loc 1 141 8
+ 429 0014 222B     		cmp	r3, #34
+ 430 0016 2DD1     		bne	.L30
+ 142:System/shell/shell_ext.c ****     {
+ 143:System/shell/shell_ext.c ****         p = ++string;
+ 431              		.loc 1 143 11
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 11
+
+
+ 432 0018 7B68     		ldr	r3, [r7, #4]
+ 433 001a 0133     		adds	r3, r3, #1
+ 434 001c 7B60     		str	r3, [r7, #4]
+ 435 001e 7B68     		ldr	r3, [r7, #4]
+ 436 0020 FB60     		str	r3, [r7, #12]
+ 144:System/shell/shell_ext.c ****     }
+ 145:System/shell/shell_ext.c **** 
+ 146:System/shell/shell_ext.c ****     while (*p)
+ 437              		.loc 1 146 11
+ 438 0022 27E0     		b	.L30
+ 439              	.L34:
+ 147:System/shell/shell_ext.c ****     {
+ 148:System/shell/shell_ext.c ****         if (*p == '\\')
+ 440              		.loc 1 148 13
+ 441 0024 FB68     		ldr	r3, [r7, #12]
+ 442 0026 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 443              		.loc 1 148 12
+ 444 0028 5C2B     		cmp	r3, #92
+ 445 002a 0DD1     		bne	.L31
+ 149:System/shell/shell_ext.c ****         {
+ 150:System/shell/shell_ext.c ****             *(string + index) = shellExtParseChar(p - 1);
+ 446              		.loc 1 150 33
+ 447 002c FB68     		ldr	r3, [r7, #12]
+ 448 002e 591E     		subs	r1, r3, #1
+ 449              		.loc 1 150 22
+ 450 0030 7B89     		ldrh	r3, [r7, #10]
+ 451 0032 7A68     		ldr	r2, [r7, #4]
+ 452 0034 D418     		adds	r4, r2, r3
+ 453              		.loc 1 150 33
+ 454 0036 0846     		mov	r0, r1
+ 455 0038 FFF7FEFF 		bl	shellExtParseChar
+ 456 003c 0346     		mov	r3, r0
+ 457              		.loc 1 150 31
+ 458 003e 2370     		strb	r3, [r4]
+ 151:System/shell/shell_ext.c ****             p++;
+ 459              		.loc 1 151 14
+ 460 0040 FB68     		ldr	r3, [r7, #12]
+ 461 0042 0133     		adds	r3, r3, #1
+ 462 0044 FB60     		str	r3, [r7, #12]
+ 463 0046 0FE0     		b	.L32
+ 464              	.L31:
+ 152:System/shell/shell_ext.c ****         }
+ 153:System/shell/shell_ext.c ****         else if (*p == '\"')
+ 465              		.loc 1 153 18
+ 466 0048 FB68     		ldr	r3, [r7, #12]
+ 467 004a 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 468              		.loc 1 153 17
+ 469 004c 222B     		cmp	r3, #34
+ 470 004e 05D1     		bne	.L33
+ 154:System/shell/shell_ext.c ****         {
+ 155:System/shell/shell_ext.c ****             *(string + index) = 0;
+ 471              		.loc 1 155 22
+ 472 0050 7B89     		ldrh	r3, [r7, #10]
+ 473 0052 7A68     		ldr	r2, [r7, #4]
+ 474 0054 1344     		add	r3, r3, r2
+ 475              		.loc 1 155 31
+ 476 0056 0022     		movs	r2, #0
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 12
+
+
+ 477 0058 1A70     		strb	r2, [r3]
+ 478 005a 05E0     		b	.L32
+ 479              	.L33:
+ 156:System/shell/shell_ext.c ****         }
+ 157:System/shell/shell_ext.c ****         else
+ 158:System/shell/shell_ext.c ****         {
+ 159:System/shell/shell_ext.c ****             *(string + index) = *p;
+ 480              		.loc 1 159 22
+ 481 005c 7B89     		ldrh	r3, [r7, #10]
+ 482 005e 7A68     		ldr	r2, [r7, #4]
+ 483 0060 1344     		add	r3, r3, r2
+ 484              		.loc 1 159 33
+ 485 0062 FA68     		ldr	r2, [r7, #12]
+ 486 0064 1278     		ldrb	r2, [r2]	@ zero_extendqisi2
+ 487              		.loc 1 159 31
+ 488 0066 1A70     		strb	r2, [r3]
+ 489              	.L32:
+ 160:System/shell/shell_ext.c ****         }
+ 161:System/shell/shell_ext.c ****         p++;
+ 490              		.loc 1 161 10
+ 491 0068 FB68     		ldr	r3, [r7, #12]
+ 492 006a 0133     		adds	r3, r3, #1
+ 493 006c FB60     		str	r3, [r7, #12]
+ 162:System/shell/shell_ext.c ****         index ++;
+ 494              		.loc 1 162 15
+ 495 006e 7B89     		ldrh	r3, [r7, #10]
+ 496 0070 0133     		adds	r3, r3, #1
+ 497 0072 7B81     		strh	r3, [r7, #10]	@ movhi
+ 498              	.L30:
+ 146:System/shell/shell_ext.c ****     {
+ 499              		.loc 1 146 12
+ 500 0074 FB68     		ldr	r3, [r7, #12]
+ 501 0076 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 146:System/shell/shell_ext.c ****     {
+ 502              		.loc 1 146 11
+ 503 0078 002B     		cmp	r3, #0
+ 504 007a D3D1     		bne	.L34
+ 163:System/shell/shell_ext.c ****     }
+ 164:System/shell/shell_ext.c ****     *(string + index) = 0;
+ 505              		.loc 1 164 14
+ 506 007c 7B89     		ldrh	r3, [r7, #10]
+ 507 007e 7A68     		ldr	r2, [r7, #4]
+ 508 0080 1344     		add	r3, r3, r2
+ 509              		.loc 1 164 23
+ 510 0082 0022     		movs	r2, #0
+ 511 0084 1A70     		strb	r2, [r3]
+ 165:System/shell/shell_ext.c ****     return string;
+ 512              		.loc 1 165 12
+ 513 0086 7B68     		ldr	r3, [r7, #4]
+ 166:System/shell/shell_ext.c **** }
+ 514              		.loc 1 166 1
+ 515 0088 1846     		mov	r0, r3
+ 516 008a 1437     		adds	r7, r7, #20
+ 517              	.LCFI21:
+ 518              		.cfi_def_cfa_offset 12
+ 519 008c BD46     		mov	sp, r7
+ 520              	.LCFI22:
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 13
+
+
+ 521              		.cfi_def_cfa_register 13
+ 522              		@ sp needed
+ 523 008e 90BD     		pop	{r4, r7, pc}
+ 524              		.cfi_endproc
+ 525              	.LFE3:
+ 527              		.section	.text.shellExtParseNumber,"ax",%progbits
+ 528              		.align	1
+ 529              		.syntax unified
+ 530              		.thumb
+ 531              		.thumb_func
+ 533              	shellExtParseNumber:
+ 534              	.LFB4:
+ 167:System/shell/shell_ext.c **** 
+ 168:System/shell/shell_ext.c **** 
+ 169:System/shell/shell_ext.c **** /**
+ 170:System/shell/shell_ext.c ****  * @brief 解析数字参数
+ 171:System/shell/shell_ext.c ****  * 
+ 172:System/shell/shell_ext.c ****  * @param string 字符串参数
+ 173:System/shell/shell_ext.c ****  * @return unsigned int 解析出的数字
+ 174:System/shell/shell_ext.c ****  */
+ 175:System/shell/shell_ext.c **** static unsigned int shellExtParseNumber(char *string)
+ 176:System/shell/shell_ext.c **** {
+ 535              		.loc 1 176 1
+ 536              		.cfi_startproc
+ 537              		@ args = 0, pretend = 0, frame = 40
+ 538              		@ frame_needed = 1, uses_anonymous_args = 0
+ 539 0000 90B5     		push	{r4, r7, lr}
+ 540              	.LCFI23:
+ 541              		.cfi_def_cfa_offset 12
+ 542              		.cfi_offset 4, -12
+ 543              		.cfi_offset 7, -8
+ 544              		.cfi_offset 14, -4
+ 545 0002 8BB0     		sub	sp, sp, #44
+ 546              	.LCFI24:
+ 547              		.cfi_def_cfa_offset 56
+ 548 0004 00AF     		add	r7, sp, #0
+ 549              	.LCFI25:
+ 550              		.cfi_def_cfa_register 7
+ 551 0006 7860     		str	r0, [r7, #4]
+ 177:System/shell/shell_ext.c ****     ShellNumType type = NUM_TYPE_DEC;
+ 552              		.loc 1 177 18
+ 553 0008 0023     		movs	r3, #0
+ 554 000a FB74     		strb	r3, [r7, #19]
+ 178:System/shell/shell_ext.c ****     char radix = 10;
+ 555              		.loc 1 178 10
+ 556 000c 0A23     		movs	r3, #10
+ 557 000e 87F82730 		strb	r3, [r7, #39]
+ 179:System/shell/shell_ext.c ****     char *p = string;
+ 558              		.loc 1 179 11
+ 559 0012 7B68     		ldr	r3, [r7, #4]
+ 560 0014 3B62     		str	r3, [r7, #32]
+ 180:System/shell/shell_ext.c ****     char offset = 0;
+ 561              		.loc 1 180 10
+ 562 0016 0023     		movs	r3, #0
+ 563 0018 FB77     		strb	r3, [r7, #31]
+ 181:System/shell/shell_ext.c ****     signed char sign = 1;
+ 564              		.loc 1 181 17
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 14
+
+
+ 565 001a 0123     		movs	r3, #1
+ 566 001c BB77     		strb	r3, [r7, #30]
+ 182:System/shell/shell_ext.c ****     unsigned int valueInt = 0;
+ 567              		.loc 1 182 18
+ 568 001e 0023     		movs	r3, #0
+ 569 0020 BB61     		str	r3, [r7, #24]
+ 183:System/shell/shell_ext.c ****     float valueFloat = 0.0;
+ 570              		.loc 1 183 11
+ 571 0022 4FF00003 		mov	r3, #0
+ 572 0026 FB60     		str	r3, [r7, #12]	@ float
+ 184:System/shell/shell_ext.c ****     unsigned int devide = 0;
+ 573              		.loc 1 184 18
+ 574 0028 0023     		movs	r3, #0
+ 575 002a 7B61     		str	r3, [r7, #20]
+ 185:System/shell/shell_ext.c **** 
+ 186:System/shell/shell_ext.c ****     if (*string == '-')
+ 576              		.loc 1 186 9
+ 577 002c 7B68     		ldr	r3, [r7, #4]
+ 578 002e 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 579              		.loc 1 186 8
+ 580 0030 2D2B     		cmp	r3, #45
+ 581 0032 01D1     		bne	.L37
+ 187:System/shell/shell_ext.c ****     {
+ 188:System/shell/shell_ext.c ****         sign = -1;
+ 582              		.loc 1 188 14
+ 583 0034 FF23     		movs	r3, #255
+ 584 0036 BB77     		strb	r3, [r7, #30]
+ 585              	.L37:
+ 189:System/shell/shell_ext.c ****     }
+ 190:System/shell/shell_ext.c **** 
+ 191:System/shell/shell_ext.c ****     type = shellExtNumType(string + ((sign == -1) ? 1 : 0));
+ 586              		.loc 1 191 55
+ 587 0038 97F91E30 		ldrsb	r3, [r7, #30]
+ 588 003c B3F1FF3F 		cmp	r3, #-1
+ 589 0040 01D1     		bne	.L38
+ 590              		.loc 1 191 55 is_stmt 0 discriminator 1
+ 591 0042 0123     		movs	r3, #1
+ 592 0044 00E0     		b	.L39
+ 593              	.L38:
+ 594              		.loc 1 191 55 discriminator 2
+ 595 0046 0023     		movs	r3, #0
+ 596              	.L39:
+ 597              		.loc 1 191 12 is_stmt 1 discriminator 4
+ 598 0048 7A68     		ldr	r2, [r7, #4]
+ 599 004a 1344     		add	r3, r3, r2
+ 600 004c 1846     		mov	r0, r3
+ 601 004e FFF7FEFF 		bl	shellExtNumType
+ 602 0052 0346     		mov	r3, r0
+ 603 0054 FB74     		strb	r3, [r7, #19]
+ 192:System/shell/shell_ext.c **** 
+ 193:System/shell/shell_ext.c ****     switch ((char)type)
+ 604              		.loc 1 193 13 discriminator 4
+ 605 0056 FB7C     		ldrb	r3, [r7, #19]	@ zero_extendqisi2
+ 606              		.loc 1 193 5 discriminator 4
+ 607 0058 032B     		cmp	r3, #3
+ 608 005a 06D0     		beq	.L40
+ 609              		.loc 1 193 5 is_stmt 0
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 15
+
+
+ 610 005c 032B     		cmp	r3, #3
+ 611 005e 16DC     		bgt	.L53
+ 612 0060 012B     		cmp	r3, #1
+ 613 0062 0ED0     		beq	.L42
+ 614 0064 022B     		cmp	r3, #2
+ 615 0066 06D0     		beq	.L43
+ 194:System/shell/shell_ext.c ****     {
+ 195:System/shell/shell_ext.c ****     case NUM_TYPE_HEX:
+ 196:System/shell/shell_ext.c ****         radix = 16;
+ 197:System/shell/shell_ext.c ****         offset = 2;
+ 198:System/shell/shell_ext.c ****         break;
+ 199:System/shell/shell_ext.c ****     
+ 200:System/shell/shell_ext.c ****     case NUM_TYPE_OCT:
+ 201:System/shell/shell_ext.c ****         radix = 8;
+ 202:System/shell/shell_ext.c ****         offset = 1;
+ 203:System/shell/shell_ext.c ****         break;
+ 204:System/shell/shell_ext.c **** 
+ 205:System/shell/shell_ext.c ****     case NUM_TYPE_BIN:
+ 206:System/shell/shell_ext.c ****         radix = 2;
+ 207:System/shell/shell_ext.c ****         offset = 2;
+ 208:System/shell/shell_ext.c ****         break;
+ 209:System/shell/shell_ext.c ****     
+ 210:System/shell/shell_ext.c ****     default:
+ 211:System/shell/shell_ext.c ****         break;
+ 616              		.loc 1 211 9 is_stmt 1
+ 617 0068 11E0     		b	.L53
+ 618              	.L40:
+ 196:System/shell/shell_ext.c ****         offset = 2;
+ 619              		.loc 1 196 15
+ 620 006a 1023     		movs	r3, #16
+ 621 006c 87F82730 		strb	r3, [r7, #39]
+ 197:System/shell/shell_ext.c ****         break;
+ 622              		.loc 1 197 16
+ 623 0070 0223     		movs	r3, #2
+ 624 0072 FB77     		strb	r3, [r7, #31]
+ 198:System/shell/shell_ext.c ****     
+ 625              		.loc 1 198 9
+ 626 0074 0CE0     		b	.L44
+ 627              	.L43:
+ 201:System/shell/shell_ext.c ****         offset = 1;
+ 628              		.loc 1 201 15
+ 629 0076 0823     		movs	r3, #8
+ 630 0078 87F82730 		strb	r3, [r7, #39]
+ 202:System/shell/shell_ext.c ****         break;
+ 631              		.loc 1 202 16
+ 632 007c 0123     		movs	r3, #1
+ 633 007e FB77     		strb	r3, [r7, #31]
+ 203:System/shell/shell_ext.c **** 
+ 634              		.loc 1 203 9
+ 635 0080 06E0     		b	.L44
+ 636              	.L42:
+ 206:System/shell/shell_ext.c ****         offset = 2;
+ 637              		.loc 1 206 15
+ 638 0082 0223     		movs	r3, #2
+ 639 0084 87F82730 		strb	r3, [r7, #39]
+ 207:System/shell/shell_ext.c ****         break;
+ 640              		.loc 1 207 16
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 16
+
+
+ 641 0088 0223     		movs	r3, #2
+ 642 008a FB77     		strb	r3, [r7, #31]
+ 208:System/shell/shell_ext.c ****     
+ 643              		.loc 1 208 9
+ 644 008c 00E0     		b	.L44
+ 645              	.L53:
+ 646              		.loc 1 211 9
+ 647 008e 00BF     		nop
+ 648              	.L44:
+ 212:System/shell/shell_ext.c ****     }
+ 213:System/shell/shell_ext.c **** 
+ 214:System/shell/shell_ext.c ****     p = string + offset + ((sign == -1) ? 1 : 0);
+ 649              		.loc 1 214 25
+ 650 0090 FB7F     		ldrb	r3, [r7, #31]	@ zero_extendqisi2
+ 651              		.loc 1 214 45
+ 652 0092 97F91E20 		ldrsb	r2, [r7, #30]
+ 653 0096 B2F1FF3F 		cmp	r2, #-1
+ 654 009a 01D1     		bne	.L45
+ 655              		.loc 1 214 45 is_stmt 0 discriminator 1
+ 656 009c 0122     		movs	r2, #1
+ 657 009e 00E0     		b	.L46
+ 658              	.L45:
+ 659              		.loc 1 214 45 discriminator 2
+ 660 00a0 0022     		movs	r2, #0
+ 661              	.L46:
+ 662              		.loc 1 214 25 is_stmt 1 discriminator 4
+ 663 00a2 1344     		add	r3, r3, r2
+ 664              		.loc 1 214 7 discriminator 4
+ 665 00a4 7A68     		ldr	r2, [r7, #4]
+ 666 00a6 1344     		add	r3, r3, r2
+ 667 00a8 3B62     		str	r3, [r7, #32]
+ 215:System/shell/shell_ext.c **** 
+ 216:System/shell/shell_ext.c ****     while (*p)
+ 668              		.loc 1 216 11 discriminator 4
+ 669 00aa 1FE0     		b	.L47
+ 670              	.L49:
+ 217:System/shell/shell_ext.c ****     {
+ 218:System/shell/shell_ext.c ****         if (*p == '.')
+ 671              		.loc 1 218 13
+ 672 00ac 3B6A     		ldr	r3, [r7, #32]
+ 673 00ae 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 674              		.loc 1 218 12
+ 675 00b0 2E2B     		cmp	r3, #46
+ 676 00b2 05D1     		bne	.L48
+ 219:System/shell/shell_ext.c ****         {
+ 220:System/shell/shell_ext.c ****             devide = 1;
+ 677              		.loc 1 220 20
+ 678 00b4 0123     		movs	r3, #1
+ 679 00b6 7B61     		str	r3, [r7, #20]
+ 221:System/shell/shell_ext.c ****             p++;
+ 680              		.loc 1 221 14
+ 681 00b8 3B6A     		ldr	r3, [r7, #32]
+ 682 00ba 0133     		adds	r3, r3, #1
+ 683 00bc 3B62     		str	r3, [r7, #32]
+ 222:System/shell/shell_ext.c ****             continue;
+ 684              		.loc 1 222 13
+ 685 00be 15E0     		b	.L47
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 17
+
+
+ 686              	.L48:
+ 223:System/shell/shell_ext.c ****         }
+ 224:System/shell/shell_ext.c ****         valueInt = valueInt * radix + shellExtToNum(*p);
+ 687              		.loc 1 224 29
+ 688 00c0 97F82730 		ldrb	r3, [r7, #39]	@ zero_extendqisi2
+ 689 00c4 BA69     		ldr	r2, [r7, #24]
+ 690 00c6 02FB03F4 		mul	r4, r2, r3
+ 691              		.loc 1 224 39
+ 692 00ca 3B6A     		ldr	r3, [r7, #32]
+ 693 00cc 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 694 00ce 1846     		mov	r0, r3
+ 695 00d0 FFF7FEFF 		bl	shellExtToNum
+ 696 00d4 0346     		mov	r3, r0
+ 697              		.loc 1 224 18
+ 698 00d6 2344     		add	r3, r3, r4
+ 699 00d8 BB61     		str	r3, [r7, #24]
+ 225:System/shell/shell_ext.c ****         devide *= 10;
+ 700              		.loc 1 225 16
+ 701 00da 7A69     		ldr	r2, [r7, #20]
+ 702 00dc 1346     		mov	r3, r2
+ 703 00de 9B00     		lsls	r3, r3, #2
+ 704 00e0 1344     		add	r3, r3, r2
+ 705 00e2 5B00     		lsls	r3, r3, #1
+ 706 00e4 7B61     		str	r3, [r7, #20]
+ 226:System/shell/shell_ext.c ****         p++;
+ 707              		.loc 1 226 10
+ 708 00e6 3B6A     		ldr	r3, [r7, #32]
+ 709 00e8 0133     		adds	r3, r3, #1
+ 710 00ea 3B62     		str	r3, [r7, #32]
+ 711              	.L47:
+ 216:System/shell/shell_ext.c ****     {
+ 712              		.loc 1 216 12
+ 713 00ec 3B6A     		ldr	r3, [r7, #32]
+ 714 00ee 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 216:System/shell/shell_ext.c ****     {
+ 715              		.loc 1 216 11
+ 716 00f0 002B     		cmp	r3, #0
+ 717 00f2 DBD1     		bne	.L49
+ 227:System/shell/shell_ext.c ****     }
+ 228:System/shell/shell_ext.c ****     if (type == NUM_TYPE_FLOAT && devide != 0)
+ 718              		.loc 1 228 8
+ 719 00f4 FB7C     		ldrb	r3, [r7, #19]	@ zero_extendqisi2
+ 720 00f6 042B     		cmp	r3, #4
+ 721 00f8 1CD1     		bne	.L50
+ 722              		.loc 1 228 32 discriminator 1
+ 723 00fa 7B69     		ldr	r3, [r7, #20]
+ 724 00fc 002B     		cmp	r3, #0
+ 725 00fe 19D0     		beq	.L50
+ 229:System/shell/shell_ext.c ****     {
+ 230:System/shell/shell_ext.c ****         valueFloat = (float)valueInt / devide * sign;
+ 726              		.loc 1 230 22
+ 727 0100 BB69     		ldr	r3, [r7, #24]
+ 728 0102 07EE903A 		vmov	s15, r3	@ int
+ 729 0106 F8EE676A 		vcvt.f32.u32	s13, s15
+ 730              		.loc 1 230 38
+ 731 010a 7B69     		ldr	r3, [r7, #20]
+ 732 010c 07EE903A 		vmov	s15, r3	@ int
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 18
+
+
+ 733 0110 F8EE677A 		vcvt.f32.u32	s15, s15
+ 734 0114 86EEA77A 		vdiv.f32	s14, s13, s15
+ 735              		.loc 1 230 47
+ 736 0118 97F91E30 		ldrsb	r3, [r7, #30]
+ 737 011c 07EE903A 		vmov	s15, r3	@ int
+ 738 0120 F8EEE77A 		vcvt.f32.s32	s15, s15
+ 739 0124 67EE277A 		vmul.f32	s15, s14, s15
+ 740              		.loc 1 230 20
+ 741 0128 C7ED037A 		vstr.32	s15, [r7, #12]
+ 231:System/shell/shell_ext.c ****         return *(unsigned int *)(&valueFloat);
+ 742              		.loc 1 231 34
+ 743 012c 07F10C03 		add	r3, r7, #12
+ 744              		.loc 1 231 16
+ 745 0130 1B68     		ldr	r3, [r3]
+ 746 0132 04E0     		b	.L52
+ 747              	.L50:
+ 232:System/shell/shell_ext.c ****     }
+ 233:System/shell/shell_ext.c ****     else
+ 234:System/shell/shell_ext.c ****     {
+ 235:System/shell/shell_ext.c ****         return valueInt * sign;
+ 748              		.loc 1 235 25
+ 749 0134 97F91E30 		ldrsb	r3, [r7, #30]
+ 750 0138 BA69     		ldr	r2, [r7, #24]
+ 751 013a 02FB03F3 		mul	r3, r2, r3
+ 752              	.L52:
+ 236:System/shell/shell_ext.c ****     }
+ 237:System/shell/shell_ext.c **** }
+ 753              		.loc 1 237 1 discriminator 1
+ 754 013e 1846     		mov	r0, r3
+ 755 0140 2C37     		adds	r7, r7, #44
+ 756              	.LCFI26:
+ 757              		.cfi_def_cfa_offset 12
+ 758 0142 BD46     		mov	sp, r7
+ 759              	.LCFI27:
+ 760              		.cfi_def_cfa_register 13
+ 761              		@ sp needed
+ 762 0144 90BD     		pop	{r4, r7, pc}
+ 763              		.cfi_endproc
+ 764              	.LFE4:
+ 766              		.section	.text.shellExtParseVar,"ax",%progbits
+ 767              		.align	1
+ 768              		.syntax unified
+ 769              		.thumb
+ 770              		.thumb_func
+ 772              	shellExtParseVar:
+ 773              	.LFB5:
+ 238:System/shell/shell_ext.c **** 
+ 239:System/shell/shell_ext.c **** 
+ 240:System/shell/shell_ext.c **** /**
+ 241:System/shell/shell_ext.c ****  * @brief 解析变量参数
+ 242:System/shell/shell_ext.c ****  * 
+ 243:System/shell/shell_ext.c ****  * @param shell shell对象
+ 244:System/shell/shell_ext.c ****  * @param var 变量
+ 245:System/shell/shell_ext.c ****  * @return unsigned int 变量值
+ 246:System/shell/shell_ext.c ****  */
+ 247:System/shell/shell_ext.c **** static unsigned int shellExtParseVar(Shell *shell, char *var)
+ 248:System/shell/shell_ext.c **** {
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 19
+
+
+ 774              		.loc 1 248 1
+ 775              		.cfi_startproc
+ 776              		@ args = 0, pretend = 0, frame = 16
+ 777              		@ frame_needed = 1, uses_anonymous_args = 0
+ 778 0000 80B5     		push	{r7, lr}
+ 779              	.LCFI28:
+ 780              		.cfi_def_cfa_offset 8
+ 781              		.cfi_offset 7, -8
+ 782              		.cfi_offset 14, -4
+ 783 0002 84B0     		sub	sp, sp, #16
+ 784              	.LCFI29:
+ 785              		.cfi_def_cfa_offset 24
+ 786 0004 00AF     		add	r7, sp, #0
+ 787              	.LCFI30:
+ 788              		.cfi_def_cfa_register 7
+ 789 0006 7860     		str	r0, [r7, #4]
+ 790 0008 3960     		str	r1, [r7]
+ 249:System/shell/shell_ext.c ****     ShellCommand *command = shellSeekCommand(shell,
+ 250:System/shell/shell_ext.c ****                                              var + 1,
+ 791              		.loc 1 250 50
+ 792 000a 3B68     		ldr	r3, [r7]
+ 793 000c 591C     		adds	r1, r3, #1
+ 251:System/shell/shell_ext.c ****                                              shell->commandList.base,
+ 794              		.loc 1 251 64
+ 795 000e 7B68     		ldr	r3, [r7, #4]
+ 796 0010 9A6D     		ldr	r2, [r3, #88]
+ 249:System/shell/shell_ext.c ****     ShellCommand *command = shellSeekCommand(shell,
+ 797              		.loc 1 249 29
+ 798 0012 0023     		movs	r3, #0
+ 799 0014 7868     		ldr	r0, [r7, #4]
+ 800 0016 FFF7FEFF 		bl	shellSeekCommand
+ 801 001a F860     		str	r0, [r7, #12]
+ 252:System/shell/shell_ext.c ****                                              0);
+ 253:System/shell/shell_ext.c ****     if (command)
+ 802              		.loc 1 253 8
+ 803 001c FB68     		ldr	r3, [r7, #12]
+ 804 001e 002B     		cmp	r3, #0
+ 805 0020 05D0     		beq	.L55
+ 254:System/shell/shell_ext.c ****     {
+ 255:System/shell/shell_ext.c ****         return shellGetVarValue(shell, command);
+ 806              		.loc 1 255 16
+ 807 0022 F968     		ldr	r1, [r7, #12]
+ 808 0024 7868     		ldr	r0, [r7, #4]
+ 809 0026 FFF7FEFF 		bl	shellGetVarValue
+ 810 002a 0346     		mov	r3, r0
+ 811 002c 00E0     		b	.L56
+ 812              	.L55:
+ 256:System/shell/shell_ext.c ****     }
+ 257:System/shell/shell_ext.c ****     else
+ 258:System/shell/shell_ext.c ****     {
+ 259:System/shell/shell_ext.c ****         return 0;
+ 813              		.loc 1 259 16
+ 814 002e 0023     		movs	r3, #0
+ 815              	.L56:
+ 260:System/shell/shell_ext.c ****     }
+ 261:System/shell/shell_ext.c **** }
+ 816              		.loc 1 261 1
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 20
+
+
+ 817 0030 1846     		mov	r0, r3
+ 818 0032 1037     		adds	r7, r7, #16
+ 819              	.LCFI31:
+ 820              		.cfi_def_cfa_offset 8
+ 821 0034 BD46     		mov	sp, r7
+ 822              	.LCFI32:
+ 823              		.cfi_def_cfa_register 13
+ 824              		@ sp needed
+ 825 0036 80BD     		pop	{r7, pc}
+ 826              		.cfi_endproc
+ 827              	.LFE5:
+ 829              		.section	.text.shellExtParsePara,"ax",%progbits
+ 830              		.align	1
+ 831              		.global	shellExtParsePara
+ 832              		.syntax unified
+ 833              		.thumb
+ 834              		.thumb_func
+ 836              	shellExtParsePara:
+ 837              	.LFB6:
+ 262:System/shell/shell_ext.c **** 
+ 263:System/shell/shell_ext.c **** 
+ 264:System/shell/shell_ext.c **** /**
+ 265:System/shell/shell_ext.c ****  * @brief 解析参数
+ 266:System/shell/shell_ext.c ****  * 
+ 267:System/shell/shell_ext.c ****  * @param shell shell对象
+ 268:System/shell/shell_ext.c ****  * @param string 参数
+ 269:System/shell/shell_ext.c ****  * @return unsigned int 解析结果
+ 270:System/shell/shell_ext.c ****  */
+ 271:System/shell/shell_ext.c **** unsigned int shellExtParsePara(Shell *shell, char *string)
+ 272:System/shell/shell_ext.c **** {
+ 838              		.loc 1 272 1
+ 839              		.cfi_startproc
+ 840              		@ args = 0, pretend = 0, frame = 8
+ 841              		@ frame_needed = 1, uses_anonymous_args = 0
+ 842 0000 80B5     		push	{r7, lr}
+ 843              	.LCFI33:
+ 844              		.cfi_def_cfa_offset 8
+ 845              		.cfi_offset 7, -8
+ 846              		.cfi_offset 14, -4
+ 847 0002 82B0     		sub	sp, sp, #8
+ 848              	.LCFI34:
+ 849              		.cfi_def_cfa_offset 16
+ 850 0004 00AF     		add	r7, sp, #0
+ 851              	.LCFI35:
+ 852              		.cfi_def_cfa_register 7
+ 853 0006 7860     		str	r0, [r7, #4]
+ 854 0008 3960     		str	r1, [r7]
+ 273:System/shell/shell_ext.c ****     if (*string == '\'' && *(string + 1))
+ 855              		.loc 1 273 9
+ 856 000a 3B68     		ldr	r3, [r7]
+ 857 000c 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 858              		.loc 1 273 8
+ 859 000e 272B     		cmp	r3, #39
+ 860 0010 09D1     		bne	.L58
+ 861              		.loc 1 273 37 discriminator 1
+ 862 0012 3B68     		ldr	r3, [r7]
+ 863 0014 0133     		adds	r3, r3, #1
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 21
+
+
+ 864              		.loc 1 273 28 discriminator 1
+ 865 0016 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 866              		.loc 1 273 25 discriminator 1
+ 867 0018 002B     		cmp	r3, #0
+ 868 001a 04D0     		beq	.L58
+ 274:System/shell/shell_ext.c ****     {
+ 275:System/shell/shell_ext.c ****         return (unsigned int)shellExtParseChar(string);
+ 869              		.loc 1 275 30
+ 870 001c 3868     		ldr	r0, [r7]
+ 871 001e FFF7FEFF 		bl	shellExtParseChar
+ 872 0022 0346     		mov	r3, r0
+ 873              		.loc 1 275 16
+ 874 0024 29E0     		b	.L59
+ 875              	.L58:
+ 276:System/shell/shell_ext.c ****     }
+ 277:System/shell/shell_ext.c ****     else if (*string == '-' || (*string >= '0' && *string <= '9'))
+ 876              		.loc 1 277 14
+ 877 0026 3B68     		ldr	r3, [r7]
+ 878 0028 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 879              		.loc 1 277 13
+ 880 002a 2D2B     		cmp	r3, #45
+ 881 002c 07D0     		beq	.L60
+ 882              		.loc 1 277 33 discriminator 1
+ 883 002e 3B68     		ldr	r3, [r7]
+ 884 0030 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 885              		.loc 1 277 29 discriminator 1
+ 886 0032 2F2B     		cmp	r3, #47
+ 887 0034 08D9     		bls	.L61
+ 888              		.loc 1 277 51 discriminator 2
+ 889 0036 3B68     		ldr	r3, [r7]
+ 890 0038 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 891              		.loc 1 277 48 discriminator 2
+ 892 003a 392B     		cmp	r3, #57
+ 893 003c 04D8     		bhi	.L61
+ 894              	.L60:
+ 278:System/shell/shell_ext.c ****     {
+ 279:System/shell/shell_ext.c ****         return (unsigned int)shellExtParseNumber(string);
+ 895              		.loc 1 279 16
+ 896 003e 3868     		ldr	r0, [r7]
+ 897 0040 FFF7FEFF 		bl	shellExtParseNumber
+ 898 0044 0346     		mov	r3, r0
+ 899 0046 18E0     		b	.L59
+ 900              	.L61:
+ 280:System/shell/shell_ext.c ****     }
+ 281:System/shell/shell_ext.c ****     else if (*string == '$' && *(string + 1))
+ 901              		.loc 1 281 14
+ 902 0048 3B68     		ldr	r3, [r7]
+ 903 004a 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 904              		.loc 1 281 13
+ 905 004c 242B     		cmp	r3, #36
+ 906 004e 0AD1     		bne	.L62
+ 907              		.loc 1 281 41 discriminator 1
+ 908 0050 3B68     		ldr	r3, [r7]
+ 909 0052 0133     		adds	r3, r3, #1
+ 910              		.loc 1 281 32 discriminator 1
+ 911 0054 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 912              		.loc 1 281 29 discriminator 1
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 22
+
+
+ 913 0056 002B     		cmp	r3, #0
+ 914 0058 05D0     		beq	.L62
+ 282:System/shell/shell_ext.c ****     {
+ 283:System/shell/shell_ext.c ****         return shellExtParseVar(shell, string);
+ 915              		.loc 1 283 16
+ 916 005a 3968     		ldr	r1, [r7]
+ 917 005c 7868     		ldr	r0, [r7, #4]
+ 918 005e FFF7FEFF 		bl	shellExtParseVar
+ 919 0062 0346     		mov	r3, r0
+ 920 0064 09E0     		b	.L59
+ 921              	.L62:
+ 284:System/shell/shell_ext.c ****     }
+ 285:System/shell/shell_ext.c ****     else if (*string)
+ 922              		.loc 1 285 14
+ 923 0066 3B68     		ldr	r3, [r7]
+ 924 0068 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 925              		.loc 1 285 13
+ 926 006a 002B     		cmp	r3, #0
+ 927 006c 04D0     		beq	.L63
+ 286:System/shell/shell_ext.c ****     {
+ 287:System/shell/shell_ext.c ****         return (unsigned int)shellExtParseString(string);
+ 928              		.loc 1 287 30
+ 929 006e 3868     		ldr	r0, [r7]
+ 930 0070 FFF7FEFF 		bl	shellExtParseString
+ 931 0074 0346     		mov	r3, r0
+ 932              		.loc 1 287 16
+ 933 0076 00E0     		b	.L59
+ 934              	.L63:
+ 288:System/shell/shell_ext.c ****     }
+ 289:System/shell/shell_ext.c ****     return 0;
+ 935              		.loc 1 289 12
+ 936 0078 0023     		movs	r3, #0
+ 937              	.L59:
+ 290:System/shell/shell_ext.c **** }
+ 938              		.loc 1 290 1
+ 939 007a 1846     		mov	r0, r3
+ 940 007c 0837     		adds	r7, r7, #8
+ 941              	.LCFI36:
+ 942              		.cfi_def_cfa_offset 8
+ 943 007e BD46     		mov	sp, r7
+ 944              	.LCFI37:
+ 945              		.cfi_def_cfa_register 13
+ 946              		@ sp needed
+ 947 0080 80BD     		pop	{r7, pc}
+ 948              		.cfi_endproc
+ 949              	.LFE6:
+ 951              		.section	.text.shellExtRun,"ax",%progbits
+ 952              		.align	1
+ 953              		.global	shellExtRun
+ 954              		.syntax unified
+ 955              		.thumb
+ 956              		.thumb_func
+ 958              	shellExtRun:
+ 959              	.LFB7:
+ 291:System/shell/shell_ext.c **** 
+ 292:System/shell/shell_ext.c **** 
+ 293:System/shell/shell_ext.c **** /**
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 23
+
+
+ 294:System/shell/shell_ext.c ****  * @brief 执行命令
+ 295:System/shell/shell_ext.c ****  * 
+ 296:System/shell/shell_ext.c ****  * @param shell shell对象
+ 297:System/shell/shell_ext.c ****  * @param command 命令
+ 298:System/shell/shell_ext.c ****  * @param argc 参数个数
+ 299:System/shell/shell_ext.c ****  * @param argv 参数
+ 300:System/shell/shell_ext.c ****  * @return int 返回值
+ 301:System/shell/shell_ext.c ****  */
+ 302:System/shell/shell_ext.c **** int shellExtRun(Shell *shell, ShellCommand *command, int argc, char *argv[])
+ 303:System/shell/shell_ext.c **** {
+ 960              		.loc 1 303 1
+ 961              		.cfi_startproc
+ 962              		@ args = 0, pretend = 0, frame = 64
+ 963              		@ frame_needed = 1, uses_anonymous_args = 0
+ 964 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 965              	.LCFI38:
+ 966              		.cfi_def_cfa_offset 20
+ 967              		.cfi_offset 4, -20
+ 968              		.cfi_offset 5, -16
+ 969              		.cfi_offset 6, -12
+ 970              		.cfi_offset 7, -8
+ 971              		.cfi_offset 14, -4
+ 972 0002 95B0     		sub	sp, sp, #84
+ 973              	.LCFI39:
+ 974              		.cfi_def_cfa_offset 104
+ 975 0004 04AF     		add	r7, sp, #16
+ 976              	.LCFI40:
+ 977              		.cfi_def_cfa 7, 88
+ 978 0006 7861     		str	r0, [r7, #20]
+ 979 0008 3961     		str	r1, [r7, #16]
+ 980 000a FA60     		str	r2, [r7, #12]
+ 981 000c BB60     		str	r3, [r7, #8]
+ 304:System/shell/shell_ext.c ****     unsigned int params[SHELL_PARAMETER_MAX_NUMBER] = {0};
+ 982              		.loc 1 304 18
+ 983 000e 07F11803 		add	r3, r7, #24
+ 984 0012 2022     		movs	r2, #32
+ 985 0014 0021     		movs	r1, #0
+ 986 0016 1846     		mov	r0, r3
+ 987 0018 FFF7FEFF 		bl	memset
+ 305:System/shell/shell_ext.c ****     int paramNum = command->attr.attrs.paramNum > (argc - 1) ? 
+ 988              		.loc 1 305 39
+ 989 001c 3B69     		ldr	r3, [r7, #16]
+ 990 001e 9B78     		ldrb	r3, [r3, #2]
+ 991 0020 C3F30303 		ubfx	r3, r3, #0, #4
+ 992 0024 DBB2     		uxtb	r3, r3
+ 993 0026 1A46     		mov	r2, r3
+ 306:System/shell/shell_ext.c ****         command->attr.attrs.paramNum : (argc - 1);
+ 994              		.loc 1 306 38
+ 995 0028 FB68     		ldr	r3, [r7, #12]
+ 996 002a 9342     		cmp	r3, r2
+ 997 002c 05DC     		bgt	.L65
+ 998              		.loc 1 306 28 discriminator 1
+ 999 002e 3B69     		ldr	r3, [r7, #16]
+ 1000 0030 9B78     		ldrb	r3, [r3, #2]
+ 1001 0032 C3F30303 		ubfx	r3, r3, #0, #4
+ 1002 0036 DBB2     		uxtb	r3, r3
+ 1003 0038 01E0     		b	.L66
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 24
+
+
+ 1004              	.L65:
+ 1005              		.loc 1 306 38 discriminator 2
+ 1006 003a FB68     		ldr	r3, [r7, #12]
+ 1007 003c 013B     		subs	r3, r3, #1
+ 1008              	.L66:
+ 305:System/shell/shell_ext.c ****     int paramNum = command->attr.attrs.paramNum > (argc - 1) ? 
+ 1009              		.loc 1 305 9
+ 1010 003e BB63     		str	r3, [r7, #56]
+ 1011              	.LBB2:
+ 307:System/shell/shell_ext.c ****     for (int i = 0; i < argc - 1; i++)
+ 1012              		.loc 1 307 14
+ 1013 0040 0023     		movs	r3, #0
+ 1014 0042 FB63     		str	r3, [r7, #60]
+ 1015              		.loc 1 307 5
+ 1016 0044 15E0     		b	.L67
+ 1017              	.L68:
+ 308:System/shell/shell_ext.c ****     {
+ 309:System/shell/shell_ext.c ****         params[i] = shellExtParsePara(shell, argv[i + 1]);
+ 1018              		.loc 1 309 50 discriminator 3
+ 1019 0046 FB6B     		ldr	r3, [r7, #60]
+ 1020 0048 0133     		adds	r3, r3, #1
+ 1021 004a 9B00     		lsls	r3, r3, #2
+ 1022 004c BA68     		ldr	r2, [r7, #8]
+ 1023 004e 1344     		add	r3, r3, r2
+ 1024              		.loc 1 309 21 discriminator 3
+ 1025 0050 1B68     		ldr	r3, [r3]
+ 1026 0052 1946     		mov	r1, r3
+ 1027 0054 7869     		ldr	r0, [r7, #20]
+ 1028 0056 FFF7FEFF 		bl	shellExtParsePara
+ 1029 005a 0246     		mov	r2, r0
+ 1030              		.loc 1 309 19 discriminator 3
+ 1031 005c FB6B     		ldr	r3, [r7, #60]
+ 1032 005e 9B00     		lsls	r3, r3, #2
+ 1033 0060 3833     		adds	r3, r3, #56
+ 1034 0062 07F10801 		add	r1, r7, #8
+ 1035 0066 0B44     		add	r3, r3, r1
+ 1036 0068 43F8282C 		str	r2, [r3, #-40]
+ 307:System/shell/shell_ext.c ****     for (int i = 0; i < argc - 1; i++)
+ 1037              		.loc 1 307 36 discriminator 3
+ 1038 006c FB6B     		ldr	r3, [r7, #60]
+ 1039 006e 0133     		adds	r3, r3, #1
+ 1040 0070 FB63     		str	r3, [r7, #60]
+ 1041              	.L67:
+ 307:System/shell/shell_ext.c ****     for (int i = 0; i < argc - 1; i++)
+ 1042              		.loc 1 307 30 discriminator 1
+ 1043 0072 FB68     		ldr	r3, [r7, #12]
+ 1044 0074 013B     		subs	r3, r3, #1
+ 307:System/shell/shell_ext.c ****     for (int i = 0; i < argc - 1; i++)
+ 1045              		.loc 1 307 5 discriminator 1
+ 1046 0076 FA6B     		ldr	r2, [r7, #60]
+ 1047 0078 9A42     		cmp	r2, r3
+ 1048 007a E4DB     		blt	.L68
+ 1049              	.LBE2:
+ 310:System/shell/shell_ext.c ****     }
+ 311:System/shell/shell_ext.c ****     switch (paramNum)
+ 1050              		.loc 1 311 5
+ 1051 007c BB6B     		ldr	r3, [r7, #56]
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 25
+
+
+ 1052 007e 072B     		cmp	r3, #7
+ 1053 0080 65D8     		bhi	.L69
+ 1054 0082 01A2     		adr	r2, .L71
+ 1055 0084 52F823F0 		ldr	pc, [r2, r3, lsl #2]
+ 1056              		.p2align 2
+ 1057              	.L71:
+ 1058 0088 A9000000 		.word	.L78+1
+ 1059 008c B3000000 		.word	.L77+1
+ 1060 0090 C1000000 		.word	.L76+1
+ 1061 0094 D1000000 		.word	.L75+1
+ 1062 0098 E1000000 		.word	.L74+1
+ 1063 009c F3000000 		.word	.L73+1
+ 1064 00a0 0B010000 		.word	.L72+1
+ 1065 00a4 29010000 		.word	.L70+1
+ 1066              		.p2align 1
+ 1067              	.L78:
+ 312:System/shell/shell_ext.c ****     {
+ 313:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 1
+ 314:System/shell/shell_ext.c ****     case 0:
+ 315:System/shell/shell_ext.c ****         return command->data.cmd.function();
+ 1068              		.loc 1 315 33
+ 1069 00a8 3B69     		ldr	r3, [r7, #16]
+ 1070 00aa 9B68     		ldr	r3, [r3, #8]
+ 1071              		.loc 1 315 16
+ 1072 00ac 9847     		blx	r3
+ 1073              	.LVL0:
+ 1074 00ae 0346     		mov	r3, r0
+ 1075 00b0 4FE0     		b	.L80
+ 1076              	.L77:
+ 316:System/shell/shell_ext.c ****         // break;
+ 317:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 1 */
+ 318:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 2
+ 319:System/shell/shell_ext.c ****     case 1:
+ 320:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0]);
+ 1077              		.loc 1 320 33
+ 1078 00b2 3B69     		ldr	r3, [r7, #16]
+ 1079 00b4 9B68     		ldr	r3, [r3, #8]
+ 1080              		.loc 1 320 16
+ 1081 00b6 BA69     		ldr	r2, [r7, #24]
+ 1082 00b8 1046     		mov	r0, r2
+ 1083 00ba 9847     		blx	r3
+ 1084              	.LVL1:
+ 1085 00bc 0346     		mov	r3, r0
+ 1086 00be 48E0     		b	.L80
+ 1087              	.L76:
+ 321:System/shell/shell_ext.c ****         // break;
+ 322:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 2 */
+ 323:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 3
+ 324:System/shell/shell_ext.c ****     case 2:
+ 325:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1]);
+ 1088              		.loc 1 325 33
+ 1089 00c0 3B69     		ldr	r3, [r7, #16]
+ 1090 00c2 9B68     		ldr	r3, [r3, #8]
+ 1091              		.loc 1 325 16
+ 1092 00c4 BA69     		ldr	r2, [r7, #24]
+ 1093 00c6 F969     		ldr	r1, [r7, #28]
+ 1094 00c8 1046     		mov	r0, r2
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 26
+
+
+ 1095 00ca 9847     		blx	r3
+ 1096              	.LVL2:
+ 1097 00cc 0346     		mov	r3, r0
+ 1098 00ce 40E0     		b	.L80
+ 1099              	.L75:
+ 326:System/shell/shell_ext.c ****         // break;
+ 327:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 3 */
+ 328:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 4
+ 329:System/shell/shell_ext.c ****     case 3:
+ 330:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 1100              		.loc 1 330 33
+ 1101 00d0 3B69     		ldr	r3, [r7, #16]
+ 1102 00d2 9B68     		ldr	r3, [r3, #8]
+ 1103              		.loc 1 330 16
+ 1104 00d4 B869     		ldr	r0, [r7, #24]
+ 1105 00d6 F969     		ldr	r1, [r7, #28]
+ 1106 00d8 3A6A     		ldr	r2, [r7, #32]
+ 1107 00da 9847     		blx	r3
+ 1108              	.LVL3:
+ 1109 00dc 0346     		mov	r3, r0
+ 1110 00de 38E0     		b	.L80
+ 1111              	.L74:
+ 331:System/shell/shell_ext.c ****                                           params[2]);
+ 332:System/shell/shell_ext.c ****         // break;
+ 333:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 4 */
+ 334:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 5
+ 335:System/shell/shell_ext.c ****     case 4:
+ 336:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 1112              		.loc 1 336 33
+ 1113 00e0 3B69     		ldr	r3, [r7, #16]
+ 1114 00e2 9C68     		ldr	r4, [r3, #8]
+ 1115              		.loc 1 336 16
+ 1116 00e4 B869     		ldr	r0, [r7, #24]
+ 1117 00e6 F969     		ldr	r1, [r7, #28]
+ 1118 00e8 3A6A     		ldr	r2, [r7, #32]
+ 1119 00ea 7B6A     		ldr	r3, [r7, #36]
+ 1120 00ec A047     		blx	r4
+ 1121              	.LVL4:
+ 1122 00ee 0346     		mov	r3, r0
+ 1123 00f0 2FE0     		b	.L80
+ 1124              	.L73:
+ 337:System/shell/shell_ext.c ****                                           params[2], params[3]);
+ 338:System/shell/shell_ext.c ****         // break;
+ 339:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 5 */
+ 340:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 6
+ 341:System/shell/shell_ext.c ****     case 5:
+ 342:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 1125              		.loc 1 342 33
+ 1126 00f2 3B69     		ldr	r3, [r7, #16]
+ 1127 00f4 9C68     		ldr	r4, [r3, #8]
+ 1128              		.loc 1 342 16
+ 1129 00f6 B869     		ldr	r0, [r7, #24]
+ 1130 00f8 F969     		ldr	r1, [r7, #28]
+ 1131 00fa 3A6A     		ldr	r2, [r7, #32]
+ 1132 00fc 7D6A     		ldr	r5, [r7, #36]
+ 1133 00fe BB6A     		ldr	r3, [r7, #40]
+ 1134 0100 0093     		str	r3, [sp]
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 27
+
+
+ 1135 0102 2B46     		mov	r3, r5
+ 1136 0104 A047     		blx	r4
+ 1137              	.LVL5:
+ 1138 0106 0346     		mov	r3, r0
+ 1139 0108 23E0     		b	.L80
+ 1140              	.L72:
+ 343:System/shell/shell_ext.c ****                                           params[2], params[3],
+ 344:System/shell/shell_ext.c ****                                           params[4]);
+ 345:System/shell/shell_ext.c ****         // break;
+ 346:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 6 */
+ 347:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 7
+ 348:System/shell/shell_ext.c ****     case 6:
+ 349:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 1141              		.loc 1 349 33
+ 1142 010a 3B69     		ldr	r3, [r7, #16]
+ 1143 010c 9C68     		ldr	r4, [r3, #8]
+ 1144              		.loc 1 349 16
+ 1145 010e B869     		ldr	r0, [r7, #24]
+ 1146 0110 F969     		ldr	r1, [r7, #28]
+ 1147 0112 3D6A     		ldr	r5, [r7, #32]
+ 1148 0114 7E6A     		ldr	r6, [r7, #36]
+ 1149 0116 BB6A     		ldr	r3, [r7, #40]
+ 1150 0118 FA6A     		ldr	r2, [r7, #44]
+ 1151 011a 0192     		str	r2, [sp, #4]
+ 1152 011c 0093     		str	r3, [sp]
+ 1153 011e 3346     		mov	r3, r6
+ 1154 0120 2A46     		mov	r2, r5
+ 1155 0122 A047     		blx	r4
+ 1156              	.LVL6:
+ 1157 0124 0346     		mov	r3, r0
+ 1158 0126 14E0     		b	.L80
+ 1159              	.L70:
+ 350:System/shell/shell_ext.c ****                                           params[2], params[3],
+ 351:System/shell/shell_ext.c ****                                           params[4], params[5]);
+ 352:System/shell/shell_ext.c ****         // break;
+ 353:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 7 */
+ 354:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 8
+ 355:System/shell/shell_ext.c ****     case 7:
+ 356:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 1160              		.loc 1 356 33
+ 1161 0128 3B69     		ldr	r3, [r7, #16]
+ 1162 012a 9C68     		ldr	r4, [r3, #8]
+ 1163              		.loc 1 356 16
+ 1164 012c B869     		ldr	r0, [r7, #24]
+ 1165 012e FD69     		ldr	r5, [r7, #28]
+ 1166 0130 3E6A     		ldr	r6, [r7, #32]
+ 1167 0132 7B6A     		ldr	r3, [r7, #36]
+ 1168 0134 7B60     		str	r3, [r7, #4]
+ 1169 0136 BB6A     		ldr	r3, [r7, #40]
+ 1170 0138 FA6A     		ldr	r2, [r7, #44]
+ 1171 013a 396B     		ldr	r1, [r7, #48]
+ 1172 013c 0291     		str	r1, [sp, #8]
+ 1173 013e 0192     		str	r2, [sp, #4]
+ 1174 0140 0093     		str	r3, [sp]
+ 1175 0142 7B68     		ldr	r3, [r7, #4]
+ 1176 0144 3246     		mov	r2, r6
+ 1177 0146 2946     		mov	r1, r5
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 28
+
+
+ 1178 0148 A047     		blx	r4
+ 1179              	.LVL7:
+ 1180 014a 0346     		mov	r3, r0
+ 1181 014c 01E0     		b	.L80
+ 1182              	.L69:
+ 357:System/shell/shell_ext.c ****                                           params[2], params[3],
+ 358:System/shell/shell_ext.c ****                                           params[4], params[5],
+ 359:System/shell/shell_ext.c ****                                           params[6]);
+ 360:System/shell/shell_ext.c ****         // break;
+ 361:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 8 */
+ 362:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 9
+ 363:System/shell/shell_ext.c ****     case 8:
+ 364:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 365:System/shell/shell_ext.c ****                                           params[2], params[3],
+ 366:System/shell/shell_ext.c ****                                           params[4], params[5],
+ 367:System/shell/shell_ext.c ****                                           params[6], params[7]);
+ 368:System/shell/shell_ext.c ****         // break;
+ 369:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 9 */
+ 370:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 10
+ 371:System/shell/shell_ext.c ****     case 9:
+ 372:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 373:System/shell/shell_ext.c ****                                           params[2], params[3],
+ 374:System/shell/shell_ext.c ****                                           params[4], params[5],
+ 375:System/shell/shell_ext.c ****                                           params[6], params[7],
+ 376:System/shell/shell_ext.c ****                                           params[8]);
+ 377:System/shell/shell_ext.c ****         // break;
+ 378:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 10 */
+ 379:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 11
+ 380:System/shell/shell_ext.c ****     case 10:
+ 381:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 382:System/shell/shell_ext.c ****                                           params[2], params[3],
+ 383:System/shell/shell_ext.c ****                                           params[4], params[5],
+ 384:System/shell/shell_ext.c ****                                           params[6], params[7],
+ 385:System/shell/shell_ext.c ****                                           params[8], params[9]);
+ 386:System/shell/shell_ext.c ****         // break;
+ 387:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 11 */
+ 388:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 12
+ 389:System/shell/shell_ext.c ****     case 11:
+ 390:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 391:System/shell/shell_ext.c ****                                           params[2], params[3],
+ 392:System/shell/shell_ext.c ****                                           params[4], params[5],
+ 393:System/shell/shell_ext.c ****                                           params[6], params[7],
+ 394:System/shell/shell_ext.c ****                                           params[8], params[9],
+ 395:System/shell/shell_ext.c ****                                           params[10]);
+ 396:System/shell/shell_ext.c ****         // break;
+ 397:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 12 */
+ 398:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 13
+ 399:System/shell/shell_ext.c ****     case 12:
+ 400:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 401:System/shell/shell_ext.c ****                                           params[2], params[3],
+ 402:System/shell/shell_ext.c ****                                           params[4], params[5],
+ 403:System/shell/shell_ext.c ****                                           params[6], params[7],
+ 404:System/shell/shell_ext.c ****                                           params[8], params[9],
+ 405:System/shell/shell_ext.c ****                                           params[10], params[11]);
+ 406:System/shell/shell_ext.c ****         // break;
+ 407:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 13 */
+ 408:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 14
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 29
+
+
+ 409:System/shell/shell_ext.c ****     case 13:
+ 410:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 411:System/shell/shell_ext.c ****                                           params[2], params[3],
+ 412:System/shell/shell_ext.c ****                                           params[4], params[5],
+ 413:System/shell/shell_ext.c ****                                           params[6], params[7],
+ 414:System/shell/shell_ext.c ****                                           params[8], params[9],
+ 415:System/shell/shell_ext.c ****                                           params[10], params[11],
+ 416:System/shell/shell_ext.c ****                                           params[12]);
+ 417:System/shell/shell_ext.c ****         // break;
+ 418:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 14 */
+ 419:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 15
+ 420:System/shell/shell_ext.c ****     case 14:
+ 421:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 422:System/shell/shell_ext.c ****                                           params[2], params[3],
+ 423:System/shell/shell_ext.c ****                                           params[4], params[5],
+ 424:System/shell/shell_ext.c ****                                           params[6], params[7],
+ 425:System/shell/shell_ext.c ****                                           params[8], params[9],
+ 426:System/shell/shell_ext.c ****                                           params[10], params[11],
+ 427:System/shell/shell_ext.c ****                                           params[12], params[13]);
+ 428:System/shell/shell_ext.c ****         // break;
+ 429:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 15 */
+ 430:System/shell/shell_ext.c **** #if SHELL_PARAMETER_MAX_NUMBER >= 16
+ 431:System/shell/shell_ext.c ****     case 15:
+ 432:System/shell/shell_ext.c ****         return command->data.cmd.function(params[0], params[1],
+ 433:System/shell/shell_ext.c ****                                           params[2], params[3],
+ 434:System/shell/shell_ext.c ****                                           params[4], params[5],
+ 435:System/shell/shell_ext.c ****                                           params[6], params[7],
+ 436:System/shell/shell_ext.c ****                                           params[8], params[9],
+ 437:System/shell/shell_ext.c ****                                           params[10], params[11],
+ 438:System/shell/shell_ext.c ****                                           params[12], params[13],
+ 439:System/shell/shell_ext.c ****                                           params[14]);
+ 440:System/shell/shell_ext.c ****         // break;
+ 441:System/shell/shell_ext.c **** #endif /** SHELL_PARAMETER_MAX_NUMBER >= 16 */
+ 442:System/shell/shell_ext.c ****     default:
+ 443:System/shell/shell_ext.c ****         return -1;
+ 1183              		.loc 1 443 16
+ 1184 014e 4FF0FF33 		mov	r3, #-1
+ 1185              	.L80:
+ 444:System/shell/shell_ext.c ****         // break;
+ 445:System/shell/shell_ext.c ****     }
+ 446:System/shell/shell_ext.c **** }
+ 1186              		.loc 1 446 1 discriminator 1
+ 1187 0152 1846     		mov	r0, r3
+ 1188 0154 4437     		adds	r7, r7, #68
+ 1189              	.LCFI41:
+ 1190              		.cfi_def_cfa_offset 20
+ 1191 0156 BD46     		mov	sp, r7
+ 1192              	.LCFI42:
+ 1193              		.cfi_def_cfa_register 13
+ 1194              		@ sp needed
+ 1195 0158 F0BD     		pop	{r4, r5, r6, r7, pc}
+ 1196              		.cfi_endproc
+ 1197              	.LFE7:
+ 1199 015a 00BF     		.text
+ 1200              	.Letext0:
+ 1201              		.file 2 "d:\\hpm-compile-tool\\gcc-arm-none-eabi-10.3-win\\arm-none-eabi\\include\\machine\\_defau
+ 1202              		.file 3 "d:\\hpm-compile-tool\\gcc-arm-none-eabi-10.3-win\\arm-none-eabi\\include\\sys\\_stdint.h"
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 30
+
+
+ 1203              		.file 4 "System/shell/shell.h"
+ 1204              		.file 5 "System/shell/shell_ext.h"
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s 			page 31
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 shell_ext.c
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:19     .text.shellExtNumType:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:24     .text.shellExtNumType:00000000 shellExtNumType
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:168    .text.shellExtToNum:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:173    .text.shellExtToNum:00000000 shellExtToNum
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:255    .text.shellExtParseChar:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:260    .text.shellExtParseChar:00000000 shellExtParseChar
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:312    .text.shellExtParseChar:0000003c $d
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:331    .text.shellExtParseChar:00000088 $t
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:395    .text.shellExtParseString:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:400    .text.shellExtParseString:00000000 shellExtParseString
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:528    .text.shellExtParseNumber:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:533    .text.shellExtParseNumber:00000000 shellExtParseNumber
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:767    .text.shellExtParseVar:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:772    .text.shellExtParseVar:00000000 shellExtParseVar
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:830    .text.shellExtParsePara:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:836    .text.shellExtParsePara:00000000 shellExtParsePara
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:952    .text.shellExtRun:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:958    .text.shellExtRun:00000000 shellExtRun
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:1058   .text.shellExtRun:00000088 $d
+C:\Users\HUAV\AppData\Local\Temp\ccuTP7rd.s:1066   .text.shellExtRun:000000a8 $t
+
+UNDEFINED SYMBOLS
+shellSeekCommand
+shellGetVarValue
+memset

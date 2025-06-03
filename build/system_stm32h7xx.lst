@@ -1,0 +1,1138 @@
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 1
+
+
+   1              		.cpu cortex-m7
+   2              		.arch armv7e-m
+   3              		.fpu fpv5-d16
+   4              		.eabi_attribute 28, 1
+   5              		.eabi_attribute 20, 1
+   6              		.eabi_attribute 21, 1
+   7              		.eabi_attribute 23, 3
+   8              		.eabi_attribute 24, 1
+   9              		.eabi_attribute 25, 1
+  10              		.eabi_attribute 26, 1
+  11              		.eabi_attribute 30, 6
+  12              		.eabi_attribute 34, 1
+  13              		.eabi_attribute 18, 4
+  14              		.file	"system_stm32h7xx.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.global	SystemCoreClock
+  19              		.section	.data.SystemCoreClock,"aw"
+  20              		.align	2
+  23              	SystemCoreClock:
+  24 0000 0090D003 		.word	64000000
+  25              		.global	SystemD2Clock
+  26              		.section	.data.SystemD2Clock,"aw"
+  27              		.align	2
+  30              	SystemD2Clock:
+  31 0000 0090D003 		.word	64000000
+  32              		.global	D1CorePrescTable
+  33              		.section	.rodata.D1CorePrescTable,"a"
+  34              		.align	2
+  37              	D1CorePrescTable:
+  38 0000 00000000 		.ascii	"\000\000\000\000\001\002\003\004\001\002\003\004\006"
+  38      01020304 
+  38      01020304 
+  38      06
+  39 000d 070809   		.ascii	"\007\010\011"
+  40              		.section	.text.SystemInit,"ax",%progbits
+  41              		.align	1
+  42              		.global	SystemInit
+  43              		.syntax unified
+  44              		.thumb
+  45              		.thumb_func
+  47              	SystemInit:
+  48              	.LFB333:
+  49              		.file 1 "HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c"
+   1:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /**
+   2:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  ******************************************************************************
+   3:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @file    system_stm32h7xx.c
+   4:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @author  MCD Application Team
+   5:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @brief   CMSIS Cortex-Mx Device Peripheral Access Layer System Source File.
+   6:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+   7:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *   This file provides two functions and one global variable to be called from
+   8:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *   user application:
+   9:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *      - SystemInit(): This function is called at startup just after reset and
+  10:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *                      before branch to main program. This call is made inside
+  11:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *                      the "startup_stm32h7xx.s" file.
+  12:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 2
+
+
+  13:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *      - SystemCoreClock variable: Contains the core clock, it can be used
+  14:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *                                  by the user application to setup the SysTick
+  15:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *                                  timer or configure other parameters.
+  16:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+  17:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *      - SystemCoreClockUpdate(): Updates the variable SystemCoreClock and must
+  18:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *                                 be called whenever the core clock is changed
+  19:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *                                 during program execution.
+  20:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+  21:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+  22:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  ******************************************************************************
+  23:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @attention
+  24:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+  25:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * Copyright (c) 2017 STMicroelectronics.
+  26:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * All rights reserved.
+  27:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+  28:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * This software is licensed under terms that can be found in the LICENSE file
+  29:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * in the root directory of this software component.
+  30:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * If no LICENSE file comes with this software, it is provided AS-IS.
+  31:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+  32:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  ******************************************************************************
+  33:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+  34:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  35:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /** @addtogroup CMSIS
+  36:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @{
+  37:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+  38:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  39:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /** @addtogroup stm32h7xx_system
+  40:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @{
+  41:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+  42:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  43:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /** @addtogroup STM32H7xx_System_Private_Includes
+  44:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @{
+  45:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+  46:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  47:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #include "stm32h7xx.h"
+  48:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #include <math.h>
+  49:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if !defined(HSE_VALUE)
+  50:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #define HSE_VALUE ((uint32_t)25000000) /*!< Value of the External oscillator in Hz */
+  51:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif                                 /* HSE_VALUE */
+  52:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  53:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if !defined(CSI_VALUE)
+  54:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #define CSI_VALUE ((uint32_t)4000000) /*!< Value of the Internal oscillator in Hz*/
+  55:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif                                /* CSI_VALUE */
+  56:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  57:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if !defined(HSI_VALUE)
+  58:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #define HSI_VALUE ((uint32_t)64000000) /*!< Value of the Internal oscillator in Hz*/
+  59:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif                                 /* HSI_VALUE */
+  60:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  61:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /**
+  62:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @}
+  63:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+  64:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  65:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /** @addtogroup STM32H7xx_System_Private_TypesDefinitions
+  66:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @{
+  67:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+  68:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  69:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /**
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 3
+
+
+  70:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @}
+  71:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+  72:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  73:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /** @addtogroup STM32H7xx_System_Private_Defines
+  74:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @{
+  75:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+  76:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  77:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /************************* Miscellaneous Configuration ************************/
+  78:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /*!< Uncomment the following line if you need to use initialized data in D2 domain SRAM (AHB SRAM) 
+  79:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /* #define DATA_IN_D2_SRAM */
+  80:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  81:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /* Note: Following vector table addresses must be defined in line with linker
+  82:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****          configuration. */
+  83:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /*!< Uncomment the following line if you need to relocate the vector table
+  84:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****      anywhere in FLASH BANK1 or AXI SRAM, else the vector table is kept at the automatic
+  85:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****      remap of boot address selected */
+  86:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /* #define USER_VECT_TAB_ADDRESS */
+  87:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+  88:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(USER_VECT_TAB_ADDRESS)
+  89:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(DUAL_CORE) && defined(CORE_CM4)
+  90:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /*!< Uncomment the following line if you need to relocate your vector Table
+  91:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****      in D2 AXI SRAM else user remap will be done in FLASH BANK2. */
+  92:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /* #define VECT_TAB_SRAM */
+  93:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(VECT_TAB_SRAM)
+  94:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #define VECT_TAB_BASE_ADDRESS D2_AXISRAM_BASE /*!< Vector Table base address field. \
+  95:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****                                                    This value must be a multiple of 0x200. */
+  96:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #define VECT_TAB_OFFSET 0x00000000U           /*!< Vector Table base offset field. \
+  97:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****                                                    This value must be a multiple of 0x200. */
+  98:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #else
+  99:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #define VECT_TAB_BASE_ADDRESS FLASH_BANK2_BASE /*!< Vector Table base address field. \
+ 100:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****                                                     This value must be a multiple of 0x200. */
+ 101:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #define VECT_TAB_OFFSET 0x00000000U            /*!< Vector Table base offset field. \
+ 102:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****                                                     This value must be a multiple of 0x200. */
+ 103:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif                                         /* VECT_TAB_SRAM */
+ 104:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #else
+ 105:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /*!< Uncomment the following line if you need to relocate your vector Table
+ 106:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****      in D1 AXI SRAM else user remap will be done in FLASH BANK1. */
+ 107:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /* #define VECT_TAB_SRAM */
+ 108:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(VECT_TAB_SRAM)
+ 109:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #define VECT_TAB_BASE_ADDRESS D1_AXISRAM_BASE /*!< Vector Table base address field. \
+ 110:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****                                                    This value must be a multiple of 0x200. */
+ 111:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #define VECT_TAB_OFFSET 0x00000000U           /*!< Vector Table base offset field. \
+ 112:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****                                                    This value must be a multiple of 0x200. */
+ 113:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #else
+ 114:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #define VECT_TAB_BASE_ADDRESS FLASH_BANK1_BASE /*!< Vector Table base address field. \
+ 115:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****                                                     This value must be a multiple of 0x200. */
+ 116:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #define VECT_TAB_OFFSET 0x00000000U            /*!< Vector Table base offset field. \
+ 117:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****                                                     This value must be a multiple of 0x200. */
+ 118:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif                                         /* VECT_TAB_SRAM */
+ 119:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif                                         /* DUAL_CORE && CORE_CM4 */
+ 120:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif                                         /* USER_VECT_TAB_ADDRESS */
+ 121:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****                                                /***************************************************
+ 122:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 123:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /**
+ 124:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @}
+ 125:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+ 126:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 4
+
+
+ 127:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /** @addtogroup STM32H7xx_System_Private_Macros
+ 128:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @{
+ 129:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+ 130:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 131:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /**
+ 132:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @}
+ 133:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+ 134:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 135:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /** @addtogroup STM32H7xx_System_Private_Variables
+ 136:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @{
+ 137:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+ 138:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /* This variable is updated in three ways:
+ 139:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     1) by calling CMSIS function SystemCoreClockUpdate()
+ 140:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     2) by calling HAL API function HAL_RCC_GetHCLKFreq()
+ 141:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     3) each time HAL_RCC_ClockConfig() is called to configure the system clock frequency
+ 142:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****        Note: If you use this function to configure the system clock; then there
+ 143:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****              is no need to call the 2 first functions listed above, since SystemCoreClock
+ 144:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****              variable is updated automatically.
+ 145:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** */
+ 146:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** uint32_t SystemCoreClock = 64000000;
+ 147:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** uint32_t SystemD2Clock = 64000000;
+ 148:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** const uint8_t D1CorePrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6, 7, 8, 9};
+ 149:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 150:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /**
+ 151:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @}
+ 152:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+ 153:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 154:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /** @addtogroup STM32H7xx_System_Private_FunctionPrototypes
+ 155:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @{
+ 156:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+ 157:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 158:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /**
+ 159:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @}
+ 160:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+ 161:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 162:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /** @addtogroup STM32H7xx_System_Private_Functions
+ 163:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @{
+ 164:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+ 165:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 166:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /**
+ 167:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @brief  Setup the microcontroller system
+ 168:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *         Initialize the FPU setting and  vector table location
+ 169:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *         configuration.
+ 170:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @param  None
+ 171:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @retval None
+ 172:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+ 173:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** void SystemInit(void)
+ 174:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** {
+  50              		.loc 1 174 1
+  51              		.cfi_startproc
+  52              		@ args = 0, pretend = 0, frame = 0
+  53              		@ frame_needed = 1, uses_anonymous_args = 0
+  54              		@ link register save eliminated.
+  55 0000 80B4     		push	{r7}
+  56              	.LCFI0:
+  57              		.cfi_def_cfa_offset 4
+  58              		.cfi_offset 7, -4
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 5
+
+
+  59 0002 00AF     		add	r7, sp, #0
+  60              	.LCFI1:
+  61              		.cfi_def_cfa_register 7
+ 175:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(DATA_IN_D2_SRAM)
+ 176:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   __IO uint32_t tmpreg;
+ 177:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif /* DATA_IN_D2_SRAM */
+ 178:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 179:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /* FPU settings ------------------------------------------------------------*/
+ 180:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
+ 181:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   SCB->CPACR |= ((3UL << (10 * 2)) | (3UL << (11 * 2))); /* set CP10 and CP11 Full Access */
+  62              		.loc 1 181 14
+  63 0004 374B     		ldr	r3, .L5
+  64 0006 D3F88830 		ldr	r3, [r3, #136]
+  65 000a 364A     		ldr	r2, .L5
+  66 000c 43F47003 		orr	r3, r3, #15728640
+  67 0010 C2F88830 		str	r3, [r2, #136]
+ 182:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif
+ 183:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset the RCC clock configuration to the default reset state ------------*/
+ 184:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 185:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Increasing the CPU frequency */
+ 186:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   if (FLASH_LATENCY_DEFAULT > (READ_BIT((FLASH->ACR), FLASH_ACR_LATENCY)))
+  68              		.loc 1 186 32
+  69 0014 344B     		ldr	r3, .L5+4
+  70 0016 1B68     		ldr	r3, [r3]
+  71 0018 03F00F03 		and	r3, r3, #15
+  72              		.loc 1 186 6
+  73 001c 062B     		cmp	r3, #6
+  74 001e 07D8     		bhi	.L2
+ 187:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   {
+ 188:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     /* Program the new number of wait states to the LATENCY bits in the FLASH_ACR register */
+ 189:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, (uint32_t)(FLASH_LATENCY_DEFAULT));
+  75              		.loc 1 189 5
+  76 0020 314B     		ldr	r3, .L5+4
+  77 0022 1B68     		ldr	r3, [r3]
+  78 0024 23F00F03 		bic	r3, r3, #15
+  79 0028 2F4A     		ldr	r2, .L5+4
+  80 002a 43F00703 		orr	r3, r3, #7
+  81 002e 1360     		str	r3, [r2]
+  82              	.L2:
+ 190:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   }
+ 191:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 192:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Set HSION bit */
+ 193:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->CR |= RCC_CR_HSION;
+  83              		.loc 1 193 11
+  84 0030 2E4B     		ldr	r3, .L5+8
+  85 0032 1B68     		ldr	r3, [r3]
+  86 0034 2D4A     		ldr	r2, .L5+8
+  87 0036 43F00103 		orr	r3, r3, #1
+  88 003a 1360     		str	r3, [r2]
+ 194:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 195:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset CFGR register */
+ 196:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->CFGR = 0x00000000;
+  89              		.loc 1 196 6
+  90 003c 2B4B     		ldr	r3, .L5+8
+  91              		.loc 1 196 13
+  92 003e 0022     		movs	r2, #0
+  93 0040 1A61     		str	r2, [r3, #16]
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 6
+
+
+ 197:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 198:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset HSEON, HSECSSON, CSION, HSI48ON, CSIKERON, PLL1ON, PLL2ON and PLL3ON bits */
+ 199:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->CR &= 0xEAF6ED7FU;
+  94              		.loc 1 199 11
+  95 0042 2A4B     		ldr	r3, .L5+8
+  96 0044 1A68     		ldr	r2, [r3]
+  97 0046 2949     		ldr	r1, .L5+8
+  98 0048 294B     		ldr	r3, .L5+12
+  99 004a 1340     		ands	r3, r3, r2
+ 100 004c 0B60     		str	r3, [r1]
+ 200:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 201:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Decreasing the number of wait states because of lower CPU frequency */
+ 202:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   if (FLASH_LATENCY_DEFAULT < (READ_BIT((FLASH->ACR), FLASH_ACR_LATENCY)))
+ 101              		.loc 1 202 32
+ 102 004e 264B     		ldr	r3, .L5+4
+ 103 0050 1B68     		ldr	r3, [r3]
+ 104              		.loc 1 202 29
+ 105 0052 03F00803 		and	r3, r3, #8
+ 106              		.loc 1 202 6
+ 107 0056 002B     		cmp	r3, #0
+ 108 0058 07D0     		beq	.L3
+ 203:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   {
+ 204:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     /* Program the new number of wait states to the LATENCY bits in the FLASH_ACR register */
+ 205:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, (uint32_t)(FLASH_LATENCY_DEFAULT));
+ 109              		.loc 1 205 5
+ 110 005a 234B     		ldr	r3, .L5+4
+ 111 005c 1B68     		ldr	r3, [r3]
+ 112 005e 23F00F03 		bic	r3, r3, #15
+ 113 0062 214A     		ldr	r2, .L5+4
+ 114 0064 43F00703 		orr	r3, r3, #7
+ 115 0068 1360     		str	r3, [r2]
+ 116              	.L3:
+ 206:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   }
+ 207:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 208:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(D3_SRAM_BASE)
+ 209:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset D1CFGR register */
+ 210:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->D1CFGR = 0x00000000;
+ 117              		.loc 1 210 6
+ 118 006a 204B     		ldr	r3, .L5+8
+ 119              		.loc 1 210 15
+ 120 006c 0022     		movs	r2, #0
+ 121 006e 9A61     		str	r2, [r3, #24]
+ 211:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 212:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset D2CFGR register */
+ 213:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->D2CFGR = 0x00000000;
+ 122              		.loc 1 213 6
+ 123 0070 1E4B     		ldr	r3, .L5+8
+ 124              		.loc 1 213 15
+ 125 0072 0022     		movs	r2, #0
+ 126 0074 DA61     		str	r2, [r3, #28]
+ 214:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 215:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset D3CFGR register */
+ 216:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->D3CFGR = 0x00000000;
+ 127              		.loc 1 216 6
+ 128 0076 1D4B     		ldr	r3, .L5+8
+ 129              		.loc 1 216 15
+ 130 0078 0022     		movs	r2, #0
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 7
+
+
+ 131 007a 1A62     		str	r2, [r3, #32]
+ 217:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #else
+ 218:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset CDCFGR1 register */
+ 219:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->CDCFGR1 = 0x00000000;
+ 220:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 221:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset CDCFGR2 register */
+ 222:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->CDCFGR2 = 0x00000000;
+ 223:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 224:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset SRDCFGR register */
+ 225:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->SRDCFGR = 0x00000000;
+ 226:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif
+ 227:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset PLLCKSELR register */
+ 228:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->PLLCKSELR = 0x02020200;
+ 132              		.loc 1 228 6
+ 133 007c 1B4B     		ldr	r3, .L5+8
+ 134              		.loc 1 228 18
+ 135 007e 1D4A     		ldr	r2, .L5+16
+ 136 0080 9A62     		str	r2, [r3, #40]
+ 229:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 230:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset PLLCFGR register */
+ 231:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->PLLCFGR = 0x01FF0000;
+ 137              		.loc 1 231 6
+ 138 0082 1A4B     		ldr	r3, .L5+8
+ 139              		.loc 1 231 16
+ 140 0084 1C4A     		ldr	r2, .L5+20
+ 141 0086 DA62     		str	r2, [r3, #44]
+ 232:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset PLL1DIVR register */
+ 233:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->PLL1DIVR = 0x01010280;
+ 142              		.loc 1 233 6
+ 143 0088 184B     		ldr	r3, .L5+8
+ 144              		.loc 1 233 17
+ 145 008a 1C4A     		ldr	r2, .L5+24
+ 146 008c 1A63     		str	r2, [r3, #48]
+ 234:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset PLL1FRACR register */
+ 235:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->PLL1FRACR = 0x00000000;
+ 147              		.loc 1 235 6
+ 148 008e 174B     		ldr	r3, .L5+8
+ 149              		.loc 1 235 18
+ 150 0090 0022     		movs	r2, #0
+ 151 0092 5A63     		str	r2, [r3, #52]
+ 236:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 237:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset PLL2DIVR register */
+ 238:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->PLL2DIVR = 0x01010280;
+ 152              		.loc 1 238 6
+ 153 0094 154B     		ldr	r3, .L5+8
+ 154              		.loc 1 238 17
+ 155 0096 194A     		ldr	r2, .L5+24
+ 156 0098 9A63     		str	r2, [r3, #56]
+ 239:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 240:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset PLL2FRACR register */
+ 241:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 242:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->PLL2FRACR = 0x00000000;
+ 157              		.loc 1 242 6
+ 158 009a 144B     		ldr	r3, .L5+8
+ 159              		.loc 1 242 18
+ 160 009c 0022     		movs	r2, #0
+ 161 009e DA63     		str	r2, [r3, #60]
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 8
+
+
+ 243:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset PLL3DIVR register */
+ 244:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->PLL3DIVR = 0x01010280;
+ 162              		.loc 1 244 6
+ 163 00a0 124B     		ldr	r3, .L5+8
+ 164              		.loc 1 244 17
+ 165 00a2 164A     		ldr	r2, .L5+24
+ 166 00a4 1A64     		str	r2, [r3, #64]
+ 245:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 246:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset PLL3FRACR register */
+ 247:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->PLL3FRACR = 0x00000000;
+ 167              		.loc 1 247 6
+ 168 00a6 114B     		ldr	r3, .L5+8
+ 169              		.loc 1 247 18
+ 170 00a8 0022     		movs	r2, #0
+ 171 00aa 5A64     		str	r2, [r3, #68]
+ 248:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 249:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Reset HSEBYP bit */
+ 250:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->CR &= 0xFFFBFFFFU;
+ 172              		.loc 1 250 11
+ 173 00ac 0F4B     		ldr	r3, .L5+8
+ 174 00ae 1B68     		ldr	r3, [r3]
+ 175 00b0 0E4A     		ldr	r2, .L5+8
+ 176 00b2 23F48023 		bic	r3, r3, #262144
+ 177 00b6 1360     		str	r3, [r2]
+ 251:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 252:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Disable all interrupts */
+ 253:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->CIER = 0x00000000;
+ 178              		.loc 1 253 6
+ 179 00b8 0C4B     		ldr	r3, .L5+8
+ 180              		.loc 1 253 13
+ 181 00ba 0022     		movs	r2, #0
+ 182 00bc 1A66     		str	r2, [r3, #96]
+ 254:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 255:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if (STM32H7_DEV_ID == 0x450UL)
+ 256:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* dual core CM7 or single core line */
+ 257:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   if ((DBGMCU->IDCODE & 0xFFFF0000U) < 0x20000000U)
+ 183              		.loc 1 257 14
+ 184 00be 104B     		ldr	r3, .L5+28
+ 185 00c0 1A68     		ldr	r2, [r3]
+ 186              		.loc 1 257 23
+ 187 00c2 104B     		ldr	r3, .L5+32
+ 188 00c4 1340     		ands	r3, r3, r2
+ 189              		.loc 1 257 6
+ 190 00c6 B3F1005F 		cmp	r3, #536870912
+ 191 00ca 02D2     		bcs	.L4
+ 258:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   {
+ 259:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     /* if stm32h7 revY*/
+ 260:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     /* Change  the switch matrix read issuing capability to 1 for the AXI SRAM target (Target 7) */
+ 261:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     *((__IO uint32_t *)0x51008108) = 0x000000001U;
+ 192              		.loc 1 261 5
+ 193 00cc 0E4B     		ldr	r3, .L5+36
+ 194              		.loc 1 261 36
+ 195 00ce 0122     		movs	r2, #1
+ 196 00d0 1A60     		str	r2, [r3]
+ 197              	.L4:
+ 262:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   }
+ 263:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 9
+
+
+ 264:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 265:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(DATA_IN_D2_SRAM)
+ 266:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* in case of initialized data in D2 SRAM (AHB SRAM) , enable the D2 SRAM clock (AHB SRAM clock) 
+ 267:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(RCC_AHB2ENR_D2SRAM3EN)
+ 268:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->AHB2ENR |= (RCC_AHB2ENR_D2SRAM1EN | RCC_AHB2ENR_D2SRAM2EN | RCC_AHB2ENR_D2SRAM3EN);
+ 269:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #elif defined(RCC_AHB2ENR_D2SRAM2EN)
+ 270:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->AHB2ENR |= (RCC_AHB2ENR_D2SRAM1EN | RCC_AHB2ENR_D2SRAM2EN);
+ 271:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #else
+ 272:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   RCC->AHB2ENR |= (RCC_AHB2ENR_AHBSRAM1EN | RCC_AHB2ENR_AHBSRAM2EN);
+ 273:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif /* RCC_AHB2ENR_D2SRAM3EN */
+ 274:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 275:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   tmpreg = RCC->AHB2ENR;
+ 276:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   (void)tmpreg;
+ 277:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif /* DATA_IN_D2_SRAM */
+ 278:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 279:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(DUAL_CORE) && defined(CORE_CM4)
+ 280:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Configure the Vector Table location add offset address for cortex-M4 ------------------*/
+ 281:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(USER_VECT_TAB_ADDRESS)
+ 282:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   SCB->VTOR = VECT_TAB_BASE_ADDRESS | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal D2 AX
+ 283:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif                                                 /* USER_VECT_TAB_ADDRESS */
+ 284:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 285:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #else
+ 286:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 287:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /*
+ 288:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****    * Disable the FMC bank1 (enabled after reset).
+ 289:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****    * This, prevents CPU speculation access on this bank which blocks the use of FMC during
+ 290:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****    * 24us. During this time the others FMC master (such as LTDC) cannot use it!
+ 291:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****    */
+ 292:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   FMC_Bank1_R->BTCR[0] = 0x000030D2;
+ 198              		.loc 1 292 14
+ 199 00d2 0E4B     		ldr	r3, .L5+40
+ 200              		.loc 1 292 24
+ 201 00d4 43F2D202 		movw	r2, #12498
+ 202 00d8 1A60     		str	r2, [r3]
+ 293:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 294:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Configure the Vector Table location -------------------------------------*/
+ 295:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(USER_VECT_TAB_ADDRESS)
+ 296:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   SCB->VTOR = VECT_TAB_BASE_ADDRESS | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal D1 AX
+ 297:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif /* USER_VECT_TAB_ADDRESS */
+ 298:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 299:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif /*DUAL_CORE && CORE_CM4*/
+ 300:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** }
+ 203              		.loc 1 300 1
+ 204 00da 00BF     		nop
+ 205 00dc BD46     		mov	sp, r7
+ 206              	.LCFI2:
+ 207              		.cfi_def_cfa_register 13
+ 208              		@ sp needed
+ 209 00de 5DF8047B 		ldr	r7, [sp], #4
+ 210              	.LCFI3:
+ 211              		.cfi_restore 7
+ 212              		.cfi_def_cfa_offset 0
+ 213 00e2 7047     		bx	lr
+ 214              	.L6:
+ 215              		.align	2
+ 216              	.L5:
+ 217 00e4 00ED00E0 		.word	-536810240
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 10
+
+
+ 218 00e8 00200052 		.word	1375739904
+ 219 00ec 00440258 		.word	1476543488
+ 220 00f0 7FEDF6EA 		.word	-352916097
+ 221 00f4 00020202 		.word	33686016
+ 222 00f8 0000FF01 		.word	33488896
+ 223 00fc 80020101 		.word	16843392
+ 224 0100 0010005C 		.word	1543507968
+ 225 0104 0000FFFF 		.word	-65536
+ 226 0108 08810051 		.word	1358987528
+ 227 010c 00400052 		.word	1375748096
+ 228              		.cfi_endproc
+ 229              	.LFE333:
+ 231              		.section	.text.SystemCoreClockUpdate,"ax",%progbits
+ 232              		.align	1
+ 233              		.global	SystemCoreClockUpdate
+ 234              		.syntax unified
+ 235              		.thumb
+ 236              		.thumb_func
+ 238              	SystemCoreClockUpdate:
+ 239              	.LFB334:
+ 301:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 302:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** /**
+ 303:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @brief  Update SystemCoreClock variable according to Clock Register Values.
+ 304:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *         The SystemCoreClock variable contains the core clock , it can
+ 305:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *         be used by the user application to setup the SysTick timer or configure
+ 306:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *         other parameters.
+ 307:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+ 308:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @note   Each time the core clock changes, this function must be called
+ 309:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *         to update SystemCoreClock variable value. Otherwise, any configuration
+ 310:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *         based on this variable will be incorrect.
+ 311:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+ 312:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @note   - The system frequency computed by this function is not the real
+ 313:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *           frequency in the chip. It is calculated based on the predefined
+ 314:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *           constant and the selected clock source:
+ 315:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+ 316:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *           - If SYSCLK source is CSI, SystemCoreClock will contain the CSI_VALUE(*)
+ 317:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *           - If SYSCLK source is HSI, SystemCoreClock will contain the HSI_VALUE(**)
+ 318:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *           - If SYSCLK source is HSE, SystemCoreClock will contain the HSE_VALUE(***)
+ 319:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *           - If SYSCLK source is PLL, SystemCoreClock will contain the CSI_VALUE(*),
+ 320:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *             HSI_VALUE(**) or HSE_VALUE(***) multiplied/divided by the PLL factors.
+ 321:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+ 322:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *         (*) CSI_VALUE is a constant defined in stm32h7xx_hal.h file (default value
+ 323:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *             4 MHz) but the real value may vary depending on the variations
+ 324:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *             in voltage and temperature.
+ 325:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *         (**) HSI_VALUE is a constant defined in stm32h7xx_hal.h file (default value
+ 326:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *             64 MHz) but the real value may vary depending on the variations
+ 327:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *             in voltage and temperature.
+ 328:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+ 329:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *         (***)HSE_VALUE is a constant defined in stm32h7xx_hal.h file (default value
+ 330:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *              25 MHz), user has to ensure that HSE_VALUE is same as the real
+ 331:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *              frequency of the crystal used. Otherwise, this function may
+ 332:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *              have wrong result.
+ 333:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *
+ 334:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *         - The result of this function could be not correct when using fractional
+ 335:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  *           value for HSE crystal.
+ 336:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @param  None
+ 337:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  * @retval None
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 11
+
+
+ 338:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****  */
+ 339:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** void SystemCoreClockUpdate(void)
+ 340:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** {
+ 240              		.loc 1 340 1
+ 241              		.cfi_startproc
+ 242              		@ args = 0, pretend = 0, frame = 40
+ 243              		@ frame_needed = 1, uses_anonymous_args = 0
+ 244              		@ link register save eliminated.
+ 245 0000 80B4     		push	{r7}
+ 246              	.LCFI4:
+ 247              		.cfi_def_cfa_offset 4
+ 248              		.cfi_offset 7, -4
+ 249 0002 8BB0     		sub	sp, sp, #44
+ 250              	.LCFI5:
+ 251              		.cfi_def_cfa_offset 48
+ 252 0004 00AF     		add	r7, sp, #0
+ 253              	.LCFI6:
+ 254              		.cfi_def_cfa_register 7
+ 341:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   uint32_t pllp, pllsource, pllm, pllfracen, hsivalue, tmp;
+ 342:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   uint32_t common_system_clock;
+ 343:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   float_t fracn1, pllvco;
+ 344:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 345:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Get SYSCLK source -------------------------------------------------------*/
+ 346:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 347:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   switch (RCC->CFGR & RCC_CFGR_SWS)
+ 255              		.loc 1 347 14
+ 256 0006 B14B     		ldr	r3, .L22
+ 257 0008 1B69     		ldr	r3, [r3, #16]
+ 258              		.loc 1 347 21
+ 259 000a 03F03803 		and	r3, r3, #56
+ 260              		.loc 1 347 3
+ 261 000e 182B     		cmp	r3, #24
+ 262 0010 00F22E81 		bhi	.L8
+ 263 0014 01A2     		adr	r2, .L10
+ 264 0016 52F823F0 		ldr	pc, [r2, r3, lsl #2]
+ 265 001a 00BF     		.p2align 2
+ 266              	.L10:
+ 267 001c 81000000 		.word	.L13+1
+ 268 0020 71020000 		.word	.L8+1
+ 269 0024 71020000 		.word	.L8+1
+ 270 0028 71020000 		.word	.L8+1
+ 271 002c 71020000 		.word	.L8+1
+ 272 0030 71020000 		.word	.L8+1
+ 273 0034 71020000 		.word	.L8+1
+ 274 0038 71020000 		.word	.L8+1
+ 275 003c 95000000 		.word	.L12+1
+ 276 0040 71020000 		.word	.L8+1
+ 277 0044 71020000 		.word	.L8+1
+ 278 0048 71020000 		.word	.L8+1
+ 279 004c 71020000 		.word	.L8+1
+ 280 0050 71020000 		.word	.L8+1
+ 281 0054 71020000 		.word	.L8+1
+ 282 0058 71020000 		.word	.L8+1
+ 283 005c 9B000000 		.word	.L11+1
+ 284 0060 71020000 		.word	.L8+1
+ 285 0064 71020000 		.word	.L8+1
+ 286 0068 71020000 		.word	.L8+1
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 12
+
+
+ 287 006c 71020000 		.word	.L8+1
+ 288 0070 71020000 		.word	.L8+1
+ 289 0074 71020000 		.word	.L8+1
+ 290 0078 71020000 		.word	.L8+1
+ 291 007c A1000000 		.word	.L9+1
+ 292              		.p2align 1
+ 293              	.L13:
+ 348:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   {
+ 349:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   case RCC_CFGR_SWS_HSI: /* HSI used as system clock source */
+ 350:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     common_system_clock = (uint32_t)(HSI_VALUE >> ((RCC->CR & RCC_CR_HSIDIV) >> 3));
+ 294              		.loc 1 350 56
+ 295 0080 924B     		ldr	r3, .L22
+ 296 0082 1B68     		ldr	r3, [r3]
+ 297              		.loc 1 350 78
+ 298 0084 DB08     		lsrs	r3, r3, #3
+ 299 0086 03F00303 		and	r3, r3, #3
+ 300              		.loc 1 350 25
+ 301 008a 914A     		ldr	r2, .L22+4
+ 302 008c 22FA03F3 		lsr	r3, r2, r3
+ 303 0090 7B62     		str	r3, [r7, #36]
+ 351:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     break;
+ 304              		.loc 1 351 5
+ 305 0092 F7E0     		b	.L14
+ 306              	.L12:
+ 352:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 353:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   case RCC_CFGR_SWS_CSI: /* CSI used as system clock  source */
+ 354:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     common_system_clock = CSI_VALUE;
+ 307              		.loc 1 354 25
+ 308 0094 8F4B     		ldr	r3, .L22+8
+ 309 0096 7B62     		str	r3, [r7, #36]
+ 355:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     break;
+ 310              		.loc 1 355 5
+ 311 0098 F4E0     		b	.L14
+ 312              	.L11:
+ 356:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 357:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   case RCC_CFGR_SWS_HSE: /* HSE used as system clock  source */
+ 358:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     common_system_clock = HSE_VALUE;
+ 313              		.loc 1 358 25
+ 314 009a 8F4B     		ldr	r3, .L22+12
+ 315 009c 7B62     		str	r3, [r7, #36]
+ 359:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     break;
+ 316              		.loc 1 359 5
+ 317 009e F1E0     		b	.L14
+ 318              	.L9:
+ 360:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 361:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   case RCC_CFGR_SWS_PLL1: /* PLL1 used as system clock  source */
+ 362:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 363:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     /* PLL_VCO = (HSE_VALUE or HSI_VALUE or CSI_VALUE/ PLLM) * PLLN
+ 364:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     SYSCLK = PLL_VCO / PLLR
+ 365:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     */
+ 366:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     pllsource = (RCC->PLLCKSELR & RCC_PLLCKSELR_PLLSRC);
+ 319              		.loc 1 366 21
+ 320 00a0 8A4B     		ldr	r3, .L22
+ 321 00a2 9B6A     		ldr	r3, [r3, #40]
+ 322              		.loc 1 366 15
+ 323 00a4 03F00303 		and	r3, r3, #3
+ 324 00a8 FB61     		str	r3, [r7, #28]
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 13
+
+
+ 367:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     pllm = ((RCC->PLLCKSELR & RCC_PLLCKSELR_DIVM1) >> 4);
+ 325              		.loc 1 367 17
+ 326 00aa 884B     		ldr	r3, .L22
+ 327 00ac 9B6A     		ldr	r3, [r3, #40]
+ 328              		.loc 1 367 52
+ 329 00ae 1B09     		lsrs	r3, r3, #4
+ 330              		.loc 1 367 10
+ 331 00b0 03F03F03 		and	r3, r3, #63
+ 332 00b4 BB61     		str	r3, [r7, #24]
+ 368:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     pllfracen = ((RCC->PLLCFGR & RCC_PLLCFGR_PLL1FRACEN) >> RCC_PLLCFGR_PLL1FRACEN_Pos);
+ 333              		.loc 1 368 22
+ 334 00b6 854B     		ldr	r3, .L22
+ 335 00b8 DB6A     		ldr	r3, [r3, #44]
+ 336              		.loc 1 368 15
+ 337 00ba 03F00103 		and	r3, r3, #1
+ 338 00be 7B61     		str	r3, [r7, #20]
+ 369:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     fracn1 = (float_t)(uint32_t)(pllfracen * ((RCC->PLL1FRACR & RCC_PLL1FRACR_FRACN1) >> 3));
+ 339              		.loc 1 369 51
+ 340 00c0 824B     		ldr	r3, .L22
+ 341 00c2 5B6B     		ldr	r3, [r3, #52]
+ 342              		.loc 1 369 87
+ 343 00c4 DB08     		lsrs	r3, r3, #3
+ 344 00c6 C3F30C03 		ubfx	r3, r3, #0, #13
+ 345              		.loc 1 369 23
+ 346 00ca 7A69     		ldr	r2, [r7, #20]
+ 347 00cc 02FB03F3 		mul	r3, r2, r3
+ 348              		.loc 1 369 12
+ 349 00d0 07EE903A 		vmov	s15, r3	@ int
+ 350 00d4 F8EE677A 		vcvt.f32.u32	s15, s15
+ 351 00d8 C7ED047A 		vstr.32	s15, [r7, #16]
+ 370:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 371:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     if (pllm != 0U)
+ 352              		.loc 1 371 8
+ 353 00dc BB69     		ldr	r3, [r7, #24]
+ 354 00de 002B     		cmp	r3, #0
+ 355 00e0 00F0C380 		beq	.L15
+ 356 00e4 FB69     		ldr	r3, [r7, #28]
+ 357 00e6 022B     		cmp	r3, #2
+ 358 00e8 59D0     		beq	.L16
+ 359 00ea FB69     		ldr	r3, [r7, #28]
+ 360 00ec 022B     		cmp	r3, #2
+ 361 00ee 78D8     		bhi	.L17
+ 362 00f0 FB69     		ldr	r3, [r7, #28]
+ 363 00f2 002B     		cmp	r3, #0
+ 364 00f4 03D0     		beq	.L18
+ 365 00f6 FB69     		ldr	r3, [r7, #28]
+ 366 00f8 012B     		cmp	r3, #1
+ 367 00fa 2ED0     		beq	.L19
+ 368 00fc 71E0     		b	.L17
+ 369              	.L18:
+ 372:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     {
+ 373:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****       switch (pllsource)
+ 374:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****       {
+ 375:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****       case RCC_PLLCKSELR_PLLSRC_HSI: /* HSI used as PLL clock source */
+ 376:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 377:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****         hsivalue = (HSI_VALUE >> ((RCC->CR & RCC_CR_HSIDIV) >> 3));
+ 370              		.loc 1 377 39
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 14
+
+
+ 371 00fe 734B     		ldr	r3, .L22
+ 372 0100 1B68     		ldr	r3, [r3]
+ 373              		.loc 1 377 61
+ 374 0102 DB08     		lsrs	r3, r3, #3
+ 375 0104 03F00303 		and	r3, r3, #3
+ 376              		.loc 1 377 18
+ 377 0108 714A     		ldr	r2, .L22+4
+ 378 010a 22FA03F3 		lsr	r3, r2, r3
+ 379 010e FB60     		str	r3, [r7, #12]
+ 378:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****         pllvco = ((float_t)hsivalue / (float_t)pllm) * ((float_t)(uint32_t)(RCC->PLL1DIVR & RCC_PLL
+ 380              		.loc 1 378 19
+ 381 0110 FB68     		ldr	r3, [r7, #12]
+ 382 0112 07EE903A 		vmov	s15, r3	@ int
+ 383 0116 F8EE676A 		vcvt.f32.u32	s13, s15
+ 384              		.loc 1 378 39
+ 385 011a BB69     		ldr	r3, [r7, #24]
+ 386 011c 07EE903A 		vmov	s15, r3	@ int
+ 387 0120 F8EE677A 		vcvt.f32.u32	s15, s15
+ 388              		.loc 1 378 37
+ 389 0124 86EEA77A 		vdiv.f32	s14, s13, s15
+ 390              		.loc 1 378 80
+ 391 0128 684B     		ldr	r3, .L22
+ 392 012a 1B6B     		ldr	r3, [r3, #48]
+ 393              		.loc 1 378 66
+ 394 012c C3F30803 		ubfx	r3, r3, #0, #9
+ 395              		.loc 1 378 57
+ 396 0130 07EE903A 		vmov	s15, r3	@ int
+ 397 0134 F8EE676A 		vcvt.f32.u32	s13, s15
+ 398              		.loc 1 378 120
+ 399 0138 97ED046A 		vldr.32	s12, [r7, #16]
+ 400 013c DFED675A 		vldr.32	s11, .L22+16
+ 401 0140 C6EE257A 		vdiv.f32	s15, s12, s11
+ 402              		.loc 1 378 110
+ 403 0144 76EEA77A 		vadd.f32	s15, s13, s15
+ 404              		.loc 1 378 139
+ 405 0148 F7EE006A 		vmov.f32	s13, #1.0e+0
+ 406 014c 77EEA67A 		vadd.f32	s15, s15, s13
+ 407              		.loc 1 378 16
+ 408 0150 67EE277A 		vmul.f32	s15, s14, s15
+ 409 0154 C7ED087A 		vstr.32	s15, [r7, #32]
+ 379:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 380:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****         break;
+ 410              		.loc 1 380 9
+ 411 0158 71E0     		b	.L20
+ 412              	.L19:
+ 381:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 382:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****       case RCC_PLLCKSELR_PLLSRC_CSI: /* CSI used as PLL clock source */
+ 383:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****         pllvco = ((float_t)CSI_VALUE / (float_t)pllm) * ((float_t)(uint32_t)(RCC->PLL1DIVR & RCC_PL
+ 413              		.loc 1 383 40
+ 414 015a BB69     		ldr	r3, [r7, #24]
+ 415 015c 07EE903A 		vmov	s15, r3	@ int
+ 416 0160 F8EE677A 		vcvt.f32.u32	s15, s15
+ 417              		.loc 1 383 38
+ 418 0164 DFED5E6A 		vldr.32	s13, .L22+20
+ 419 0168 86EEA77A 		vdiv.f32	s14, s13, s15
+ 420              		.loc 1 383 81
+ 421 016c 574B     		ldr	r3, .L22
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 15
+
+
+ 422 016e 1B6B     		ldr	r3, [r3, #48]
+ 423              		.loc 1 383 67
+ 424 0170 C3F30803 		ubfx	r3, r3, #0, #9
+ 425              		.loc 1 383 58
+ 426 0174 07EE903A 		vmov	s15, r3	@ int
+ 427 0178 F8EE676A 		vcvt.f32.u32	s13, s15
+ 428              		.loc 1 383 121
+ 429 017c 97ED046A 		vldr.32	s12, [r7, #16]
+ 430 0180 DFED565A 		vldr.32	s11, .L22+16
+ 431 0184 C6EE257A 		vdiv.f32	s15, s12, s11
+ 432              		.loc 1 383 111
+ 433 0188 76EEA77A 		vadd.f32	s15, s13, s15
+ 434              		.loc 1 383 140
+ 435 018c F7EE006A 		vmov.f32	s13, #1.0e+0
+ 436 0190 77EEA67A 		vadd.f32	s15, s15, s13
+ 437              		.loc 1 383 16
+ 438 0194 67EE277A 		vmul.f32	s15, s14, s15
+ 439 0198 C7ED087A 		vstr.32	s15, [r7, #32]
+ 384:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****         break;
+ 440              		.loc 1 384 9
+ 441 019c 4FE0     		b	.L20
+ 442              	.L16:
+ 385:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 386:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****       case RCC_PLLCKSELR_PLLSRC_HSE: /* HSE used as PLL clock source */
+ 387:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****         pllvco = ((float_t)HSE_VALUE / (float_t)pllm) * ((float_t)(uint32_t)(RCC->PLL1DIVR & RCC_PL
+ 443              		.loc 1 387 40
+ 444 019e BB69     		ldr	r3, [r7, #24]
+ 445 01a0 07EE903A 		vmov	s15, r3	@ int
+ 446 01a4 F8EE677A 		vcvt.f32.u32	s15, s15
+ 447              		.loc 1 387 38
+ 448 01a8 DFED4E6A 		vldr.32	s13, .L22+24
+ 449 01ac 86EEA77A 		vdiv.f32	s14, s13, s15
+ 450              		.loc 1 387 81
+ 451 01b0 464B     		ldr	r3, .L22
+ 452 01b2 1B6B     		ldr	r3, [r3, #48]
+ 453              		.loc 1 387 67
+ 454 01b4 C3F30803 		ubfx	r3, r3, #0, #9
+ 455              		.loc 1 387 58
+ 456 01b8 07EE903A 		vmov	s15, r3	@ int
+ 457 01bc F8EE676A 		vcvt.f32.u32	s13, s15
+ 458              		.loc 1 387 121
+ 459 01c0 97ED046A 		vldr.32	s12, [r7, #16]
+ 460 01c4 DFED455A 		vldr.32	s11, .L22+16
+ 461 01c8 C6EE257A 		vdiv.f32	s15, s12, s11
+ 462              		.loc 1 387 111
+ 463 01cc 76EEA77A 		vadd.f32	s15, s13, s15
+ 464              		.loc 1 387 140
+ 465 01d0 F7EE006A 		vmov.f32	s13, #1.0e+0
+ 466 01d4 77EEA67A 		vadd.f32	s15, s15, s13
+ 467              		.loc 1 387 16
+ 468 01d8 67EE277A 		vmul.f32	s15, s14, s15
+ 469 01dc C7ED087A 		vstr.32	s15, [r7, #32]
+ 388:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****         break;
+ 470              		.loc 1 388 9
+ 471 01e0 2DE0     		b	.L20
+ 472              	.L17:
+ 389:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 16
+
+
+ 390:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****       default:
+ 391:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****         hsivalue = (HSI_VALUE >> ((RCC->CR & RCC_CR_HSIDIV) >> 3));
+ 473              		.loc 1 391 39
+ 474 01e2 3A4B     		ldr	r3, .L22
+ 475 01e4 1B68     		ldr	r3, [r3]
+ 476              		.loc 1 391 61
+ 477 01e6 DB08     		lsrs	r3, r3, #3
+ 478 01e8 03F00303 		and	r3, r3, #3
+ 479              		.loc 1 391 18
+ 480 01ec 384A     		ldr	r2, .L22+4
+ 481 01ee 22FA03F3 		lsr	r3, r2, r3
+ 482 01f2 FB60     		str	r3, [r7, #12]
+ 392:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****         pllvco = ((float_t)hsivalue / (float_t)pllm) * ((float_t)(uint32_t)(RCC->PLL1DIVR & RCC_PLL
+ 483              		.loc 1 392 19
+ 484 01f4 FB68     		ldr	r3, [r7, #12]
+ 485 01f6 07EE903A 		vmov	s15, r3	@ int
+ 486 01fa F8EE676A 		vcvt.f32.u32	s13, s15
+ 487              		.loc 1 392 39
+ 488 01fe BB69     		ldr	r3, [r7, #24]
+ 489 0200 07EE903A 		vmov	s15, r3	@ int
+ 490 0204 F8EE677A 		vcvt.f32.u32	s15, s15
+ 491              		.loc 1 392 37
+ 492 0208 86EEA77A 		vdiv.f32	s14, s13, s15
+ 493              		.loc 1 392 80
+ 494 020c 2F4B     		ldr	r3, .L22
+ 495 020e 1B6B     		ldr	r3, [r3, #48]
+ 496              		.loc 1 392 66
+ 497 0210 C3F30803 		ubfx	r3, r3, #0, #9
+ 498              		.loc 1 392 57
+ 499 0214 07EE903A 		vmov	s15, r3	@ int
+ 500 0218 F8EE676A 		vcvt.f32.u32	s13, s15
+ 501              		.loc 1 392 120
+ 502 021c 97ED046A 		vldr.32	s12, [r7, #16]
+ 503 0220 DFED2E5A 		vldr.32	s11, .L22+16
+ 504 0224 C6EE257A 		vdiv.f32	s15, s12, s11
+ 505              		.loc 1 392 110
+ 506 0228 76EEA77A 		vadd.f32	s15, s13, s15
+ 507              		.loc 1 392 139
+ 508 022c F7EE006A 		vmov.f32	s13, #1.0e+0
+ 509 0230 77EEA67A 		vadd.f32	s15, s15, s13
+ 510              		.loc 1 392 16
+ 511 0234 67EE277A 		vmul.f32	s15, s14, s15
+ 512 0238 C7ED087A 		vstr.32	s15, [r7, #32]
+ 393:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****         break;
+ 513              		.loc 1 393 9
+ 514 023c 00BF     		nop
+ 515              	.L20:
+ 394:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****       }
+ 395:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****       pllp = (((RCC->PLL1DIVR & RCC_PLL1DIVR_P1) >> 9) + 1U);
+ 516              		.loc 1 395 20
+ 517 023e 234B     		ldr	r3, .L22
+ 518 0240 1B6B     		ldr	r3, [r3, #48]
+ 519              		.loc 1 395 50
+ 520 0242 5B0A     		lsrs	r3, r3, #9
+ 521 0244 03F07F03 		and	r3, r3, #127
+ 522              		.loc 1 395 12
+ 523 0248 0133     		adds	r3, r3, #1
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 17
+
+
+ 524 024a BB60     		str	r3, [r7, #8]
+ 396:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****       common_system_clock = (uint32_t)(float_t)(pllvco / (float_t)pllp);
+ 525              		.loc 1 396 58
+ 526 024c BB68     		ldr	r3, [r7, #8]
+ 527 024e 07EE903A 		vmov	s15, r3	@ int
+ 528 0252 B8EE677A 		vcvt.f32.u32	s14, s15
+ 529              		.loc 1 396 39
+ 530 0256 D7ED086A 		vldr.32	s13, [r7, #32]
+ 531 025a C6EE877A 		vdiv.f32	s15, s13, s14
+ 532              		.loc 1 396 27
+ 533 025e FCEEE77A 		vcvt.u32.f32	s15, s15
+ 534 0262 17EE903A 		vmov	r3, s15	@ int
+ 535 0266 7B62     		str	r3, [r7, #36]
+ 397:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     }
+ 398:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     else
+ 399:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     {
+ 400:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****       common_system_clock = 0U;
+ 401:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     }
+ 402:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     break;
+ 536              		.loc 1 402 5
+ 537 0268 0CE0     		b	.L14
+ 538              	.L15:
+ 400:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     }
+ 539              		.loc 1 400 27
+ 540 026a 0023     		movs	r3, #0
+ 541 026c 7B62     		str	r3, [r7, #36]
+ 542              		.loc 1 402 5
+ 543 026e 09E0     		b	.L14
+ 544              	.L8:
+ 403:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 404:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   default:
+ 405:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     common_system_clock = (uint32_t)(HSI_VALUE >> ((RCC->CR & RCC_CR_HSIDIV) >> 3));
+ 545              		.loc 1 405 56
+ 546 0270 164B     		ldr	r3, .L22
+ 547 0272 1B68     		ldr	r3, [r3]
+ 548              		.loc 1 405 78
+ 549 0274 DB08     		lsrs	r3, r3, #3
+ 550 0276 03F00303 		and	r3, r3, #3
+ 551              		.loc 1 405 25
+ 552 027a 154A     		ldr	r2, .L22+4
+ 553 027c 22FA03F3 		lsr	r3, r2, r3
+ 554 0280 7B62     		str	r3, [r7, #36]
+ 406:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****     break;
+ 555              		.loc 1 406 5
+ 556 0282 00BF     		nop
+ 557              	.L14:
+ 407:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   }
+ 408:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 409:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* Compute SystemClock frequency --------------------------------------------------*/
+ 410:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(RCC_D1CFGR_D1CPRE)
+ 411:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   tmp = D1CorePrescTable[(RCC->D1CFGR & RCC_D1CFGR_D1CPRE) >> RCC_D1CFGR_D1CPRE_Pos];
+ 558              		.loc 1 411 30
+ 559 0284 114B     		ldr	r3, .L22
+ 560 0286 9B69     		ldr	r3, [r3, #24]
+ 561              		.loc 1 411 60
+ 562 0288 1B0A     		lsrs	r3, r3, #8
+ 563 028a 03F00F03 		and	r3, r3, #15
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 18
+
+
+ 564              		.loc 1 411 25
+ 565 028e 164A     		ldr	r2, .L22+28
+ 566 0290 D35C     		ldrb	r3, [r2, r3]	@ zero_extendqisi2
+ 567              		.loc 1 411 7
+ 568 0292 7B60     		str	r3, [r7, #4]
+ 412:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 413:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* common_system_clock frequency : CM7 CPU frequency  */
+ 414:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   common_system_clock >>= tmp;
+ 569              		.loc 1 414 23
+ 570 0294 7A6A     		ldr	r2, [r7, #36]
+ 571 0296 7B68     		ldr	r3, [r7, #4]
+ 572 0298 22FA03F3 		lsr	r3, r2, r3
+ 573 029c 7B62     		str	r3, [r7, #36]
+ 415:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 416:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* SystemD2Clock frequency : CM4 CPU, AXI and AHBs Clock frequency  */
+ 417:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   SystemD2Clock = (common_system_clock >> ((D1CorePrescTable[(RCC->D1CFGR & RCC_D1CFGR_HPRE) >> RCC
+ 574              		.loc 1 417 66
+ 575 029e 0B4B     		ldr	r3, .L22
+ 576 02a0 9B69     		ldr	r3, [r3, #24]
+ 577              		.loc 1 417 94
+ 578 02a2 03F00F03 		and	r3, r3, #15
+ 579              		.loc 1 417 61
+ 580 02a6 104A     		ldr	r2, .L22+28
+ 581 02a8 D35C     		ldrb	r3, [r2, r3]	@ zero_extendqisi2
+ 582              		.loc 1 417 119
+ 583 02aa 03F01F03 		and	r3, r3, #31
+ 584              		.loc 1 417 40
+ 585 02ae 7A6A     		ldr	r2, [r7, #36]
+ 586 02b0 22FA03F3 		lsr	r3, r2, r3
+ 587              		.loc 1 417 17
+ 588 02b4 0D4A     		ldr	r2, .L22+32
+ 589 02b6 1360     		str	r3, [r2]
+ 418:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 419:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #else
+ 420:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   tmp = D1CorePrescTable[(RCC->CDCFGR1 & RCC_CDCFGR1_CDCPRE) >> RCC_CDCFGR1_CDCPRE_Pos];
+ 421:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 422:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* common_system_clock frequency : CM7 CPU frequency  */
+ 423:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   common_system_clock >>= tmp;
+ 424:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 425:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   /* SystemD2Clock frequency : AXI and AHBs Clock frequency  */
+ 426:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   SystemD2Clock = (common_system_clock >> ((D1CorePrescTable[(RCC->CDCFGR1 & RCC_CDCFGR1_HPRE) >> R
+ 427:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 428:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif
+ 429:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** 
+ 430:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #if defined(DUAL_CORE) && defined(CORE_CM4)
+ 431:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   SystemCoreClock = SystemD2Clock;
+ 432:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #else
+ 433:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c ****   SystemCoreClock = common_system_clock;
+ 590              		.loc 1 433 19
+ 591 02b8 0D4A     		ldr	r2, .L22+36
+ 592 02ba 7B6A     		ldr	r3, [r7, #36]
+ 593 02bc 1360     		str	r3, [r2]
+ 434:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** #endif /* DUAL_CORE && CORE_CM4 */
+ 435:HW_Lib/STM32H7/HAL_Lib/Core/Src/system_stm32h7xx.c **** }
+ 594              		.loc 1 435 1
+ 595 02be 00BF     		nop
+ 596 02c0 2C37     		adds	r7, r7, #44
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 19
+
+
+ 597              	.LCFI7:
+ 598              		.cfi_def_cfa_offset 4
+ 599 02c2 BD46     		mov	sp, r7
+ 600              	.LCFI8:
+ 601              		.cfi_def_cfa_register 13
+ 602              		@ sp needed
+ 603 02c4 5DF8047B 		ldr	r7, [sp], #4
+ 604              	.LCFI9:
+ 605              		.cfi_restore 7
+ 606              		.cfi_def_cfa_offset 0
+ 607 02c8 7047     		bx	lr
+ 608              	.L23:
+ 609 02ca 00BF     		.align	2
+ 610              	.L22:
+ 611 02cc 00440258 		.word	1476543488
+ 612 02d0 0090D003 		.word	64000000
+ 613 02d4 00093D00 		.word	4000000
+ 614 02d8 40787D01 		.word	25000000
+ 615 02dc 00000046 		.word	1174405120
+ 616 02e0 0024744A 		.word	1249125376
+ 617 02e4 20BCBE4B 		.word	1270791200
+ 618 02e8 00000000 		.word	D1CorePrescTable
+ 619 02ec 00000000 		.word	SystemD2Clock
+ 620 02f0 00000000 		.word	SystemCoreClock
+ 621              		.cfi_endproc
+ 622              	.LFE334:
+ 624              		.text
+ 625              	.Letext0:
+ 626              		.file 2 "d:\\hpm-compile-tool\\gcc-arm-none-eabi-10.3-win\\arm-none-eabi\\include\\machine\\_defau
+ 627              		.file 3 "d:\\hpm-compile-tool\\gcc-arm-none-eabi-10.3-win\\arm-none-eabi\\include\\sys\\_stdint.h"
+ 628              		.file 4 "HW_Lib/STM32H7/HAL_Lib/CMSIS/Core/Include/core_cm7.h"
+ 629              		.file 5 "HW_Lib/STM32H7/HAL_Lib/CMSIS/Device/ST/STM32H7xx/Include/system_stm32h7xx.h"
+ 630              		.file 6 "HW_Lib/STM32H7/HAL_Lib/CMSIS/Device/ST/STM32H7xx/Include/stm32h743xx.h"
+ 631              		.file 7 "d:\\hpm-compile-tool\\gcc-arm-none-eabi-10.3-win\\arm-none-eabi\\include\\math.h"
+ARM GAS  C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s 			page 20
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 system_stm32h7xx.c
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:23     .data.SystemCoreClock:00000000 SystemCoreClock
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:20     .data.SystemCoreClock:00000000 $d
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:30     .data.SystemD2Clock:00000000 SystemD2Clock
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:27     .data.SystemD2Clock:00000000 $d
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:37     .rodata.D1CorePrescTable:00000000 D1CorePrescTable
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:34     .rodata.D1CorePrescTable:00000000 $d
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:41     .text.SystemInit:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:47     .text.SystemInit:00000000 SystemInit
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:217    .text.SystemInit:000000e4 $d
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:232    .text.SystemCoreClockUpdate:00000000 $t
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:238    .text.SystemCoreClockUpdate:00000000 SystemCoreClockUpdate
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:267    .text.SystemCoreClockUpdate:0000001c $d
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:292    .text.SystemCoreClockUpdate:00000080 $t
+C:\Users\HUAV\AppData\Local\Temp\cc1Dz2Jn.s:611    .text.SystemCoreClockUpdate:000002cc $d
+
+NO UNDEFINED SYMBOLS
