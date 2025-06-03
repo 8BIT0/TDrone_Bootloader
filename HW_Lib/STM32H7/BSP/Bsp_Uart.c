@@ -15,7 +15,7 @@
 #define BspUart_Opr_TimeOut 100 // 100ms
 
 /* internal variable */
-static volatile BspUARTObj_TypeDef *BspUart_Obj_List[Bsp_UART_Port_Sum] = {NULL};
+static BspUARTObj_TypeDef *BspUart_Obj_List[Bsp_UART_Port_Sum] = {NULL};
 
 /* internal function */
 
